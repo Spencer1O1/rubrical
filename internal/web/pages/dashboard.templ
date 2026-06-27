@@ -1,0 +1,52 @@
+package pages
+
+import "rubrical/internal/web/components"
+
+type AssignmentListItem struct {
+	ID               int64
+	Title            string
+	CourseName       string
+	ImportedAtLabel  string
+	SubmissionType   string
+	Status           string
+	URL              string
+}
+
+templ Dashboard(assignments []AssignmentListItem) {
+	@components.Layout("Dashboard", dashboardContent(assignments))
+}
+
+templ dashboardContent(assignments []AssignmentListItem) {
+	<section class="space-y-6">
+		<div>
+			<h1 class="text-2xl font-semibold tracking-tight">Your assignments</h1>
+			<p class="mt-1 text-stone-600">Imported from Canvas via the Rubrical browser extension.</p>
+		</div>
+		if len(assignments) == 0 {
+			<div class="rounded-xl border border-dashed border-stone-300 bg-white p-8 text-center">
+				<h2 class="text-lg font-medium">No assignments yet</h2>
+				<p class="mt-2 text-sm text-stone-600">
+					Install the Rubrical extension, open a Canvas assignment, and click
+					<span class="font-medium text-stone-900">Check with Rubrical</span>.
+				</p>
+			</div>
+		} else {
+			<ul class="divide-y divide-stone-200 overflow-hidden rounded-xl border border-stone-200 bg-white">
+				for _, item := range assignments {
+					<li>
+						<a href={ item.URL } class="flex flex-col gap-2 px-5 py-4 transition hover:bg-stone-50 sm:flex-row sm:items-center sm:justify-between">
+							<div>
+								<p class="font-medium text-stone-900">{ item.Title }</p>
+								if item.CourseName != "" {
+									<p class="text-sm text-stone-500">{ item.CourseName }</p>
+								}
+								<p class="mt-1 text-xs text-stone-400">Imported { item.ImportedAtLabel }</p>
+							</div>
+							@components.StatusBadge(item.Status)
+						</a>
+					</li>
+				}
+			</ul>
+		}
+	</section>
+}

@@ -1,0 +1,11 @@
+---
+description: Do not bump extension manifest version during local dev
+globs: extension/manifest.json
+alwaysApply: false
+---
+
+# Extension manifest version (dev)
+
+Do **not** bump `version` in `extension/manifest.json` during normal development. Leave it unchanged unless the user explicitly asks for a release or store publish version bump.
+
+After rebuilding the extension (`make extension-build`), reload the unpacked extension in the browser — a manifest version bump is not required for dev iteration.

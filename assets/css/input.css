@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.assignment-instructions {
+  overflow-x: hidden;
+}
+
+.assignment-instructions-table-scroll {
+  @apply my-4 max-w-full overflow-x-auto;
+}
+
+.assignment-instructions-table-scroll :where(table),
+.assignment-instructions :where(table) {
+  @apply border-collapse text-sm;
+  width: max-content;
+  max-width: none;
+}
+
+.assignment-instructions :where(th, td) {
+  @apply border border-stone-200 px-3 py-2 align-top;
+}
+
+.assignment-instructions :where(thead th) {
+  @apply bg-stone-50 font-medium text-stone-900;
+}
+
+.assignment-instructions :where(ul, ol) {
+  @apply my-3 list-inside list-disc space-y-1 pl-2;
+}
+
+.assignment-instructions :where(ol) {
+  @apply list-decimal;
+}
+
+.assignment-instructions :where(p) {
+  @apply my-3;
+}
+
+.assignment-instructions :where(h1, h2, h3, h4) {
+  @apply mt-4 font-semibold text-stone-900;
+}
+
+.assignment-instructions :where(h3, h4) {
+  @apply text-base;
+}
+
+.assignment-instructions :where(a) {
+  @apply text-indigo-600 underline;
+}

@@ -1,0 +1,1283 @@
+# Rubrical Project Specification
+
+## 1. Project Vision
+
+Rubrical is a pre-submission academic feedback tool that helps students evaluate their assignments against the actual assignment instructions and rubric before submitting. The goal is not to replace the student’s work, automate academic dishonesty, or submit assignments on the student’s behalf. Instead, Rubrical acts like a preflight checklist: it helps students see whether their draft satisfies the requirements, where it may lose points, and what specific improvements would make it stronger.
+
+Many students lose points not because they are incapable of doing the work, but because they miss rubric details, misunderstand instructions, fail to include required elements, or submit work without a structured final review. Rubrical solves this by extracting the assignment context the student is already allowed to view, combining it with the student’s draft, and producing rubric-aware feedback.
+
+The core experience should feel simple:
+
+1. The student opens an assignment, discussion, or other supported Canvas page.
+2. Rubrical injects a visible action button into the page, near the normal Canvas submission controls.
+3. The student clicks “Check with Rubrical.”
+4. Rubrical captures the visible assignment details, rubric, and current draft/submission text when available.
+5. Rubrical analyzes the student’s work against the assignment instructions and rubric.
+6. Rubrical gives structured feedback, estimated rubric performance, missing requirements, and revision suggestions.
+7. The student revises and submits manually through Canvas.
+
+Rubrical is not intended to be a Canvas API automation tool for v1. It should avoid needing Canvas API tokens, OAuth, or developer keys. Instead, it should use a browser extension to extract visible page content from the user’s active Canvas session only after the user intentionally clicks a Rubrical action.
+
+## 2. Core Problem
+
+Students often interact with assignments in scattered places:
+
+* Assignment instructions are in Canvas.
+* Rubrics may be in a separate table, modal, expandable panel, or lower section of the page.
+* Required readings or prompts may be embedded in long text blocks.
+* Drafts may be written in Google Docs, Word, VS Code, Canvas text editors, or discussion reply boxes.
+* Submission requirements may be hidden in small details.
+* Students often submit before comparing their work carefully against the rubric.
+
+This creates a gap between “I wrote something” and “I know this satisfies the rubric.”
+
+Rubrical closes that gap by turning unstructured assignment pages into structured grading context and comparing that context against the student’s current draft.
+
+## 3. Product Principles
+
+### 3.1 Student-Controlled
+
+The student initiates every import and every analysis.
+
+Rubrical may passively detect supported Canvas pages and inject a visible action button, but it must not import, transmit, store, or analyze assignment content, rubric content, or submission content until the user intentionally clicks a Rubrical action such as “Check with Rubrical” or “Import to Rubrical.”
+
+### 3.2 Embedded Where the Student Already Works
+
+Rubrical should not require the student to manually copy assignment instructions into a separate tool when the browser extension can safely read visible content from the current Canvas page.
+
+The preferred UX is to place Rubrical directly next to the existing Canvas workflow:
+
+```text
+[Submit Assignment] [Check with Rubrical]
+```
+
+or:
+
+```text
+Before you submit:
+[Check with Rubrical]
+```
+
+Rubrical should feel like a pre-submit checkpoint that appears at the moment the student needs it.
+
+### 3.3 Pre-Submission, Not Auto-Submission
+
+Rubrical helps the student review and improve their work. It should not submit assignments automatically in v1.
+
+Manual submission keeps the student responsible for the final work and avoids unnecessary Canvas API/auth complexity.
+
+### 3.4 Visible Content Only
+
+The extension should only extract content visible to the authenticated user on the current Canvas page.
+
+Rubrical should not:
+
+* Read Canvas passwords.
+* Read Canvas cookies.
+* Extract session tokens.
+* Use MITM techniques.
+* Bypass Canvas permissions.
+* Import hidden or unauthorized content.
+* Scrape pages silently in the background.
+
+### 3.5 Rubric-Aware Feedback
+
+Feedback should be grounded in the assignment’s actual requirements and rubric, not generic writing advice.
+
+The output should clearly connect suggestions to rubric criteria or assignment instructions.
+
+### 3.6 Explainable Scoring
+
+When Rubrical estimates performance, it should explain why.
+
+Feedback should include:
+
+* Evidence from the draft
+* Missing elements
+* Relevant rubric criteria
+* Specific revision guidance
+* Confidence level
+
+### 3.7 Minimal Frontend Complexity
+
+Rubrical should not become another large React/TypeScript application.
+
+The browser extension should be tiny. The core application should be server-rendered using Go, templ, HTMX, and Tailwind.
+
+JavaScript should only be used where the browser extension requires it.
+
+## 4. Target Users
+
+### 4.1 Primary User
+
+A student who wants to check an assignment before submitting it.
+
+Common needs:
+
+* “Did I answer all parts of the prompt?”
+* “Does my draft satisfy the rubric?”
+* “What am I missing?”
+* “What score would this probably receive?”
+* “What should I revise before submitting?”
+* “Did I include the required word count, citations, or examples?”
+* “Is this ready to submit?”
+
+### 4.2 Secondary User
+
+A student-developer or power user who writes assignments outside Canvas and wants a better workflow for reviewing work before submission.
+
+### 4.3 Future Users
+
+Possible future users may include:
+
+* Tutors
+* Writing centers
+* Teachers who want to preview rubric clarity
+* Students working in groups
+* Students using non-Canvas LMS platforms
+
+These are not v1 priorities.
+
+## 5. Core User Workflow
+
+### 5.1 Canvas Page Detection Flow
+
+1. User navigates to a supported Canvas page.
+2. Browser extension content script detects page type.
+3. Extension determines whether the page appears to be:
+
+   * Assignment page
+   * Discussion page
+   * Assignment submission page
+   * Discussion reply page
+   * Rubric-bearing page
+   * Unsupported page
+4. If supported, the extension locates useful UI anchor points:
+
+   * Submit Assignment button
+   * Start Assignment button
+   * Text entry editor
+   * Discussion reply editor
+   * Post Reply button
+   * Rubric area
+5. Extension injects a Rubrical button into the page.
+6. No assignment, rubric, or draft content is transmitted yet.
+
+The extension may inspect the page enough to decide where to place the button, but the import/analyze action must wait for the user click.
+
+### 5.2 Preferred Button UX
+
+When a visible draft/submission editor is detected:
+
+```text
+Check with Rubrical
+```
+
+When only assignment/rubric context is detected:
+
+```text
+Import to Rubrical
+```
+
+When a file upload submission is detected and no readable text draft is available:
+
+```text
+Import Assignment to Rubrical
+```
+
+The button should be visually distinct from Canvas’s native submit action and should not trick the user into thinking it submits the assignment.
+
+Suggested placement:
+
+```text
+[Submit Assignment] [Check with Rubrical]
+```
+
+or:
+
+```text
+Before you submit:
+[Check with Rubrical]
+```
+
+### 5.3 Check with Rubrical Flow
+
+1. User opens a Canvas assignment or discussion page.
+2. Rubrical injects a “Check with Rubrical” button near the relevant submission controls.
+3. User writes or previews their current draft in Canvas.
+4. User clicks “Check with Rubrical.”
+5. Extension extracts:
+
+   * Page URL
+   * Assignment/discussion title
+   * Assignment instructions or discussion prompt
+   * Visible rubric content
+   * Due date if visible
+   * Points possible if visible
+   * Submission type if visible
+   * Current draft/submission text if visible
+6. Extension sends the extracted payload to the Rubrical backend.
+7. Backend stores or updates an assignment snapshot.
+8. Backend stores the current draft if one was detected.
+9. Backend runs analysis if enough draft content is available.
+10. Rubrical opens a results page or side panel with feedback.
+
+### 5.4 Import to Rubrical Flow
+
+If no draft is visible:
+
+1. User clicks “Import to Rubrical.”
+2. Extension extracts assignment instructions and rubric.
+3. Backend stores an assignment snapshot.
+4. Rubrical opens the imported assignment page.
+5. User pastes or uploads their draft inside Rubrical.
+6. User clicks “Analyze.”
+7. Backend analyzes the draft against the imported assignment context.
+
+### 5.5 File Upload Assignment Flow
+
+For file upload assignments, the Canvas page may not contain the student’s draft text.
+
+Rubrical should handle this gracefully:
+
+1. User opens the file upload assignment.
+2. Extension injects “Import Assignment to Rubrical.”
+3. User clicks the button.
+4. Extension imports assignment instructions and rubric.
+5. Rubrical opens an assignment page.
+6. User uploads or pastes their draft into Rubrical.
+7. Rubrical analyzes the draft.
+
+Future versions may attempt to read selected local files from a file input, but v1 should not depend on that behavior.
+
+### 5.6 Draft Analysis Flow
+
+1. User opens an imported assignment in Rubrical.
+2. User either:
+
+   * Uses a draft captured from Canvas
+   * Pastes a draft manually
+   * Uploads a supported file in a future version
+3. User clicks “Analyze” or the analysis starts automatically after the “Check with Rubrical” click if a draft was already captured.
+4. Backend stores the draft as a `submission_draft`.
+5. Backend normalizes the assignment instructions and rubric.
+6. AI analysis service compares the draft to:
+
+   * Assignment instructions
+   * Rubric criteria
+   * Required word count
+   * Required citations or sources
+   * Required media/file/link elements, if detectable
+7. Backend stores the analysis result.
+8. HTMX updates the results panel with server-rendered feedback cards.
+
+### 5.7 Revision Flow
+
+1. User reviews feedback.
+2. User edits their draft in Canvas, Rubrical, or their external writing tool.
+3. User re-runs the analysis.
+4. Rubrical shows the newest feedback and may show improvement from the previous analysis.
+5. User manually submits final work in Canvas.
+
+## 6. MVP Features
+
+### 6.1 Browser Extension
+
+The browser extension should be intentionally small.
+
+Technology:
+
+* TypeScript
+* Manifest V3
+* Content scripts
+* Minimal popup if needed
+* No React
+* No heavy frontend framework
+
+Responsibilities:
+
+* Detect supported Canvas pages.
+* Inject a Rubrical action button near useful Canvas controls.
+* Extract visible assignment/discussion/rubric content after user click.
+* Extract current visible draft text when available.
+* Send extracted content to the Rubrical backend.
+* Open the Rubrical results page or imported assignment page.
+
+The extension should use a `MutationObserver` because Canvas may dynamically render page elements after initial load.
+
+Initial supported page types:
+
+* Canvas assignment pages
+* Canvas online text entry assignments
+* Canvas discussion pages
+* Canvas discussion reply editors
+* Canvas rubric tables when visible on the page
+
+The extractor should use layered strategies:
+
+1. Known Canvas selectors.
+2. Semantic HTML regions such as `main`, `h1`, `table`, `article`, `textarea`, and contenteditable regions.
+3. Text heuristics for labels such as “Rubric,” “Criteria,” “Pts,” “Due,” “Submitting,” “Submit Assignment,” and “Reply.”
+4. Manual fallback in a future version.
+
+### 6.2 Button Injection
+
+Rubrical should inject a visible button into supported Canvas pages.
+
+Button labels:
+
+* `Check with Rubrical`
+* `Import to Rubrical`
+* `Import Assignment to Rubrical`
+
+Injection targets:
+
+* Near Submit Assignment button
+* Near Start Assignment button
+* Near online text entry editor
+* Near discussion reply/post controls
+* Near rubric area if no submission controls are found
+
+Rules:
+
+* Do not inject duplicate buttons.
+* Do not hide or replace Canvas controls.
+* Do not make Rubrical’s button look like the official submit button.
+* Do not submit the assignment.
+* Do not transmit page content until the user clicks the button.
+
+### 6.3 Assignment Snapshot Storage
+
+Rubrical should store imported assignment snapshots so the user can return to them later.
+
+Stored data should include:
+
+* Source URL
+* Source platform
+* Page type
+* Imported title
+* Raw visible text
+* Extracted instructions
+* Extracted rubric rows
+* Due date if found
+* Points possible if found
+* Submission type if found
+* Import timestamp
+
+### 6.4 Current Draft Extraction
+
+When available, the extension should extract the current student draft from the Canvas page after the user clicks “Check with Rubrical.”
+
+Possible draft sources:
+
+* Textarea
+* Rich text editor iframe
+* Contenteditable editor
+* Discussion reply box
+* Assignment text entry editor
+* Visible submitted text preview
+
+If no draft is detected, Rubrical should still import the assignment context and prompt the user to paste or upload their draft.
+
+### 6.5 Draft Input Inside Rubrical
+
+The user should be able to paste a draft into Rubrical if the extension cannot extract one.
+
+MVP draft input:
+
+* Plain text
+* Markdown-like text
+* HTML-safe text display
+
+Future draft input:
+
+* `.docx`
+* `.pdf`
+* Google Docs import
+* Canvas submission box extraction improvements
+* File upload with text extraction
+
+### 6.6 Rubric Normalization
+
+The backend should attempt to transform rubric tables into structured criteria.
+
+A criterion may include:
+
+* Criterion name
+* Description
+* Point value
+* Rating levels
+* Rating descriptions
+* Raw extracted text
+
+Not every Canvas rubric will be clean. The system should preserve raw extracted data even when normalization is imperfect.
+
+### 6.7 AI Analysis
+
+The AI layer should produce structured results, not just a blob of prose.
+
+Analysis output should include:
+
+* Overall summary
+* Estimated rubric performance
+* Criteria-by-criteria feedback
+* Missing requirements
+* Strengths
+* Specific revision suggestions
+* Risk flags
+* Word count verification when applicable
+* Evidence from the student draft
+* Confidence level
+
+The AI should be instructed to avoid writing the assignment for the student. It should focus on evaluation, diagnosis, and revision guidance.
+
+### 6.8 Feedback UI
+
+The results page should show feedback in clear sections:
+
+* Overall readiness
+* Estimated score or rubric level
+* Missing requirements
+* Rubric criteria cards
+* Suggested revisions
+* Strengths
+* Warnings
+
+Each feedback card should be easy to scan.
+
+Example feedback card:
+
+* Criterion: Uses assigned reading
+* Status: Partially met
+* Estimated score: 3/5
+* Evidence found: Mentions Small’s idea of “musicking”
+* Missing: Does not connect Pearson’s idea of the ephemeral to the live event example
+* Suggested revision: Add 2–3 sentences connecting silence, breath, and audience presence to Pearson’s argument
+
+### 6.9 Dashboard
+
+The dashboard should show the user’s imported assignments.
+
+Each item should display:
+
+* Assignment title
+* Course/source if available
+* Import date
+* Last analysis date
+* Due date if available
+* Status:
+
+  * Imported
+  * Draft captured
+  * Draft added
+  * Analyzed
+  * Revised
+  * Ready
+
+## 7. Non-Goals for v1
+
+Rubrical v1 should not:
+
+* Automatically submit assignments.
+* Extract Canvas cookies or session tokens.
+* Use MITM techniques.
+* Require Canvas API tokens.
+* Require Canvas OAuth.
+* Impersonate the user outside the visible browser page.
+* Scrape content in the background without user action.
+* Import or analyze pages without a user click.
+* Guarantee a grade.
+* Write full assignments for the student.
+* Support every LMS.
+* Build a complex SPA frontend.
+* Include collaborative editing.
+* Include teacher/admin dashboards.
+
+## 8. Technical Stack
+
+### 8.1 Browser Extension
+
+Technology:
+
+* TypeScript
+* Manifest V3
+* Minimal popup UI
+* Content scripts
+* MutationObserver-based page detection
+* No React
+* No heavy frontend framework
+
+Responsibilities:
+
+* Page detection
+* Button injection
+* DOM extraction after user click
+* Draft detection
+* Data packaging
+* POST to Rubrical backend
+* Open Rubrical assignment/results page
+
+The extension should remain small and replaceable. All complex logic belongs in the Go backend.
+
+### 8.2 Backend
+
+Technology:
+
+* Go
+* chi router
+* Standard `net/http` patterns where practical
+
+Responsibilities:
+
+* HTTP routing
+* Assignment imports
+* Draft storage
+* Rubric normalization
+* AI orchestration
+* Database access
+* Server-rendered page responses
+* HTMX partial responses
+* Authentication if added later
+
+Suggested backend structure:
+
+```text
+rubrical/
+  cmd/
+    server/
+      main.go
+
+  internal/
+    web/
+      routes.go
+      handlers/
+      pages/
+      components/
+
+    db/
+      queries/
+      migrations/
+
+    canvasextract/
+      normalize.go
+      selectors.go
+      rubric.go
+      draft.go
+
+    analysis/
+      analyzer.go
+      prompts.go
+      schemas.go
+
+    ai/
+      client.go
+      openai.go
+      anthropic.go
+
+    auth/
+      session.go
+
+    config/
+      config.go
+
+  extension/
+    manifest.json
+    src/
+      content.ts
+      popup.ts
+      injector.ts
+      extractor.ts
+      draft.ts
+
+  migrations/
+  sql/
+  static/
+  templates-or-templ/
+```
+
+### 8.3 Routing
+
+Use `chi` for routing.
+
+Example routes:
+
+```text
+GET  /                         Dashboard
+POST /imports                  Import assignment from extension
+GET  /assignments/{id}         Assignment detail page
+POST /assignments/{id}/draft   Save draft
+POST /assignments/{id}/analyze Analyze draft
+GET  /assignments/{id}/results Results panel
+POST /feedback/{id}/resolve    Mark feedback item resolved
+GET  /health                   Health check
+```
+
+HTMX routes should return HTML fragments when appropriate.
+
+Example:
+
+```text
+POST /assignments/{id}/analyze
+```
+
+This route should:
+
+1. Save the submitted draft.
+2. Run analysis.
+3. Store analysis results.
+4. Return the updated feedback panel as an HTML fragment.
+
+### 8.4 HTML Rendering
+
+Technology:
+
+* templ
+
+Rubrical should use templ for type-safe server-rendered HTML components.
+
+Component examples:
+
+* `Layout`
+* `DashboardPage`
+* `AssignmentPage`
+* `DraftEditor`
+* `AnalysisPanel`
+* `FeedbackCard`
+* `RubricCriterionCard`
+* `ImportStatusBadge`
+* `ScoreEstimateBadge`
+
+The UI should be built from composable server-rendered components.
+
+### 8.5 Interactivity
+
+Technology:
+
+* HTMX
+
+HTMX should handle:
+
+* Submitting drafts
+* Running analysis
+* Updating feedback panels
+* Marking feedback items as resolved
+* Refreshing assignment status
+* Loading partial content
+* Showing progress/loading states
+
+The project should avoid building unnecessary client-side state management.
+
+Example UI behavior:
+
+```html
+<form
+  hx-post="/assignments/123/analyze"
+  hx-target="#analysis-results"
+  hx-swap="innerHTML"
+>
+  <textarea name="draft"></textarea>
+  <button type="submit">Analyze</button>
+</form>
+
+<section id="analysis-results">
+  <!-- Server-rendered feedback appears here -->
+</section>
+```
+
+### 8.6 Database
+
+Technology:
+
+* PostgreSQL
+
+Rubrical should use Postgres as the primary database.
+
+Core tables:
+
+* users
+* assignment_snapshots
+* rubric_criteria
+* submission_drafts
+* analysis_runs
+* feedback_items
+* extracted_sources
+
+For local development, the app can run against a local Postgres container.
+
+### 8.7 Migrations
+
+Technology:
+
+* goose
+
+Migrations should live in the `migrations/` directory and be committed to the repository.
+
+Migration naming example:
+
+```text
+00001_create_users.sql
+00002_create_assignment_snapshots.sql
+00003_create_submission_drafts.sql
+00004_create_analysis_runs.sql
+00005_create_feedback_items.sql
+```
+
+### 8.8 Queries
+
+Technology:
+
+* sqlc
+
+SQL should be written explicitly and compiled into type-safe Go code using sqlc.
+
+Suggested layout:
+
+```text
+sql/
+  queries/
+    assignments.sql
+    drafts.sql
+    analysis.sql
+    feedback.sql
+  schema/
+```
+
+sqlc should generate Go database access code into an internal package such as:
+
+```text
+internal/db/gen
+```
+
+### 8.9 Styling
+
+Technology:
+
+* Tailwind CSS
+
+Tailwind should be used for styling server-rendered templ components.
+
+The UI should feel clean, focused, and academic without becoming visually heavy.
+
+Design direction:
+
+* Minimal dashboard
+* Strong typography for assignment text
+* Clear feedback cards
+* Status badges
+* Rubric-aligned color/priority indicators
+* Comfortable spacing for long-form reading
+* Mobile-friendly, but desktop-first for v1
+
+### 8.10 AI Service Layer
+
+Technology:
+
+* Go service layer
+* Provider adapters for OpenAI, Anthropic, or other models
+
+The AI layer should be abstracted behind an internal interface.
+
+Example:
+
+```go
+type Analyzer interface {
+    AnalyzeDraft(ctx context.Context, input AnalysisInput) (AnalysisResult, error)
+}
+```
+
+Provider-specific code should not leak into handlers.
+
+The analysis service should:
+
+* Build prompts from structured assignment data.
+* Include rubric criteria.
+* Include the student draft.
+* Request structured JSON output.
+* Validate the model response.
+* Store the result.
+* Return renderable feedback data to the web layer.
+
+The system should support multiple providers later.
+
+Possible providers:
+
+* OpenAI
+* Anthropic
+* Local model later, if practical
+
+## 9. Suggested Data Model
+
+### 9.1 users
+
+Stores application users if auth is added.
+
+Fields:
+
+* id
+* email
+* display_name
+* created_at
+* updated_at
+
+For v1 local-only development, user accounts may be skipped or replaced with a single local user.
+
+### 9.2 assignment_snapshots
+
+Stores imported Canvas assignment data.
+
+Fields:
+
+* id
+* user_id
+* source_url
+* source_platform
+* page_type
+* course_name
+* assignment_title
+* raw_text
+* instructions_text
+* due_at
+* points_possible
+* submission_type
+* imported_at
+* created_at
+* updated_at
+
+### 9.3 rubric_criteria
+
+Stores normalized rubric criteria.
+
+Fields:
+
+* id
+* assignment_snapshot_id
+* name
+* description
+* points_possible
+* ratings_json
+* raw_text
+* sort_order
+* created_at
+* updated_at
+
+### 9.4 submission_drafts
+
+Stores student drafts.
+
+Fields:
+
+* id
+* assignment_snapshot_id
+* user_id
+* body
+* word_count
+* source_type
+* captured_from_canvas
+* created_at
+* updated_at
+
+Possible `source_type` values:
+
+* canvas_text_entry
+* canvas_discussion_reply
+* manual_paste
+* file_upload
+* imported_submission_preview
+
+### 9.5 analysis_runs
+
+Stores each analysis attempt.
+
+Fields:
+
+* id
+* assignment_snapshot_id
+* submission_draft_id
+* provider
+* model
+* status
+* overall_summary
+* estimated_score
+* estimated_score_max
+* confidence
+* raw_model_input
+* raw_model_output
+* created_at
+* completed_at
+
+### 9.6 feedback_items
+
+Stores individual feedback items from analysis.
+
+Fields:
+
+* id
+* analysis_run_id
+* rubric_criterion_id
+* category
+* severity
+* title
+* explanation
+* evidence
+* suggestion
+* status
+* sort_order
+* created_at
+* updated_at
+
+Feedback categories may include:
+
+* missing_requirement
+* weak_evidence
+* rubric_gap
+* structure_issue
+* citation_issue
+* word_count_issue
+* strength
+* revision_suggestion
+
+Severity values may include:
+
+* info
+* low
+* medium
+* high
+* critical
+
+### 9.7 extracted_sources
+
+Stores raw and normalized extraction records.
+
+Fields:
+
+* id
+* assignment_snapshot_id
+* source_kind
+* raw_content
+* normalized_content
+* extraction_method
+* confidence
+* created_at
+
+Possible `source_kind` values:
+
+* assignment_instructions
+* discussion_prompt
+* rubric_table
+* due_date
+* points_possible
+* submission_type
+* visible_draft
+
+## 10. Extension Extraction Model
+
+The extension should output a structured payload.
+
+Example import payload:
+
+```json
+{
+  "sourceUrl": "https://school.instructure.com/courses/123/assignments/456",
+  "pageType": "assignment",
+  "title": "Arts Discussion Forum #7",
+  "visibleText": "...",
+  "instructionsText": "...",
+  "draftText": "...",
+  "rubricRows": [
+    ["Criteria", "Ratings", "Pts"],
+    ["Reflection depth", "Full credit...", "10 pts"],
+    ["Word count", "Minimum 300 words", "5 pts"]
+  ],
+  "metadata": {
+    "dueDateText": "Due Jun 26",
+    "pointsPossibleText": "25 pts",
+    "submissionTypeText": "Online Text Entry"
+  },
+  "captureMode": "check_with_rubrical",
+  "capturedAt": "2026-06-26T12:00:00Z"
+}
+```
+
+The backend should not trust the extractor blindly. It should normalize and validate the payload.
+
+### 10.1 Capture Modes
+
+Possible capture modes:
+
+* `check_with_rubrical`
+* `import_to_rubrical`
+* `manual_paste`
+* `file_upload`
+
+### 10.2 Draft Detection Rules
+
+The extension should attempt to detect drafts from:
+
+* `textarea`
+* `contenteditable="true"`
+* rich text editor body
+* visible discussion reply editor
+* visible assignment text entry editor
+* visible previous submission content
+
+If multiple candidates are found, the extension should choose the most likely active editor and may include metadata about extraction confidence.
+
+## 11. AI Analysis Output Schema
+
+The AI should return structured JSON that can be validated before storage.
+
+Example conceptual output:
+
+```json
+{
+  "overallSummary": "The draft addresses the main prompt and includes a specific live performance example, but it could more directly connect Pearson's idea of ephemerality to the described performance.",
+  "estimatedScore": 24,
+  "estimatedScoreMax": 30,
+  "confidence": "medium",
+  "criteria": [
+    {
+      "criterionName": "Addresses live performance vs digital formats",
+      "status": "met",
+      "estimatedPoints": 5,
+      "maxPoints": 5,
+      "evidence": "The draft discusses digital performance as a lossy approximation.",
+      "suggestion": "No major change needed."
+    },
+    {
+      "criterionName": "Connects to course concepts",
+      "status": "partially_met",
+      "estimatedPoints": 4,
+      "maxPoints": 5,
+      "evidence": "Small's musicking is discussed directly.",
+      "suggestion": "Add a clearer sentence connecting Pearson's ephemeral performance concept to silence, breath, or audience presence."
+    }
+  ],
+  "missingRequirements": [],
+  "strengths": [
+    "Specific personal example from Carmina Burana",
+    "Clear argument for why live performance persists"
+  ],
+  "revisionSuggestions": [
+    "Make the Pearson connection more explicit.",
+    "Replace a few unnatural phrases if the tone should be more academic."
+  ]
+}
+```
+
+The backend should parse this into database records and render it through templ components.
+
+## 12. Security and Privacy
+
+Rubrical may handle sensitive academic data. The app should be designed with privacy in mind from the beginning.
+
+Rules:
+
+* Do not collect Canvas passwords.
+* Do not collect Canvas access tokens.
+* Do not collect session cookies.
+* Do not use MITM techniques.
+* Do not auto-submit assignments.
+* Do not import pages without user action.
+* Do not analyze drafts without user action.
+* Do not expose drafts publicly.
+* Do not log full drafts unnecessarily.
+* Keep AI API keys server-side only.
+* Use environment variables for secrets.
+* Redact sensitive content from application logs.
+* Add clear user messaging about what is being imported and analyzed.
+
+For v1, Rubrical should assume that imported assignment text and student drafts are private user data.
+
+### 12.1 Passive Detection vs Active Import
+
+Rubrical may passively detect Canvas page structure to inject a button.
+
+Rubrical must not passively transmit or store assignment/draft content.
+
+Allowed passive behavior:
+
+* Detecting page type
+* Looking for submit buttons
+* Looking for editors
+* Looking for rubric areas
+* Injecting a button
+* Updating button text based on context
+
+Not allowed passively:
+
+* Sending assignment text to backend
+* Sending draft text to backend
+* Sending rubric text to backend
+* Running AI analysis
+* Storing a page snapshot
+
+Active import begins only after the user clicks a Rubrical action.
+
+## 13. Development Environment
+
+Suggested development setup:
+
+```text
+Go server running locally
+Postgres running in Docker
+Tailwind build/watch process
+templ generate/watch process
+Browser extension loaded unpacked in Chrome
+```
+
+Example services:
+
+```text
+localhost:8787       Rubrical web app
+localhost:5432       Postgres
+Chrome extension     Imports Canvas page content
+```
+
+Suggested Makefile commands:
+
+```text
+make dev             Run server, templ, and Tailwind watchers
+make db-up           Start Postgres
+make migrate-up      Run goose migrations
+make sqlc            Generate sqlc code
+make test            Run Go tests
+make extension-build Build extension assets
+```
+
+## 14. MVP Build Order
+
+### Phase 1: Skeleton
+
+* Create Go project.
+* Add chi router.
+* Add templ.
+* Add Tailwind.
+* Add basic dashboard page.
+* Add Postgres Docker setup.
+* Add goose.
+* Add sqlc.
+
+### Phase 2: Browser Extension Injection
+
+* Create Manifest V3 browser extension.
+* Add content script.
+* Detect Canvas assignment/discussion pages.
+* Use MutationObserver to handle dynamic page rendering.
+* Inject “Check with Rubrical” or “Import to Rubrical” button.
+* Prevent duplicate injection.
+* Confirm that no content is transmitted before click.
+
+### Phase 3: Assignment Import
+
+* On button click, extract page title and main visible text.
+* Extract assignment instructions or discussion prompt.
+* Extract due date and points if visible.
+* POST import payload to backend.
+* Store assignment snapshot.
+* Show imported assignment page.
+
+### Phase 4: Draft Capture
+
+* Detect text entry editors.
+* Detect discussion reply editors.
+* Extract current draft after button click.
+* Store captured draft.
+* If no draft is detected, show paste/upload prompt in Rubrical.
+
+### Phase 5: Rubric Extraction
+
+* Extract table rows from Canvas.
+* Store raw rubric rows.
+* Normalize into rubric criteria.
+* Display rubric criteria in Rubrical.
+
+### Phase 6: Draft Input
+
+* Add draft textarea in Rubrical.
+* Save draft.
+* Count words.
+* Display draft status.
+
+### Phase 7: AI Analysis
+
+* Create AI provider interface.
+* Add OpenAI or Anthropic adapter.
+* Build first analysis prompt.
+* Request structured JSON.
+* Store analysis run.
+* Render feedback cards.
+
+### Phase 8: Revision Loop
+
+* Allow re-analysis.
+* Show analysis history.
+* Mark feedback items resolved.
+* Compare previous and latest results.
+
+### Phase 9: Polish
+
+* Improve Canvas selectors.
+* Add manual extraction fallback.
+* Improve UI.
+* Add HTMX loading states.
+* Add error handling.
+* Add privacy/settings page.
+
+## 15. Future Features
+
+Possible post-MVP features:
+
+* Manual region selection from Canvas pages
+* PDF instruction extraction
+* `.docx` draft upload
+* Google Docs import
+* Assignment requirement checklist
+* Discussion post mode
+* Essay mode
+* Lab report mode
+* Code assignment mode
+* Citation checker
+* Source requirement checker
+* Local-only desktop mode
+* Native messaging bridge
+* Support for other LMS platforms
+* Teacher-facing rubric clarity checker
+* Team/group project review mode
+* Multiple AI provider selection
+* Bring-your-own API key mode
+* Optional Canvas API/OAuth integration if institutionally available
+* Optional side panel mode instead of opening a new tab
+
+## 16. Brand and Positioning
+
+Rubrical should be positioned as:
+
+> A rubric-aware preflight checker for student assignments.
+
+Possible tagline:
+
+> Check the rubric before the rubric checks you.
+
+Alternative positioning:
+
+> Rubrical helps students review their work against the actual assignment instructions before submitting.
+
+The tone should be helpful, direct, and student-centered. It should avoid sounding like a cheating tool. The product should emphasize learning, revision, and responsibility.
+
+## 17. Summary
+
+Rubrical is a Canvas-adjacent academic review tool that helps students check their work before submission. It injects a visible “Check with Rubrical” action into supported Canvas assignment and discussion pages, then imports visible assignment, rubric, and draft content only after the student intentionally clicks the button.
+
+The technical architecture intentionally avoids frontend complexity:
+
+* TypeScript browser extension, no React
+* Go backend with chi
+* Server-rendered HTML with templ
+* HTMX for interactivity
+* Postgres for persistence
+* goose for migrations
+* sqlc for type-safe queries
+* Tailwind for styling
+* Go AI service layer for OpenAI/Anthropic integration
+
+The central philosophy is simple: Rubrical should help students become more aware of requirements before they submit. It should not bypass Canvas, steal credentials, auto-submit work, or replace the student’s authorship. It should be a reliable academic preflight tool embedded at the point where students need it most.

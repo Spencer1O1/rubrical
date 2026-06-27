@@ -1,0 +1,13 @@
+{
+  "name": "rubrical",
+  "private": true,
+  "packageManager": "pnpm@10.25.0",
+  "scripts": {
+    "css:build": "tailwindcss -i ./assets/css/input.css -o ./static/css/app.css --minify",
+    "css:watch": "tailwindcss -i ./assets/css/input.css -o ./static/css/app.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "tailwindcss": "^3.4.17"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "rubrical-extension",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife --target=chrome120",
+    "watch": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife --target=chrome120 --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "typescript": "^5.8.2"
+  }
+}

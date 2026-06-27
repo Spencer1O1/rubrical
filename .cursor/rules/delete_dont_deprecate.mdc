@@ -1,0 +1,93 @@
+---
+description: When something is removed or replaced, delete it everywhere — no shims, aliases, or redirects
+alwaysApply: true
+---
+
+# Delete, don't deprecate
+
+When you remove or replace **anything** in this repo — routes, files, exports, APIs, types, env vars, config keys, DB fields, UI, feature flags, docs — **delete the old thing**. Do not leave compatibility layers, redirects, or “temporary” dual paths.
+
+**Default:** one way to do it. The new way only.
+
+## Never leave behind
+
+- Redirect routes, URL aliases, or “old path → new path” handlers
+- Re-exports or renamed aliases “for backwards compatibility”
+- Wrapper functions that only forward to the replacement
+- `@deprecated` symbols that still work
+- Dual code paths (old + new) unless **both** are explicitly required in production *right now*
+- Code paths for **states the new implementation never creates** (old enum values, old row shapes, old status fields) — e.g. handling `status === "confirmed"` after switching to delete-on-confirm
+- Functions or symbols named `*Legacy*`, `*Old*`, `*Compat*`, or `*Migration*` in product code
+- Commented-out old code “just in case”
+- Feature flags gating the old implementation alongside the new one
+- Stale docs, AGENTS.md, Storybook stories, or tests for removed behavior
+- Empty folders, barrel files, or index re-exports pointing at deleted modules
+
+## Behavior and data migrations
+
+When behavior changes so the **new code never writes a state**, do **not** add handlers for that state “just in case.” Delete the branch. If old rows still exist in a deployment, that is a **one-time migration or manual cleanup** — not a permanent code path.
+
+**Idempotency for the current design is allowed** — e.g. retry confirm after the staging row was already deleted, resolved via the new model (`captures.sourceScanId`, tag state, etc.).
+
+**Idempotency for a superseded design is not allowed** — e.g. special-casing `status === "confirmed"` or `status === "aborted"` after the lifecycle switched to delete-on-terminal.
+
+## When instructions conflict
+
+If a plan, task, comment, or doc asks for backwards compatibility, legacy branches, or “keep handling old X,” **this rule wins** unless the user **explicitly overrides in the current conversation**.
+
+Do not silently add migration shims because a plan mentions “legacy rows” or “existing behavior for old status.” Rewrite toward the new lifecycle only.
+
+## Do instead
+
+- Delete old and new in the **same change** (code, tests, docs, config)
+- Grep the repo and fix **every** reference — not just the call site you touched
+- If external consumers might break, say so in the PR — do **not** keep in-repo shims to hide it
+
+## Examples
+
+```tsx
+// ❌ route shim
+<Route path="/old" element={<Navigate to="/new" replace />} />
+
+// ✅ old route gone
+<Route path="new" element={<Screen />} />
+```
+
+```typescript
+// ❌ alias export
+export { newApi as oldApi };
+
+// ✅ old name deleted; callers updated
+export { newApi };
+```
+
+```typescript
+// ❌ forwarding shim
+export function startTagSession(...args) {
+  return ensureNativeSession(...args);
+}
+
+// ✅ rename at all call sites; delete startTagSession
+```
+
+```typescript
+// ❌ parallel implementations
+if (useNewFlow) { … } else { …legacy… }
+
+// ✅ legacy branch deleted after migration
+```
+
+```typescript
+// ❌ handler for a terminal status the new flow never writes
+if (scan.status === "confirmed") {
+  return confirmLegacyScan(...);
+}
+
+// ✅ only states the new flow produces; missing row → current-model idempotency
+if (scan.status !== "pending") {
+  throw scanError(scanErrorCodes.scanNotPending);
+}
+// scan row gone → lookup captures.sourceScanId, not old status
+```
+
+Keeping two paths “for a smooth transition” inside this monorepo is **not** the default. A deliberate, time-boxed migration is a product/engineering decision — not something agents add silently.

@@ -1,0 +1,234 @@
+package pages
+
+import "rubrical/internal/web/components"
+
+type AssignmentView struct {
+	ID               int64
+	Title            string
+	CourseName       string
+	Instructions     string
+	InstructionsHTML string
+	RawText          string
+	ImportedAtLabel  string
+	Rubric           RubricTableView
+	DraftBody        string
+	DraftStatusLabel string
+	AnalyzeURL       string
+	StrictExtraction bool
+}
+
+// Assignment is the full revisit view from the dashboard.
+templ Assignment(view AssignmentView) {
+	@components.Layout(view.Title, assignmentPageContent(view))
+}
+
+// AssignmentEmbed is the in-Canvas popup: draft-first, context collapsed.
+templ AssignmentEmbed(view AssignmentView) {
+	@components.EmbedLayout(view.Title, assignmentEmbedContent(view))
+}
+
+templ assignmentPageContent(view AssignmentView) {
+	<section class="space-y-8">
+		if view.StrictExtraction {
+			<p class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+				Strict extraction mode — fallbacks disabled. Missing data means Canvas extraction failed, not a silent substitute.
+			</p>
+		}
+		<div>
+			if view.CourseName != "" {
+				<p class="text-sm font-medium text-indigo-600">{ view.CourseName }</p>
+			}
+			<h1 class="mt-1 text-2xl font-semibold tracking-tight">{ view.Title }</h1>
+			<p class="mt-1 text-sm text-stone-500">Imported { view.ImportedAtLabel }</p>
+		</div>
+		<div class="grid gap-8 lg:grid-cols-2">
+			@assignmentInstructionsScrollPanel(view)
+			@draftPanel(view)
+		</div>
+		@assignmentRubricPanel(view)
+	</section>
+}
+
+templ assignmentEmbedContent(view AssignmentView) {
+	<section class="space-y-4">
+		if view.StrictExtraction {
+			<p class="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+				Strict extraction mode — fallbacks disabled. Missing data means Canvas extraction failed, not a silent substitute.
+			</p>
+		}
+		<div>
+			if view.CourseName != "" {
+				<p class="text-sm font-medium text-indigo-600">{ view.CourseName }</p>
+			}
+			<h1 class="text-xl font-semibold tracking-tight">{ view.Title }</h1>
+			<p class="mt-1 text-sm text-stone-500">
+				You already have the assignment open in Canvas — expand below only if you need to double-check instructions or the rubric here.
+			</p>
+		</div>
+		@assignmentInstructionsDetails(view)
+		@assignmentRubricDetails(view)
+		@draftPanel(view)
+	</section>
+}
+
+templ assignmentInstructionsScrollPanel(view AssignmentView) {
+	<div class="space-y-4">
+		<h2 class="text-lg font-medium">Assignment instructions</h2>
+		<div class="assignment-instructions max-h-[28rem] overflow-x-hidden overflow-y-auto rounded-xl border border-stone-200 bg-white p-5 text-sm leading-relaxed text-stone-700">
+			@assignmentInstructionsBody(view)
+		</div>
+	</div>
+}
+
+templ assignmentInstructionsDetails(view AssignmentView) {
+	<details class="group rounded-xl border border-stone-200 bg-white">
+		<summary class="cursor-pointer list-none px-4 py-3 text-sm font-medium text-stone-900 marker:content-none [&::-webkit-details-marker]:hidden">
+			<span class="flex items-center justify-between gap-3">
+				<span>Assignment instructions</span>
+				<span class="text-xs font-normal text-stone-500 group-open:hidden">Show</span>
+				<span class="hidden text-xs font-normal text-stone-500 group-open:inline">Hide</span>
+			</span>
+		</summary>
+		<div class="assignment-instructions border-t border-stone-200 px-4 py-3 text-sm leading-relaxed text-stone-700">
+			@assignmentInstructionsBody(view)
+		</div>
+	</details>
+}
+
+templ assignmentInstructionsBody(view AssignmentView) {
+	if view.InstructionsHTML != "" {
+		@templ.Raw(view.InstructionsHTML)
+	} else if !view.StrictExtraction && view.Instructions != "" {
+		@templ.Raw(SanitizedInstructionsHTML(view.Instructions))
+	} else {
+		<p class="text-stone-500">No instructions were extracted from Canvas.</p>
+	}
+}
+
+templ assignmentRubricPanel(view AssignmentView) {
+	<section class="space-y-4">
+		<h2 class="text-lg font-medium">Rubric</h2>
+		if len(view.Rubric.Rows) > 0 {
+			@assignmentRubricTable(view)
+		} else {
+			<p class="text-sm text-stone-500">No rubric was extracted from Canvas.</p>
+		}
+	</section>
+}
+
+templ assignmentRubricDetails(view AssignmentView) {
+	<details class="group rounded-xl border border-stone-200 bg-white">
+		<summary class="cursor-pointer list-none px-4 py-3 text-sm font-medium text-stone-900 marker:content-none [&::-webkit-details-marker]:hidden">
+			<span class="flex items-center justify-between gap-3">
+				<span>Rubric</span>
+				<span class="text-xs font-normal text-stone-500 group-open:hidden">Show</span>
+				<span class="hidden text-xs font-normal text-stone-500 group-open:inline">Hide</span>
+			</span>
+		</summary>
+		<div class="border-t border-stone-200 p-3">
+			if len(view.Rubric.Rows) > 0 {
+				@assignmentRubricTable(view)
+			} else {
+				<p class="text-sm text-stone-500">No rubric was extracted from Canvas.</p>
+			}
+		</div>
+	</details>
+}
+
+templ assignmentRubricTable(view AssignmentView) {
+	{{ columnCount := view.Rubric.RatingColumnCount() }}
+	<div class="overflow-x-auto rounded-xl border border-stone-200 bg-white">
+		<table class="w-full min-w-[640px] border-collapse text-sm">
+			<thead>
+				<tr class="border-b border-stone-200 bg-stone-50">
+					<th class="w-[18%] px-4 py-3 text-left font-medium text-stone-900">
+						{ RubricHeaderLabel(view.Rubric.Header, 0, "Criteria", view.StrictExtraction) }
+					</th>
+					<th class="px-4 py-3 text-left font-medium text-stone-900">
+						{ RubricHeaderLabel(view.Rubric.Header, 1, "Ratings", view.StrictExtraction) }
+					</th>
+					<th class="w-[8%] px-4 py-3 text-right font-medium text-stone-900">
+						{ RubricHeaderLabel(view.Rubric.Header, 2, "Points", view.StrictExtraction) }
+					</th>
+				</tr>
+			</thead>
+			<tbody>
+				for _, row := range view.Rubric.Rows {
+					<tr class="border-b border-stone-200 last:border-b-0">
+						<td class="px-4 py-4 align-top font-medium text-stone-900">{ row.Criterion }</td>
+						<td class="p-0 align-top">
+							@rubricRatingsCell(row.Ratings, columnCount)
+						</td>
+						<td class="px-4 py-4 align-top text-right text-stone-600 whitespace-nowrap">{ row.Points }</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	</div>
+}
+
+templ rubricRatingsCell(ratings []RubricRatingView, columnCount int) {
+	if len(ratings) == 0 && columnCount == 0 {
+		<div class="px-4 py-4 text-stone-500">—</div>
+	} else {
+		<div class="flex w-full items-stretch divide-x divide-stone-200">
+			for _, rating := range ratings {
+				<div class="relative min-w-0 flex-[1_1_0%] px-4 pt-4 pb-9">
+					if rating.Title != "" {
+						<p class="font-medium text-stone-900">{ rating.Title }</p>
+					}
+					if rating.Description != "" {
+						<p class={ rubricRatingDescriptionClass(rating.Title) }>{ rating.Description }</p>
+					}
+					if rating.Points != "" {
+						<p class="absolute bottom-4 right-4 text-xs text-stone-500">{ rating.Points }</p>
+					}
+				</div>
+			}
+			for i := len(ratings); i < columnCount; i++ {
+				<div class="min-w-0 flex-[1_1_0%] px-4 py-4 text-stone-500">—</div>
+			}
+		</div>
+	}
+}
+
+templ draftPanel(view AssignmentView) {
+	<aside class="space-y-4">
+		<h2 class="text-lg font-medium">Your draft</h2>
+		<form
+			hx-post={ view.AnalyzeURL }
+			hx-target="#analysis-results"
+			hx-swap="innerHTML"
+			class="space-y-4 rounded-xl border border-stone-200 bg-white p-5"
+		>
+			<textarea
+				name="draft"
+				rows="16"
+				class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm leading-relaxed focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+				placeholder="Paste your draft here if it wasn't captured from Canvas."
+			>{ view.DraftBody }</textarea>
+			<div class="flex items-center justify-between gap-3">
+				<p class="text-xs text-stone-500">{ view.DraftStatusLabel }</p>
+				<button
+					type="submit"
+					class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+				>
+					Analyze
+				</button>
+			</div>
+		</form>
+		<section id="analysis-results">
+			@AnalysisPending()
+		</section>
+	</aside>
+}
+
+templ DraftSaved(message string) {
+	<p class="text-xs text-emerald-600">{ message }</p>
+}
+
+templ AnalysisPending() {
+	<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">
+		Analysis is not wired up yet. AI feedback will appear here in Phase 7.
+	</div>
+}

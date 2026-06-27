@@ -1,0 +1,19 @@
+package components
+
+templ EmbedLayout(title string, content templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en" class="h-full bg-stone-50">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } · Rubrical</title>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+		</head>
+		<body class="min-h-full text-stone-900 antialiased">
+			<main class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+				@content
+			</main>
+		</body>
+	</html>
+}

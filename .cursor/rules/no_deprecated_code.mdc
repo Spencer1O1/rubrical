@@ -1,0 +1,34 @@
+---
+description: Do not use APIs, types, or patterns marked deprecated
+alwaysApply: true
+---
+
+# No deprecated code
+
+Do **not** introduce or leave deprecated APIs, types, packages, or patterns. If the editor, linter, TypeScript, or docs mark something `@deprecated`, use the recommended replacement before shipping.
+
+**When editing existing code:** if you touch a file that uses a deprecated symbol, migrate it in the same change when the fix is local and clear.
+
+## React 19 event types
+
+`FormEvent` / `FormEventHandler` are deprecated — forms emit `submit`, not a generic `form` event.
+
+```typescript
+// ❌ deprecated
+function onSubmit(event: React.FormEvent<HTMLFormElement>) { … }
+onSubmit: FormEventHandler<HTMLFormElement>;
+
+// ✅ use SubmitEvent / SubmitEventHandler
+import type { SubmitEventHandler } from "react";
+
+function onSubmit(event: React.SubmitEvent<HTMLFormElement>) { … }
+onSubmit: SubmitEventHandler<HTMLFormElement>;
+```
+
+Other React events: prefer the specific handler type (`ChangeEventHandler`, `InputEventHandler`, …) or `EventHandler` / `SyntheticEvent` when appropriate — not deprecated umbrella types.
+
+## General
+
+- Check IDE strikethrough and `ts(6385)` deprecation diagnostics; do not ignore them.
+- Prefer current library docs over training-data examples that use old APIs.
+- If a dependency is deprecated end-to-end, plan a migration rather than copying its usage into new code.
