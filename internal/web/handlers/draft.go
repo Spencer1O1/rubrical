@@ -413,7 +413,7 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderAnalysisResults(w, r, pages.AnalysisResultsFromResult(&result))
+	h.renderAnalysisResults(w, r, h.analysisResultsView(r.Context(), id, &result))
 }
 
 func (h *Handlers) persistDraftFromAnalyzeForm(ctx context.Context, assignmentID int64, r *http.Request, mode string) error {
@@ -533,5 +533,5 @@ func (h *Handlers) AnalysisResults(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.renderAnalysisResults(w, r, pages.AnalysisResultsFromResult(result))
+	h.renderAnalysisResults(w, r, h.analysisResultsView(r.Context(), id, result))
 }

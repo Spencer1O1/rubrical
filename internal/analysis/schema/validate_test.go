@@ -2,75 +2,109 @@ package schema
 
 import "testing"
 
-func TestValidate(t *testing.T) {
-	score := 4.0
-	max := 5.0
-	out := ModelOutput{
-		OverallSummary:    "Solid draft with room to improve connections.",
-		EstimatedScore:    &score,
-		EstimatedScoreMax: &max,
-		Confidence:        "medium",
-		Criteria: []CriterionFeedback{
+func TestValidateProviderResponse(t *testing.T) {
+	out := ProviderResponse{
+		OverallSummary: "Solid draft with room to improve connections.",
+		Confidence:     "medium",
+		Criteria: []CriterionAssessment{
 			{
-				CriterionName: "Content quality",
-				Status:        "partially_met",
-				Evidence:      "Uses a specific example.",
-				Suggestion:    "Connect the example to the rubric language.",
+				CriterionName:  "Content quality",
+				CriterionScore: 0.72,
+				Evidence:       "Uses a specific example.",
+				Suggestion:     "Connect the example to the rubric language.",
 			},
 		},
 	}
 
-	if err := Validate(&out); err != nil {
+	if err := ValidateProviderResponse(&out); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func TestValidate_rejectsScoreAboveMax(t *testing.T) {
-	score := 6.0
-	max := 5.0
-	out := ModelOutput{
-		OverallSummary:    "Summary",
-		EstimatedScore:    &score,
-		EstimatedScoreMax: &max,
-		Confidence:        "medium",
-		Criteria: []CriterionFeedback{
-			{CriterionName: "A", Status: "met"},
+func TestValidateScoredAnalysis_requiresStatus(t *testing.T) {
+	out := ScoredAnalysis{
+		OverallSummary: "Summary",
+		Confidence:     "medium",
+		Criteria: []ScoredCriterion{
+			{
+				CriterionAssessment: CriterionAssessment{
+					CriterionName:  "A",
+					CriterionScore: 0.5,
+					Evidence:       "e",
+					Suggestion:     "s",
+				},
+			},
 		},
 	}
-	if err := Validate(&out); err == nil {
+	if err := ValidateScoredAnalysis(&out); err == nil {
+		t.Fatal("expected missing status error")
+	}
+}
+
+func TestValidateScoredAnalysis(t *testing.T) {
+	out := ScoredAnalysis{
+		OverallSummary: "Solid draft with room to improve connections.",
+		Confidence:     "medium",
+		Criteria: []ScoredCriterion{
+			{
+				CriterionAssessment: CriterionAssessment{
+					CriterionName:  "Content quality",
+					CriterionScore: 0.72,
+					Evidence:       "Uses a specific example.",
+					Suggestion:     "Connect the example to the rubric language.",
+				},
+				Status: "partially_met",
+			},
+		},
+	}
+
+	if err := ValidateScoredAnalysis(&out); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateScoredAnalysis_rejectsScoreAboveMax(t *testing.T) {
+	score := 6.0
+	max := 5.0
+	out := ScoredAnalysis{
+		OverallSummary:    "Summary",
+		PredictedScore:    &score,
+		PredictedScoreMax: &max,
+		Confidence:        "medium",
+		Criteria: []ScoredCriterion{
+			{
+				CriterionAssessment: CriterionAssessment{CriterionName: "A", CriterionScore: 1},
+				Status:              "met",
+			},
+		},
+	}
+	if err := ValidateScoredAnalysis(&out); err == nil {
 		t.Fatal("expected score above max error")
 	}
 }
 
-func TestValidate_rejectsCriterionPointsAboveMax(t *testing.T) {
-	points := 4.0
-	max := 3.0
-	out := ModelOutput{
+func TestValidateProviderResponse_rejectsInvalidCriterionScore(t *testing.T) {
+	out := ProviderResponse{
 		OverallSummary: "Summary",
 		Confidence:     "medium",
-		Criteria: []CriterionFeedback{
-			{
-				CriterionName:   "A",
-				Status:          "met",
-				EstimatedPoints: &points,
-				MaxPoints:       &max,
-			},
+		Criteria: []CriterionAssessment{
+			{CriterionName: "A", CriterionScore: 1.2},
 		},
 	}
-	if err := Validate(&out); err == nil {
-		t.Fatal("expected criterion points above max error")
+	if err := ValidateProviderResponse(&out); err == nil {
+		t.Fatal("expected invalid criterionScore error")
 	}
 }
 
-func TestValidate_rejectsInvalidConfidence(t *testing.T) {
-	out := ModelOutput{
+func TestValidateProviderResponse_rejectsInvalidConfidence(t *testing.T) {
+	out := ProviderResponse{
 		OverallSummary: "Summary",
 		Confidence:     "very-high",
-		Criteria: []CriterionFeedback{
-			{CriterionName: "A", Status: "met"},
+		Criteria: []CriterionAssessment{
+			{CriterionName: "A", CriterionScore: 0.5},
 		},
 	}
-	if err := Validate(&out); err == nil {
+	if err := ValidateProviderResponse(&out); err == nil {
 		t.Fatal("expected invalid confidence error")
 	}
 }

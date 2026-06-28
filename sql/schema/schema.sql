@@ -60,6 +60,9 @@ CREATE TABLE rubric_criteria (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX idx_rubric_criteria_assignment
+    ON rubric_criteria (assignment_snapshot_id, sort_order);
+
 CREATE TABLE submission_drafts (
     id BIGSERIAL PRIMARY KEY,
     assignment_snapshot_id BIGINT NOT NULL REFERENCES assignment_snapshots(id) ON DELETE CASCADE,
@@ -73,6 +76,9 @@ CREATE TABLE submission_drafts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX idx_submission_drafts_assignment
+    ON submission_drafts (assignment_snapshot_id, updated_at DESC);
 
 CREATE TABLE submission_draft_files (
     id BIGSERIAL PRIMARY KEY,
@@ -102,8 +108,8 @@ CREATE TABLE analysis_runs (
     model TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     overall_summary TEXT,
-    estimated_score NUMERIC(10, 2),
-    estimated_score_max NUMERIC(10, 2),
+    predicted_score NUMERIC(10, 2),
+    predicted_score_max NUMERIC(10, 2),
     confidence TEXT,
     raw_model_input JSONB,
     raw_model_output JSONB,
@@ -121,8 +127,24 @@ CREATE TABLE feedback_items (
     explanation TEXT,
     evidence TEXT,
     suggestion TEXT,
+    criterion_status TEXT,
+    criterion_score NUMERIC,
+    predicted_points NUMERIC,
+    max_points NUMERIC,
+    selected_rating TEXT,
     status TEXT NOT NULL DEFAULT 'open',
     sort_order INT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE extracted_sources (
+    id BIGSERIAL PRIMARY KEY,
+    assignment_snapshot_id BIGINT NOT NULL REFERENCES assignment_snapshots(id) ON DELETE CASCADE,
+    source_kind TEXT NOT NULL,
+    raw_content TEXT,
+    normalized_content TEXT,
+    extraction_method TEXT,
+    confidence TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

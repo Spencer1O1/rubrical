@@ -1,15 +1,13 @@
 package schema
 
-// JSONSchema returns the strict JSON Schema used by provider structured-output APIs.
-// Keep aligned with ModelOutput and Validate.
+// JSONSchema returns the strict JSON Schema for ProviderResponse (AI structured output).
+// Keep aligned with ProviderResponse and ValidateProviderResponse.
 func JSONSchema() map[string]any {
 	return map[string]any{
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
 			"overallSummary":      map[string]any{"type": "string"},
-			"estimatedScore":      nullableNumber(),
-			"estimatedScoreMax":   nullableNumber(),
 			"confidence":          map[string]any{"type": "string", "enum": []any{"low", "medium", "high"}},
 			"criteria":            map[string]any{"type": "array", "items": criterionJSONSchema()},
 			"missingRequirements": stringArraySchema(),
@@ -18,8 +16,6 @@ func JSONSchema() map[string]any {
 		},
 		"required": []any{
 			"overallSummary",
-			"estimatedScore",
-			"estimatedScoreMax",
 			"confidence",
 			"criteria",
 			"missingRequirements",
@@ -34,18 +30,14 @@ func criterionJSONSchema() map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"criterionName":   map[string]any{"type": "string"},
-			"status":          map[string]any{"type": "string", "enum": []any{"met", "partially_met", "not_met"}},
-			"estimatedPoints": nullableNumber(),
-			"maxPoints":       nullableNumber(),
-			"evidence":        map[string]any{"type": "string"},
-			"suggestion":      map[string]any{"type": "string"},
+			"criterionName":  map[string]any{"type": "string"},
+			"criterionScore": map[string]any{"type": "number", "minimum": 0, "maximum": 1},
+			"evidence":       map[string]any{"type": "string"},
+			"suggestion":     map[string]any{"type": "string"},
 		},
 		"required": []any{
 			"criterionName",
-			"status",
-			"estimatedPoints",
-			"maxPoints",
+			"criterionScore",
 			"evidence",
 			"suggestion",
 		},
@@ -57,8 +49,4 @@ func stringArraySchema() map[string]any {
 		"type":  "array",
 		"items": map[string]any{"type": "string"},
 	}
-}
-
-func nullableNumber() map[string]any {
-	return map[string]any{"type": []any{"number", "null"}}
 }

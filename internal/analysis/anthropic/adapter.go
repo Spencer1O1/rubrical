@@ -30,7 +30,7 @@ func (p *Provider) Model() string {
 	return p.client.Model()
 }
 
-func (p *Provider) Analyze(ctx context.Context, req request.Request) (*schema.ModelOutput, error) {
+func (p *Provider) Analyze(ctx context.Context, req request.Request) (*schema.ProviderResponse, error) {
 	attachments := make([]Attachment, len(req.Attachments))
 	for i, file := range req.Attachments {
 		attachments[i] = Attachment{
@@ -50,11 +50,11 @@ func (p *Provider) Analyze(ctx context.Context, req request.Request) (*schema.Mo
 		return nil, err
 	}
 
-	var out schema.ModelOutput
+	var out schema.ProviderResponse
 	if err := json.Unmarshal(raw, &out); err != nil {
 		return nil, err
 	}
-	if err := schema.Validate(&out); err != nil {
+	if err := schema.ValidateProviderResponse(&out); err != nil {
 		return nil, err
 	}
 	return &out, nil

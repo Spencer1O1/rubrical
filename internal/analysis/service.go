@@ -11,6 +11,7 @@ import (
 	"rubrical/internal/aisettings"
 	"rubrical/internal/analysis/files"
 	"rubrical/internal/analysis/provider"
+	"rubrical/internal/analysis/schema"
 	"rubrical/internal/draftfiles"
 	"rubrical/internal/draftmode"
 	"rubrical/internal/urlfetch"
@@ -111,18 +112,28 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 		return Result{}, err
 	}
 
-	modelOut, err := provider.Analyze(ctx, req)
+	providerResp, err := provider.Analyze(ctx, req)
 	if err != nil {
 		_ = s.markRunFailed(ctx, runID, err)
 		return Result{}, err
 	}
 
-	if err := s.saveModelOutput(ctx, runID, modelOut); err != nil {
+	scored, err := ApplyRubricScoring(providerResp, input.Rubric)
+	if err != nil {
+		_ = s.markRunFailed(ctx, runID, err)
+		return Result{}, fmt.Errorf("rubric scoring: %w", err)
+	}
+	if err := schema.ValidateScoredAnalysis(scored); err != nil {
+		_ = s.markRunFailed(ctx, runID, err)
+		return Result{}, fmt.Errorf("analysis output: %w", err)
+	}
+
+	if err := s.saveScoredAnalysis(ctx, runID, scored); err != nil {
 		_ = s.markRunFailed(ctx, runID, err)
 		return Result{}, err
 	}
 
-	result, err := s.persistSuccess(ctx, runID, assignmentID, provider, modelOut)
+	result, err := s.persistSuccess(ctx, runID, assignmentID, provider, scored)
 	if err != nil {
 		return result, err
 	}
@@ -156,6 +167,10 @@ func validateProcessedContent(input Input, result files.ProcessResult) error {
 
 func (s *Service) LoadLatestResult(ctx context.Context, assignmentID int64) (*Result, error) {
 	return loadLatestResult(ctx, s.pool, assignmentID)
+}
+
+func (s *Service) LoadRubricContext(ctx context.Context, assignmentID int64) (RubricContext, error) {
+	return loadRubricContext(ctx, s.pool, assignmentID)
 }
 
 func validateAnalyzable(input Input) error {

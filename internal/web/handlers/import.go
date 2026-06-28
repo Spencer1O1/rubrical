@@ -330,7 +330,8 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64, embed bool) (pag
 
 	if h.analysis != nil {
 		if result, err := h.analysis.LoadLatestResult(ctx, id); err == nil && result != nil {
-			view.Analysis = pages.AnalysisResultsFromResult(result)
+			rubric, _ := h.analysis.LoadRubricContext(ctx, id)
+			view.Analysis = pages.AnalysisResultsFromResult(result, rubric)
 		}
 	}
 

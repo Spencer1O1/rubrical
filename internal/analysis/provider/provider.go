@@ -10,5 +10,5 @@ import (
 type Provider interface {
 	Name() string
 	Model() string
-	Analyze(ctx context.Context, req request.Request) (*schema.ModelOutput, error)
+	Analyze(ctx context.Context, req request.Request) (*schema.ProviderResponse, error)
 }

@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"context"
+
 	"rubrical/internal/aisettings"
 	"rubrical/internal/analysis"
 	"rubrical/internal/config"
 	"rubrical/internal/db"
 	"rubrical/internal/draftfiles"
 	"rubrical/internal/importpayload"
+	"rubrical/internal/web/pages"
 )
 
 type Handlers struct {
@@ -43,4 +46,14 @@ func (h *Handlers) maxDraftUploadBytes() int {
 		return importpayload.DefaultLimits().MaxUploadBytes
 	}
 	return h.importLimits.MaxUploadBytes
+}
+
+func (h *Handlers) analysisResultsView(ctx context.Context, assignmentID int64, result *analysis.Result) pages.AnalysisResultsView {
+	rubric := analysis.RubricContext{}
+	if h.analysis != nil {
+		if loaded, err := h.analysis.LoadRubricContext(ctx, assignmentID); err == nil {
+			rubric = loaded
+		}
+	}
+	return pages.AnalysisResultsFromResult(result, rubric)
 }

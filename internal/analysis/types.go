@@ -46,21 +46,26 @@ type Result struct {
 	Provider         string
 	Model            string
 	OverallSummary   string
-	EstimatedScore   *float64
-	EstimatedScoreMax *float64
+	PredictedScore    *float64
+	PredictedScoreMax *float64
 	Confidence       string
 	Feedback         []FeedbackItem
 	CompletedAt      time.Time
 }
 
 type FeedbackItem struct {
-	ID          int64
-	Category    string
-	Severity    string
-	Title       string
-	Explanation string
-	Evidence    string
-	Suggestion  string
-	Status      string
-	SortOrder   int
+	ID              int64
+	Category        string
+	Severity        string
+	Title           string
+	Explanation     string
+	Evidence        string
+	Suggestion      string
+	CriterionStatus string
+	CriterionScore  *float64
+	SelectedRating  string
+	PredictedPoints *float64
+	MaxPoints       *float64
+	Status          string
+	SortOrder       int
 }

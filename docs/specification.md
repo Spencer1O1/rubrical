@@ -776,15 +776,13 @@ Technology:
 
 Migrations should live in the `migrations/` directory and be committed to the repository.
 
-Migration naming example:
+Migration naming (solo dev — one squashed file in git):
 
 ```text
-00001_create_users.sql
-00002_create_assignment_snapshots.sql
-00003_create_submission_drafts.sql
-00004_create_analysis_runs.sql
-00005_create_feedback_items.sql
+00001_initial_schema.sql
 ```
+
+While iterating locally you may add temporary `00002_*.sql` files; before finishing, fold everything into `00001_initial_schema.sql`, mirror the same shape in `sql/schema/schema.sql`, delete incrementals, and run `make db-reset`. See `docs/development.md`.
 
 ### 8.8 Queries
 
@@ -983,8 +981,8 @@ Fields:
 * model
 * status
 * overall_summary
-* estimated_score
-* estimated_score_max
+* predicted_score
+* predicted_score_max
 * confidence
 * raw_model_input
 * raw_model_output
@@ -1006,6 +1004,11 @@ Fields:
 * explanation
 * evidence
 * suggestion
+* criterion_status
+* criterion_score
+* predicted_points
+* max_points
+* selected_rating
 * status
 * sort_order
 * created_at
@@ -1126,30 +1129,24 @@ If multiple candidates are found, the extension should choose the most likely ac
 
 ## 11. AI Analysis Output Schema
 
-The AI should return structured JSON that can be validated before storage.
+The AI returns structured JSON with `criterionScore` (0–1) per rubric criterion. The server splits [0,1] into **equal slices per rating band** (4 bands → [0, 0.25), [0.25, 0.5), [0.5, 0.75), [0.75, 1]), maps each slice to the corresponding band's title and points (worst→best by rubric order), derives `status` (bottom band → not met, top → met, middle → partially met), and sums `predictedScore`. Point-only rows (no bands) use score × max points with fixed status thresholds. The AI must not return `predictedScore`, `selectedRating`, `predictedPoints`, or `status`.
 
 Example conceptual output:
 
 ```json
 {
   "overallSummary": "The draft addresses the main prompt and includes a specific live performance example, but it could more directly connect Pearson's idea of ephemerality to the described performance.",
-  "estimatedScore": 24,
-  "estimatedScoreMax": 30,
   "confidence": "medium",
   "criteria": [
     {
       "criterionName": "Addresses live performance vs digital formats",
-      "status": "met",
-      "estimatedPoints": 5,
-      "maxPoints": 5,
+      "criterionScore": 0.9,
       "evidence": "The draft discusses digital performance as a lossy approximation.",
       "suggestion": "No major change needed."
     },
     {
       "criterionName": "Connects to course concepts",
-      "status": "partially_met",
-      "estimatedPoints": 4,
-      "maxPoints": 5,
+      "criterionScore": 0.55,
       "evidence": "Small's musicking is discussed directly.",
       "suggestion": "Add a clearer sentence connecting Pearson's ephemeral performance concept to silence, breath, or audience presence."
     }

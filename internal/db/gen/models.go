@@ -16,8 +16,8 @@ type AnalysisRun struct {
 	Model                pgtype.Text        `json:"model"`
 	Status               string             `json:"status"`
 	OverallSummary       pgtype.Text        `json:"overall_summary"`
-	EstimatedScore       pgtype.Numeric     `json:"estimated_score"`
-	EstimatedScoreMax    pgtype.Numeric     `json:"estimated_score_max"`
+	PredictedScore       pgtype.Numeric     `json:"predicted_score"`
+	PredictedScoreMax    pgtype.Numeric     `json:"predicted_score_max"`
 	Confidence           pgtype.Text        `json:"confidence"`
 	RawModelInput        []byte             `json:"raw_model_input"`
 	RawModelOutput       []byte             `json:"raw_model_output"`
