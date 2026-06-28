@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"rubrical/internal/config"
+	"rubrical/internal/secrets"
 )
 
 type Settings struct {
@@ -19,15 +20,18 @@ type Settings struct {
 }
 
 type Store struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	cipher *secrets.Cipher
 }
 
-func NewStore(pool *pgxpool.Pool) *Store {
-	return &Store{pool: pool}
+func NewStore(pool *pgxpool.Pool, cipher *secrets.Cipher) *Store {
+	return &Store{pool: pool, cipher: cipher}
 }
 
 func (s *Store) Get(ctx context.Context, userID int64) (Settings, error) {
 	var settings Settings
+	var openAIStored string
+	var anthropicStored string
 	err := s.pool.QueryRow(ctx, `
 		SELECT ai_provider, ai_model, openai_api_key, anthropic_api_key
 		FROM user_ai_settings
@@ -35,8 +39,8 @@ func (s *Store) Get(ctx context.Context, userID int64) (Settings, error) {
 	`, userID).Scan(
 		&settings.Provider,
 		&settings.Model,
-		&settings.OpenAIAPIKey,
-		&settings.AnthropicAPIKey,
+		&openAIStored,
+		&anthropicStored,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return DefaultSettings(), nil
@@ -44,6 +48,18 @@ func (s *Store) Get(ctx context.Context, userID int64) (Settings, error) {
 	if err != nil {
 		return Settings{}, err
 	}
+
+	openAIAPIKey, err := s.decryptKey(openAIStored)
+	if err != nil {
+		return Settings{}, fmt.Errorf("openai api key: %w", err)
+	}
+	anthropicAPIKey, err := s.decryptKey(anthropicStored)
+	if err != nil {
+		return Settings{}, fmt.Errorf("anthropic api key: %w", err)
+	}
+
+	settings.OpenAIAPIKey = openAIAPIKey
+	settings.AnthropicAPIKey = anthropicAPIKey
 	return Normalize(settings), nil
 }
 
@@ -58,6 +74,15 @@ func (s *Store) Save(ctx context.Context, userID int64, incoming Settings) (Sett
 		return Settings{}, err
 	}
 
+	openAIStored, err := s.encryptKey(next.OpenAIAPIKey)
+	if err != nil {
+		return Settings{}, fmt.Errorf("openai api key: %w", err)
+	}
+	anthropicStored, err := s.encryptKey(next.AnthropicAPIKey)
+	if err != nil {
+		return Settings{}, fmt.Errorf("anthropic api key: %w", err)
+	}
+
 	_, err = s.pool.Exec(ctx, `
 		INSERT INTO user_ai_settings (
 			user_id, ai_provider, ai_model, openai_api_key, anthropic_api_key
@@ -68,11 +93,22 @@ func (s *Store) Save(ctx context.Context, userID int64, incoming Settings) (Sett
 			openai_api_key = EXCLUDED.openai_api_key,
 			anthropic_api_key = EXCLUDED.anthropic_api_key,
 			updated_at = NOW()
-	`, userID, next.Provider, next.Model, next.OpenAIAPIKey, next.AnthropicAPIKey)
+	`, userID, next.Provider, next.Model, openAIStored, anthropicStored)
 	if err != nil {
 		return Settings{}, err
 	}
 	return next, nil
+}
+
+func (s *Store) encryptKey(value string) (string, error) {
+	if s.cipher == nil {
+		return "", errors.New("secrets cipher is not configured")
+	}
+	return s.cipher.Encrypt(strings.TrimSpace(value))
+}
+
+func (s *Store) decryptKey(value string) (string, error) {
+	return s.cipher.Decrypt(value)
 }
 
 func (s *Store) ActiveAPIKey(settings Settings) (string, error) {

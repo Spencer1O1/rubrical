@@ -52,12 +52,18 @@ function setStatus(message: string, kind: "info" | "success" | "error" = "info")
   status.dataset.kind = kind;
 }
 
+function updateKeyConfiguredHints(settings: AISettings): void {
+  byId<HTMLSpanElement>("openai-key-status").hidden = !settings.openaiApiKeyConfigured;
+  byId<HTMLSpanElement>("anthropic-key-status").hidden = !settings.anthropicApiKeyConfigured;
+}
+
 function applySettingsToForm(settings: AISettings): void {
   byId<HTMLSelectElement>("provider").value = settings.provider;
   renderModelOptions(settings.provider, settings.model);
   byId<HTMLSelectElement>("model").value = settings.model;
-  byId<HTMLInputElement>("openai-key").value = settings.openaiApiKey;
-  byId<HTMLInputElement>("anthropic-key").value = settings.anthropicApiKey;
+  byId<HTMLInputElement>("openai-key").value = "";
+  byId<HTMLInputElement>("anthropic-key").value = "";
+  updateKeyConfiguredHints(settings);
 }
 
 async function initPopup(): Promise<void> {

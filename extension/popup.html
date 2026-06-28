@@ -81,6 +81,19 @@
         line-height: 1.4;
         color: #78716c;
       }
+      .key-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .configured {
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #047857;
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 8px;
+      }
       .section {
         display: grid;
         gap: 8px;
@@ -110,14 +123,20 @@
 
       <div class="section">
         <label>
-          OpenAI API key
+          <span class="key-label">
+            OpenAI API key
+            <span id="openai-key-status" class="configured" hidden>Configured</span>
+          </span>
           <input id="openai-key" name="openaiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" />
         </label>
         <label>
-          Anthropic API key
+          <span class="key-label">
+            Anthropic API key
+            <span id="anthropic-key-status" class="configured" hidden>Configured</span>
+          </span>
           <input id="anthropic-key" name="anthropicApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" />
         </label>
-        <p class="hint">Save both keys if you switch providers often. Only the active provider’s key is used.</p>
+        <p class="hint">Leave a key blank to keep the saved value. Keys are encrypted on the server and never sent back to the browser.</p>
       </div>
 
       <button type="submit">Save settings</button>

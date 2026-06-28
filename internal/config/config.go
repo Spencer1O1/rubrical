@@ -12,6 +12,7 @@ type Config struct {
 	Addr                    string
 	DatabaseURL             string
 	DataDir                 string
+	SecretsEncryptionKey    string
 	DraftMaxUploadBytes     int
 	DraftMaxUploadSlots     int
 	AnalysisMaxSubmissionTextChars int
@@ -33,6 +34,7 @@ func Load() (Config, error) {
 		Addr:                    envOrDefault("RUBRICAL_ADDR", DefaultAddr),
 		DatabaseURL:             envOrDefault("DATABASE_URL", DefaultDatabaseURL),
 		DataDir:                 envOrDefault("RUBRICAL_DATA_DIR", DefaultDataDir),
+		SecretsEncryptionKey:    strings.TrimSpace(os.Getenv("RUBRICAL_SECRETS_ENCRYPTION_KEY")),
 		DraftMaxUploadBytes:     envInt("DRAFT_MAX_UPLOAD_BYTES", DefaultDraftMaxUploadBytes),
 		DraftMaxUploadSlots:     envInt("DRAFT_MAX_UPLOAD_SLOTS", DefaultDraftMaxUploadSlots),
 		AnalysisMaxSubmissionTextChars: envInt("ANALYSIS_MAX_SUBMISSION_TEXT_CHARS", DefaultAnalysisMaxSubmissionTextChars),

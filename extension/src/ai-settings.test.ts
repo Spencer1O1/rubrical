@@ -63,4 +63,15 @@ describe("isAISettingsConfigured", () => {
       ),
     ).toBe("sk-ant-test");
   });
+
+  it("accepts configured flags from the server without returning raw keys", () => {
+    expect(
+      isAISettingsConfigured(
+        normalizeAISettings({
+          provider: "openai",
+          openaiApiKeyConfigured: true,
+        }),
+      ),
+    ).toBe(true);
+  });
 });

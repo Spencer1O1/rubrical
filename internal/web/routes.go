@@ -13,7 +13,7 @@ import (
 	"rubrical/internal/web/handlers"
 )
 
-func NewRouter(database *db.DB, fileStore *draftfiles.Store, userID int64, cfg config.Config, analysisSvc *analysis.Service) http.Handler {
+func NewRouter(database *db.DB, fileStore *draftfiles.Store, userID int64, cfg config.Config, analysisSvc *analysis.Service, aiSettings *aisettings.Store) http.Handler {
 	r := chi.NewRouter()
 	r.Use(cors)
 	r.Use(middleware.RequestID)
@@ -21,7 +21,7 @@ func NewRouter(database *db.DB, fileStore *draftfiles.Store, userID int64, cfg c
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	h := handlers.New(database, fileStore, userID, cfg, analysisSvc, aisettings.NewStore(database.Pool))
+	h := handlers.New(database, fileStore, userID, cfg, analysisSvc, aiSettings)
 
 	r.Get("/health", h.Health)
 	r.Get("/", h.Dashboard)

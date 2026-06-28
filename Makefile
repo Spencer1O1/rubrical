@@ -1,4 +1,4 @@
-.PHONY: dev server purge css css-watch templ templ-watch db-up db-down db-reset migrate-up migrate-down sqlc extension-build test build tidy
+.PHONY: dev server purge css css-watch templ templ-watch db-up db-down db-reset migrate-up migrate-down sqlc extension-build test build tidy setup-secrets-key
 
 DATABASE_URL ?= postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable
 
@@ -62,8 +62,11 @@ extension-build:
 install-js:
 	pnpm install
 
-setup: install-js tidy templ sqlc css
+setup: install-js tidy templ sqlc css setup-secrets-key
 	@echo "Skeleton ready. Start Postgres with: make db-up && make migrate-up"
+
+setup-secrets-key:
+	pnpm setup:secrets-key
 
 test:
 	go test ./...

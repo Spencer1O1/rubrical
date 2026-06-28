@@ -108,14 +108,16 @@ function normalizeAISettings(raw) {
     provider,
     model,
     openaiApiKey: typeof raw?.openaiApiKey === "string" ? raw.openaiApiKey.trim() : "",
-    anthropicApiKey: typeof raw?.anthropicApiKey === "string" ? raw.anthropicApiKey.trim() : ""
+    anthropicApiKey: typeof raw?.anthropicApiKey === "string" ? raw.anthropicApiKey.trim() : "",
+    openaiApiKeyConfigured: raw?.openaiApiKeyConfigured === true,
+    anthropicApiKeyConfigured: raw?.anthropicApiKeyConfigured === true
   };
 }
-function apiKeyForSettings(settings) {
-  return settings.provider === "anthropic" ? settings.anthropicApiKey : settings.openaiApiKey;
-}
 function isAISettingsConfigured(settings) {
-  return apiKeyForSettings(settings).length > 0;
+  if (settings.provider === "anthropic") {
+    return settings.anthropicApiKey.length > 0 || settings.anthropicApiKeyConfigured === true;
+  }
+  return settings.openaiApiKey.length > 0 || settings.openaiApiKeyConfigured === true;
 }
 
 // src/ai-settings-api.ts
@@ -187,12 +189,17 @@ function setStatus(message, kind = "info") {
   status.textContent = message;
   status.dataset.kind = kind;
 }
+function updateKeyConfiguredHints(settings) {
+  byId("openai-key-status").hidden = !settings.openaiApiKeyConfigured;
+  byId("anthropic-key-status").hidden = !settings.anthropicApiKeyConfigured;
+}
 function applySettingsToForm(settings) {
   byId("provider").value = settings.provider;
   renderModelOptions(settings.provider, settings.model);
   byId("model").value = settings.model;
-  byId("openai-key").value = settings.openaiApiKey;
-  byId("anthropic-key").value = settings.anthropicApiKey;
+  byId("openai-key").value = "";
+  byId("anthropic-key").value = "";
+  updateKeyConfiguredHints(settings);
 }
 async function initPopup() {
   let settings;

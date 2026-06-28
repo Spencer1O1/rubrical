@@ -15,7 +15,7 @@ A rubric-aware preflight checker for student assignments. See [specification.md]
 ```bash
 # From repo root
 pnpm install
-make setup
+make setup          # includes pnpm setup:secrets-key
 
 # Start Postgres and run migrations
 make db-up
@@ -28,6 +28,8 @@ make server       # terminal 3
 ```
 
 Open http://localhost:8787
+
+`make setup` runs `pnpm setup:secrets-key`, which creates `.env.local` (from `.env.example` if needed) and writes `RUBRICAL_SECRETS_ENCRYPTION_KEY`. The server requires this key to encrypt BYOK API keys at rest. Re-run `pnpm setup:secrets-key` only on a fresh machine — changing the key invalidates saved API keys.
 
 On startup the server creates a **local dev user** (`local@rubrical.dev`) and assigns all imports to that user. The dashboard shows only that user's assignments. Existing rows with no `user_id` are backfilled on startup.
 

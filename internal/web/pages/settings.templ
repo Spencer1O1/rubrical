@@ -68,7 +68,7 @@ templ settingsPageContent(settings aisettings.Settings, errorMessage string, sav
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">AI settings</h1>
 			<p class="mt-2 text-sm text-stone-600">
-				Your API keys are stored in Rubrical and used only when you analyze a draft. During beta you bring your own keys; paid plans will use Rubrical-managed AI later.
+				Your API keys are encrypted at rest on the Rubrical server and used only when you analyze a draft. During beta you bring your own keys; paid plans will use Rubrical-managed AI later.
 			</p>
 		</div>
 		@settingsForm(settings, errorMessage, saved, false, 0)
@@ -155,7 +155,7 @@ templ settingsForm(settings aisettings.Settings, errorMessage string, saved bool
 				class="block w-full rounded-lg border border-stone-300 px-3 py-2 font-mono text-sm"
 			/>
 		</label>
-		<p class="text-xs text-stone-500">Leave a key field blank to keep the saved value. Save both keys if you switch providers often.</p>
+		<p class="text-xs text-stone-500">Leave a key field blank to keep the saved value. Keys are encrypted at rest on the server and are not sent back to the browser after save.</p>
 		<button type="submit" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
 			Save settings
 		</button>

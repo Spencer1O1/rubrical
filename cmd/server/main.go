@@ -16,6 +16,7 @@ import (
 	"rubrical/internal/db"
 	"rubrical/internal/draftfiles"
 	"rubrical/internal/purge"
+	"rubrical/internal/secrets"
 	"rubrical/internal/web"
 )
 
@@ -49,7 +50,12 @@ func main() {
 		log.Fatalf("draft files: %v", err)
 	}
 
-	aiSettingsStore := aisettings.NewStore(database.Pool)
+	secretsCipher, err := secrets.NewCipherFromEnv(cfg.SecretsEncryptionKey)
+	if err != nil {
+		log.Fatalf("secrets encryption: %v", err)
+	}
+
+	aiSettingsStore := aisettings.NewStore(database.Pool, secretsCipher)
 	analysisSvc := analysis.NewService(
 		database.Pool,
 		fileStore,
@@ -88,7 +94,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.Addr,
-		Handler:      web.NewRouter(database, fileStore, userID, cfg, analysisSvc),
+		Handler:      web.NewRouter(database, fileStore, userID, cfg, analysisSvc, aiSettingsStore),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 180 * time.Second,
 		IdleTimeout:  60 * time.Second,

@@ -12,8 +12,16 @@ Configured in **Settings** (dashboard, Canvas embed `/settings?embed=1`, or exte
 |---------|-------------|
 | `provider` | `openai` or `anthropic` |
 | `model` | Model id for the active provider |
-| `openai_api_key` | BYOK OpenAI key |
-| `anthropic_api_key` | BYOK Anthropic key |
+| `openai_api_key` | BYOK OpenAI key (encrypted at rest) |
+| `anthropic_api_key` | BYOK Anthropic key (encrypted at rest) |
+
+Keys are encrypted with **AES-256-GCM** before being written to PostgreSQL. Generate a stable operator key during setup:
+
+```bash
+pnpm setup:secrets-key   # writes RUBRICAL_SECRETS_ENCRYPTION_KEY to .env.local
+```
+
+The server refuses to start without this key. The settings API never returns raw keys — only `openaiApiKeyConfigured` / `anthropicApiKeyConfigured` booleans.
 
 Default provider/model when empty: `openai` / `gpt-4o-mini` (Anthropic: `claude-sonnet-4-20250514`).
 

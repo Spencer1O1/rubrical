@@ -32,7 +32,7 @@ func (h *Handlers) GetAISettingsAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to load ai settings", http.StatusInternalServerError)
 		return
 	}
-	writeJSON(w, settings)
+	writeJSON(w, settings.Public())
 }
 
 func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,7 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isJSONRequest(r) {
-		writeJSON(w, saved)
+		writeJSON(w, saved.Public())
 		return
 	}
 

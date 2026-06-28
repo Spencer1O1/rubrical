@@ -5,6 +5,8 @@ export type AISettings = {
   model: string;
   openaiApiKey: string;
   anthropicApiKey: string;
+  openaiApiKeyConfigured?: boolean;
+  anthropicApiKeyConfigured?: boolean;
 };
 
 export const PROVIDER_MODELS: Record<AIProviderId, readonly { id: string; label: string }[]> = {
@@ -26,6 +28,8 @@ export const DEFAULT_AI_SETTINGS: AISettings = {
   model: PROVIDER_MODELS.openai[0].id,
   openaiApiKey: "",
   anthropicApiKey: "",
+  openaiApiKeyConfigured: false,
+  anthropicApiKeyConfigured: false,
 };
 
 export function defaultModelForProvider(provider: AIProviderId): string {
@@ -48,6 +52,8 @@ export function normalizeAISettings(raw: Partial<AISettings> | null | undefined)
     openaiApiKey: typeof raw?.openaiApiKey === "string" ? raw.openaiApiKey.trim() : "",
     anthropicApiKey:
       typeof raw?.anthropicApiKey === "string" ? raw.anthropicApiKey.trim() : "",
+    openaiApiKeyConfigured: raw?.openaiApiKeyConfigured === true,
+    anthropicApiKeyConfigured: raw?.anthropicApiKeyConfigured === true,
   };
 }
 
@@ -58,5 +64,10 @@ export function apiKeyForSettings(settings: AISettings): string {
 }
 
 export function isAISettingsConfigured(settings: AISettings): boolean {
-  return apiKeyForSettings(settings).length > 0;
+  if (settings.provider === "anthropic") {
+    return (
+      settings.anthropicApiKey.length > 0 || settings.anthropicApiKeyConfigured === true
+    );
+  }
+  return settings.openaiApiKey.length > 0 || settings.openaiApiKeyConfigured === true;
 }

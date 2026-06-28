@@ -6,7 +6,8 @@
     "css:build": "tailwindcss -i ./assets/css/input.css -o ./static/css/app.css --minify",
     "css:watch": "tailwindcss -i ./assets/css/input.css -o ./static/css/app.css --watch",
     "test:fixtures": "pnpm --filter rubrical-extension test:fixtures",
-    "clean:fixtures": "node scripts/clean-fixtures.mjs"
+    "clean:fixtures": "node scripts/clean-fixtures.mjs",
+    "setup:secrets-key": "node scripts/setup-secrets-key.mjs"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
