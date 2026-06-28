@@ -1,4 +1,4 @@
-import { RUBRICAL_API_BASES } from "./api";
+import { getRubricalJson } from "./api";
 import { setStrictExtraction } from "./strict";
 
 type HealthResponse = {
@@ -6,22 +6,13 @@ type HealthResponse = {
 };
 
 export async function syncStrictExtractionFromServer(): Promise<boolean> {
-  for (const base of RUBRICAL_API_BASES) {
-    try {
-      const response = await fetch(`${base}/health`);
-      if (!response.ok) {
-        continue;
-      }
-
-      const data = (await response.json()) as HealthResponse;
-      const strict = data.strictExtraction === true;
-      setStrictExtraction(strict);
-      return strict;
-    } catch {
-      // try next base
-    }
+  const data = await getRubricalJson<HealthResponse>("/health");
+  if (!data) {
+    setStrictExtraction(false);
+    return false;
   }
 
-  setStrictExtraction(false);
-  return false;
+  const strict = data.strictExtraction === true;
+  setStrictExtraction(strict);
+  return strict;
 }

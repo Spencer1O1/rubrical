@@ -4,54 +4,56 @@ import {
   ensureInlineButton,
   isSupportedCanvasPage,
   needsPlacement,
+  setRubricalButtonEnabled,
 } from "./injector";
-import { postImport, RUBRICAL_API_BASES } from "./api";
+import { RUBRICAL_API_BASES } from "./api";
+import {
+  isAssignmentContextReady,
+  prefetchAssignmentContext,
+  runImportOnClick,
+  subscribeAssignmentContextReady,
+} from "./import";
+import {
+  pauseStagedFilesSync,
+  refreshStagedFileIndicators,
+  resumeStagedFilesSync,
+  startStagedFilesSync,
+} from "./staged-files";
+import { pingStagedFilesServiceWorker } from "./staged-files/messages";
 import { RUBRICAL_BUTTON_LABEL } from "./labels";
 import { openAssignmentModal } from "./modal";
-import {
-  extractCourseName,
-  extractInstructions,
-  extractTitle,
-  findLabeledText,
-} from "./extractor";
-import { extractDraftText } from "./draft";
-import { extractRubricTable } from "./rubric";
-import { syncStrictExtractionFromServer } from "./server-config";
+import { isRubricalDraftFilesChangedMessage } from "./panel-bridge";
+import { onLongDescriptionScrapeSession } from "./scrape-session";
 
 const PLACE_DEBOUNCE_MS = 300;
+const PREFETCH_DEBOUNCE_MS = 500;
+
+function syncButtonReadyState(): void {
+  if (!isSupportedCanvasPage()) {
+    return;
+  }
+  setRubricalButtonEnabled(isAssignmentContextReady(detectPageType()));
+}
 
 async function handleRubricalClick(pageType: string): Promise<void> {
-  await syncStrictExtractionFromServer();
-
-  const draftText = extractDraftText();
-  const title = extractTitle();
-  const payload = {
-    sourceUrl: window.location.href,
-    pageType,
-    title,
-    visibleText: document.querySelector("#assignment_show, main")?.textContent?.trim() ?? "",
-    instructionsText: extractInstructions(),
-    draftText,
-    rubric: extractRubricTable(),
-    metadata: {
-      dueDateText: findLabeledText("Due"),
-      pointsPossibleText: findLabeledText("Points"),
-      submissionTypeText: findLabeledText("Submitting"),
-      courseName: extractCourseName(),
-    },
-    captureMode: "check_with_rubrical",
-    capturedAt: new Date().toISOString(),
-  };
+  if (!isAssignmentContextReady(pageType)) {
+    return;
+  }
 
   try {
-    const { data, base } = await postImport(payload);
-    if (data.redirect) {
-      openAssignmentModal(base, data.redirect, title);
+    const { redirect, title, base } = await runImportOnClick(pageType);
+    if (redirect) {
+      openAssignmentModal(base, redirect, title);
     }
-  } catch {
-    alert(
-      `Rubrical could not reach the local server.\n\nTried: ${RUBRICAL_API_BASES.join(", ")}\n\nFrom WSL run: make server\nFrom Windows test: curl http://localhost:8787/health -UseBasicParsing`,
-    );
+  } catch (err) {
+    const detail =
+      err instanceof Error && err.message.trim() !== ""
+        ? err.message
+        : "Unknown error";
+    const serverHint = detail.toLowerCase().includes("canvas attachment")
+      ? ""
+      : `\n\nIf this is a connection problem, the extension tried:\n${RUBRICAL_API_BASES.join("\n")}\n\nFrom WSL run: make server\nFrom Windows test: curl http://localhost:8787/health -UseBasicParsing`;
+    alert(`Rubrical import failed.\n\n${detail}${serverHint}`);
   }
 }
 
@@ -64,20 +66,99 @@ function placeButton(): void {
   ensureInlineButton(RUBRICAL_BUTTON_LABEL, () => {
     void handleRubricalClick(pageType);
   });
+  syncButtonReadyState();
 }
 
 const debouncedPlaceButton = debounce(placeButton, PLACE_DEBOUNCE_MS);
 
-function boot(): void {
-  debouncedPlaceButton();
+const debouncedPrefetch = debounce(() => {
+  if (!isSupportedCanvasPage()) {
+    return;
+  }
+  void prefetchAssignmentContext(detectPageType());
+}, PREFETCH_DEBOUNCE_MS);
 
-  const observer = new MutationObserver(() => {
+function syncButtonReady(): void {
+  syncButtonReadyState();
+}
+
+const debouncedStagedFilesSync = debounce(() => {
+  if (!isSupportedCanvasPage()) {
+    return;
+  }
+  void startStagedFilesSync();
+}, PLACE_DEBOUNCE_MS);
+
+function onDomMutation(): void {
+  if (needsPlacement()) {
+    debouncedPlaceButton();
+  }
+  debouncedPrefetch();
+  if (isSupportedCanvasPage()) {
+    syncButtonReady();
+    debouncedStagedFilesSync();
+  }
+}
+
+let domSyncConnected = false;
+const domSyncObserver = new MutationObserver(onDomMutation);
+
+function connectDomSync(): void {
+  if (domSyncConnected || !document.body) {
+    return;
+  }
+  domSyncObserver.observe(document.body, { childList: true, subtree: true });
+  domSyncConnected = true;
+}
+
+function disconnectDomSync(): void {
+  if (!domSyncConnected) {
+    return;
+  }
+  domSyncObserver.disconnect();
+  domSyncConnected = false;
+}
+
+function onRubricalPanelMessage(event: MessageEvent): void {
+  if (!isRubricalDraftFilesChangedMessage(event)) {
+    return;
+  }
+  void refreshStagedFileIndicators();
+}
+
+function boot(): void {
+  window.addEventListener("message", onRubricalPanelMessage);
+
+  if (isSupportedCanvasPage()) {
+    void pingStagedFilesServiceWorker();
+  }
+
+  subscribeAssignmentContextReady(() => {
+    syncButtonReadyState();
+    if (!isSupportedCanvasPage() || !isAssignmentContextReady(detectPageType())) {
+      return;
+    }
+    void startStagedFilesSync();
+  });
+
+  onLongDescriptionScrapeSession((active) => {
+    if (active) {
+      pauseStagedFilesSync();
+      disconnectDomSync();
+      return;
+    }
+
+    connectDomSync();
+    syncButtonReadyState();
     if (needsPlacement()) {
       debouncedPlaceButton();
     }
+    resumeStagedFilesSync();
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  debouncedPlaceButton();
+  debouncedPrefetch();
+  connectDomSync();
 }
 
 boot();

@@ -1,0 +1,39 @@
+---
+description: Minimal correct code — one mechanism, delete the rest
+alwaysApply: true
+---
+
+# Ponytail engineering
+
+Be the person who ships **10 lines that work**, not 200 lines that almost work.
+
+This is a **philosophy**, not a checklist of repo-specific tricks. Apply it everywhere.
+
+## Default stance
+
+1. **Understand the real constraint first.** Observe, measure, read the source of truth — then write code. Not the other way around.
+2. **One mechanism per concern.** If you need three layers to solve one problem, you probably haven't found the real solution yet.
+3. **Delete before you add.** When a fix lands, remove what failed in the same change. No parallel paths, no “just in case” guards.
+4. **Faster and cleaner wins.** Equal correctness → take the shorter, clearer path. Prefer direct primitives and event-driven flow over loops, polling, and ceremony.
+5. **Prefer declarative over imperative.** Say *what* should be true (config, CSS, types, schema) instead of re-enforcing it on every step — unless the imperative path is genuinely simpler.
+6. **Scope with a toggle.** One switch, one setup, one teardown — not three hooks that must run in the right order.
+7. **No premature abstraction.** Don't extract, export, or generalize until a second caller exists or the duplication is hurting you.
+
+## Red flags — stop and simplify
+
+- Two systems fighting the same symptom
+- Compensation logic for a problem your own code introduced
+- Watchers, polls, or retries that exist “just in case” with no observed failure mode
+- Tests that assert implementation shape instead of behavior
+- Abstractions whose names contain Legacy, Compat, Helper, Manager, or Util without a crisp job
+
+## How to untangle mess
+
+1. List what must be true when you're done — outcomes, not mechanisms.
+2. Find the smallest thing that makes each outcome true.
+3. Collapse setup and teardown into one place.
+4. Verify (typecheck, tests, repro). Stop when it's correct. Don't refactor for aesthetics.
+
+## When complexity is allowed
+
+Add a layer only when the simple version **failed in evidence** you can point to (repro, log, diff, failing test). Document that evidence briefly — not a design doc.

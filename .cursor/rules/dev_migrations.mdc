@@ -1,0 +1,48 @@
+---
+description: Solo-dev DB migrations — incremental while building, squash into 00001 when done
+globs: migrations/**/*.sql,sql/schema/**,sql/queries/**
+alwaysApply: false
+---
+
+# Dev migrations (goose)
+
+Solo dev, wipeable DB. **One squashed migration in git**, not a growing chain.
+
+## While changing schema
+
+1. Add a **one-time** goose file: `migrations/0000N_short_name.sql` (`-- +goose Up` / `-- +goose Down`).
+2. Mirror the same shape in `sql/schema/schema.sql` (sqlc reads this).
+3. Run from repo root:
+   ```bash
+   make migrate-up
+   ```
+4. Update queries / Go as needed; run tests.
+
+## Before finishing the task — squash
+
+Do **not** leave `00002`, `00003`, … in the repo.
+
+1. Fold all schema changes into `migrations/00001_initial_schema.sql`.
+2. Update `sql/schema/schema.sql` to match `00001` exactly.
+3. **Delete** every incremental migration file (`00002_*.sql`, …).
+4. Do **not** add runtime `ALTER TABLE` patches in Go (no `ensureSchema`, no startup drift shims). Goose is the only path.
+
+## Fresh database
+
+After squash, a new DB only needs:
+
+```bash
+make db-up && make migrate-up
+```
+
+If you already ran deleted incremental migrations (`00002`, …), goose may still record version `2` while only `00001` exists — `make migrate-down` fails with `no current version found`. Wipe and re-apply:
+
+```bash
+make db-reset
+```
+
+## Do not
+
+- Keep incremental migrations “for history” in this repo
+- Leave dual paths (goose migration + Go patch) for the same column
+- Add `@deprecated` migration shims or “legacy column” handlers for pre-squash shapes

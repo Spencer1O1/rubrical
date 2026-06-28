@@ -7,10 +7,11 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"rubrical/internal/config"
 	"rubrical/internal/db"
+	"rubrical/internal/draftfiles"
 	"rubrical/internal/web/handlers"
 )
 
-func NewRouter(database *db.DB, userID int64, cfg config.Config) http.Handler {
+func NewRouter(database *db.DB, fileStore *draftfiles.Store, userID int64, cfg config.Config) http.Handler {
 	r := chi.NewRouter()
 	r.Use(cors)
 	r.Use(middleware.RequestID)
@@ -18,14 +19,20 @@ func NewRouter(database *db.DB, userID int64, cfg config.Config) http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	h := handlers.New(database, userID, cfg.StrictExtraction)
+	h := handlers.New(database, fileStore, userID, cfg.StrictExtraction)
 
 	r.Get("/health", h.Health)
 	r.Get("/", h.Dashboard)
+	r.Get("/assignments/draft-manifest", h.DraftManifest)
 
 	r.Route("/assignments", func(r chi.Router) {
 		r.Get("/{id}", h.AssignmentDetail)
 		r.Post("/{id}/draft", h.SaveDraft)
+		r.Post("/{id}/draft/upload", h.UploadDraft)
+		r.Post("/{id}/draft/discussion-attachment", h.UploadDiscussionAttachment)
+		r.Post("/{id}/draft/url", h.SaveDraftURL)
+		r.Post("/{id}/draft/mode", h.SetDraftMode)
+		r.Post("/{id}/draft/files/{fileId}/remove", h.RemoveDraftFile)
 		r.Post("/{id}/analyze", h.AnalyzeDraft)
 		r.Get("/{id}/results", h.AnalysisResults)
 	})

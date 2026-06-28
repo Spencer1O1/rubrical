@@ -1,13 +1,7 @@
-export const BUTTON_ID = "rubrical-action-button";
+import { isSupportedCanvasPath, submitAnchorOrder } from "./canvas/anchors";
+import { queryAnchor } from "./canvas/query";
 
-/** Stable Canvas anchors — ids and data-testids, not button text. */
-const SUBMIT_ANCHOR_SELECTORS = [
-  "#submit-button",
-  '[data-testid="submit-button"]',
-  "#discussion-reply-btn",
-  '[data-testid="discussion-reply-button"]',
-  '[data-testid="reply-button"]',
-] as const;
+export const BUTTON_ID = "rubrical-action-button";
 
 let lastMirroredSignature = "";
 let lastLabel = "";
@@ -26,10 +20,7 @@ export function isSupportedCanvasPage(): boolean {
   }
 
   const path = window.location.pathname;
-  return (
-    path.includes("/assignments/") ||
-    path.includes("/discussion_topics/")
-  );
+  return isSupportedCanvasPath(window.location.pathname);
 }
 
 export function detectPageType(): string {
@@ -49,8 +40,8 @@ export function isVisible(el: HTMLElement): boolean {
 }
 
 export function findSubmitAnchor(): HTMLButtonElement | null {
-  for (const selector of SUBMIT_ANCHOR_SELECTORS) {
-    const el = document.querySelector<HTMLButtonElement>(selector);
+  for (const anchor of submitAnchorOrder) {
+    const el = queryAnchor<HTMLButtonElement>(anchor);
     if (el && isVisible(el)) {
       return el;
     }
@@ -180,6 +171,24 @@ export function updateButtonLabel(label: string): void {
   }
   button.setAttribute("aria-label", label);
   lastLabel = label;
+}
+
+export function setRubricalButtonEnabled(enabled: boolean): void {
+  const button = document.getElementById(BUTTON_ID) as HTMLButtonElement | null;
+  if (!button) {
+    return;
+  }
+
+  button.disabled = !enabled;
+  if (enabled) {
+    button.removeAttribute("aria-disabled");
+    button.style.opacity = "";
+    button.style.cursor = "";
+  } else {
+    button.setAttribute("aria-disabled", "true");
+    button.style.opacity = "0.55";
+    button.style.cursor = "not-allowed";
+  }
 }
 
 export function ensureInlineButton(

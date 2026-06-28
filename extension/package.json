@@ -2,12 +2,17 @@
   "name": "rubrical-extension",
   "private": true,
   "scripts": {
-    "build": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife --target=chrome120",
-    "watch": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife --target=chrome120 --watch",
-    "typecheck": "tsc --noEmit"
+    "build": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife --target=chrome120 --loader:.css=text && esbuild src/background.ts --bundle --outfile=background.js --format=iife --target=chrome120",
+    "watch": "esbuild src/content.ts --bundle --outfile=dist/content.js --format=iife --target=chrome120 --loader:.css=text --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:fixtures": "vitest run src/canvas/fixtures.test.ts"
   },
   "devDependencies": {
+    "@types/chrome": "^0.2.0",
     "esbuild": "^0.25.0",
-    "typescript": "^5.8.2"
+    "happy-dom": "^20.10.6",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
   }
 }

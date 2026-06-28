@@ -12,6 +12,8 @@ import (
 	"rubrical/internal/auth"
 	"rubrical/internal/config"
 	"rubrical/internal/db"
+	"rubrical/internal/draftfiles"
+	"rubrical/internal/purge"
 	"rubrical/internal/web"
 )
 
@@ -21,14 +23,14 @@ func main() {
 		log.Fatalf("config: %v", err)
 	}
 
-	ctx := context.Background()
-	database, err := db.Connect(ctx, cfg.DatabaseURL)
+	bootstrap := context.Background()
+	database, err := db.Connect(bootstrap, cfg.DatabaseURL)
 	if err != nil {
 		log.Fatalf("database: %v", err)
 	}
 	defer database.Close()
 
-	userID, err := auth.EnsureLocalUser(ctx, database.Pool)
+	userID, err := auth.EnsureLocalUser(bootstrap, database.Pool)
 	if err != nil {
 		log.Fatalf("local user: %v", err)
 	}
@@ -37,9 +39,27 @@ func main() {
 		log.Printf("RUBRICAL_STRICT_EXTRACTION=1 — extraction/display fallbacks disabled")
 	}
 
+	fileStore, err := draftfiles.NewStore(cfg.DataDir)
+	if err != nil {
+		log.Fatalf("draft files: %v", err)
+	}
+
+	purgeCtx, stopPurge := context.WithCancel(context.Background())
+	defer stopPurge()
+	policy := purge.Policy{
+		PostDueDateRetention: cfg.PostDueDateRetention,
+		PostUploadRetention:  cfg.PostUploadRetention,
+	}
+	log.Printf(
+		"draft file purge: %s after due date (POST_DUE_DATE_RETENTION_TIME); %s after upload when no due date (POST_UPLOAD_RETENTION_TIME)",
+		cfg.PostDueDateRetention,
+		cfg.PostUploadRetention,
+	)
+	purge.RunBackground(purgeCtx, database.Pool, fileStore, policy, time.Hour)
+
 	server := &http.Server{
 		Addr:         cfg.Addr,
-		Handler:      web.NewRouter(database, userID, cfg),
+		Handler:      web.NewRouter(database, fileStore, userID, cfg),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 60 * time.Second,
 		IdleTimeout:  60 * time.Second,
@@ -55,9 +75,10 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
+	stopPurge()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
 
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Fatalf("shutdown: %v", err)

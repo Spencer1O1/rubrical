@@ -1,4 +1,8 @@
+import { discussion, submission } from "./canvas/anchors";
+import type { CanvasAnchor } from "./canvas/anchors/types";
+import { firstMatch, queryAnchor, queryAnchorAll } from "./canvas/query";
 import { findSubmitAnchor, isVisible } from "./injector";
+import { isStrictExtraction } from "./strict";
 
 type TinyMCEEditor = {
   getContent?: (options?: { format?: string }) => string;
@@ -12,6 +16,12 @@ type TinyMCEGlobal = {
   get?: (id: string) => TinyMCEEditor | null;
 };
 
+type DraftEditorAnchors = {
+  root: Element;
+  textareas: CanvasAnchor;
+  editorIframes: CanvasAnchor;
+};
+
 const EMPTY_EDITOR_HTML = "<p><br data-mce-bogus=\"1\"></p>";
 
 function tinymceGlobal(): TinyMCEGlobal | undefined {
@@ -23,55 +33,88 @@ function isEmptyEditorHtml(html: string): boolean {
   return trimmed === "" || trimmed === EMPTY_EDITOR_HTML || trimmed === "<p></p>" || trimmed === "<p><br></p>";
 }
 
-function getSubmissionRoot(): Element {
-  const submit = findSubmitAnchor();
-  const fromSubmit = submit?.closest("#assignment_show, form.submit_assignment, .submission_form");
-  if (fromSubmit) {
-    return fromSubmit;
+function discussionEditRoot(): Element | null {
+  return queryAnchor(discussion.editContainer);
+}
+
+function resolveDraftEditorAnchors(): DraftEditorAnchors {
+  const discussionRoot = discussionEditRoot();
+  if (discussionRoot) {
+    return {
+      root: discussionRoot,
+      textareas: discussion.textareas,
+      editorIframes: discussion.editorIframes,
+    };
   }
 
-  return document.querySelector("#assignment_show, .submission_form") ?? document.body;
+  const assignmentRoot = queryAnchor(submission.root) ?? document.body;
+  return {
+    root: queryAnchor(submission.textEditor, assignmentRoot) ?? assignmentRoot,
+    textareas: submission.textareas,
+    editorIframes: submission.editorIframes,
+  };
 }
 
-function getSubmissionTextareas(root: Element): HTMLTextAreaElement[] {
-  return Array.from(
-    root.querySelectorAll<HTMLTextAreaElement>(
-      "textarea#submission_body, textarea[name='submission[body]'], textarea[name*='submission'], textarea[id*='submission']",
-    ),
-  );
+export function getSubmissionRoot(): Element {
+  const discussionRoot = discussionEditRoot();
+  if (discussionRoot) {
+    return discussionRoot;
+  }
+
+  const anchored = queryAnchor(submission.root);
+  if (anchored) {
+    return anchored;
+  }
+
+  if (!isStrictExtraction()) {
+    const submit = findSubmitAnchor();
+    const fromSubmit = submit?.closest([...submission.root.classic].join(", "));
+    if (fromSubmit) {
+      return fromSubmit;
+    }
+
+    const classic = firstMatch(submission.root.classic);
+    if (classic) {
+      return classic;
+    }
+  }
+
+  return document.body;
 }
 
-function syncSubmissionEditor(root: Element, textareas: HTMLTextAreaElement[]): void {
+function getSubmissionTextareas(anchors: DraftEditorAnchors): HTMLTextAreaElement[] {
+  return queryAnchorAll<HTMLTextAreaElement>(anchors.textareas, anchors.root);
+}
+
+function syncSubmissionEditor(textareas: HTMLTextAreaElement[]): void {
   const tinymce = tinymceGlobal();
+  if (!tinymce) {
+    return;
+  }
+
+  const saveById = (id: string) => {
+    tinymce.get?.(id)?.save?.();
+  };
 
   for (const textarea of textareas) {
-    if (textarea.id && tinymce?.get) {
-      tinymce.get(textarea.id)?.save?.();
+    if (textarea.id) {
+      saveById(textarea.id);
     }
   }
 
-  tinymce?.triggerSave?.();
-
-  const active = document.activeElement;
-  if (active instanceof HTMLElement && active !== document.body) {
-    active.blur();
-  }
-
-  for (const textarea of textareas) {
-    if (textarea.id && tinymce?.get) {
-      tinymce.get(textarea.id)?.save?.();
+  for (const editor of tinymce.editors ?? []) {
+    if (editor.id) {
+      saveById(editor.id);
     }
   }
 
-  tinymce?.triggerSave?.();
+  tinymce.triggerSave?.();
 }
 
-function readEditorIframes(root: Element): string {
-  const iframes = Array.from(
-    root.querySelectorAll<HTMLIFrameElement>(
-      ".tox-edit-area iframe, iframe.tox-edit-area__iframe, iframe[id*='tinymce']",
-    ),
-  ).filter((iframe) => isVisible(iframe));
+function readEditorIframes(anchors: DraftEditorAnchors): string {
+  const iframes = queryAnchorAll<HTMLIFrameElement>(anchors.editorIframes, anchors.root).filter(
+    (iframe) => isVisible(iframe),
+  );
 
   for (const iframe of iframes) {
     const body = iframe.contentDocument?.body;
@@ -88,7 +131,7 @@ function readEditorIframes(root: Element): string {
   return "";
 }
 
-function readTinyMCEEditors(root: Element, textareas: HTMLTextAreaElement[]): string {
+function readTinyMCEEditors(anchors: DraftEditorAnchors, textareas: HTMLTextAreaElement[]): string {
   const tinymce = tinymceGlobal();
   if (!tinymce) {
     return "";
@@ -112,7 +155,7 @@ function readTinyMCEEditors(root: Element, textareas: HTMLTextAreaElement[]): st
     }
 
     const textarea = document.getElementById(editor.id);
-    if (!textarea || !root.contains(textarea)) {
+    if (!textarea || !anchors.root.contains(textarea)) {
       continue;
     }
 
@@ -137,14 +180,13 @@ function readSyncedTextarea(textareas: HTMLTextAreaElement[]): string {
 
 /** Live editor read order (iframe → TinyMCE → textarea), not A2/classic page layout. */
 export function extractDraftText(): string {
-  const root = getSubmissionRoot();
-  const textareas = getSubmissionTextareas(root);
-  syncSubmissionEditor(root, textareas);
+  const anchors = resolveDraftEditorAnchors();
+  const textareas = getSubmissionTextareas(anchors);
+  syncSubmissionEditor(textareas);
 
-  // Live editor first — hidden textarea often still holds the last server draft.
   for (const reader of [
-    () => readEditorIframes(root),
-    () => readTinyMCEEditors(root, textareas),
+    () => readEditorIframes(anchors),
+    () => readTinyMCEEditors(anchors, textareas),
     () => readSyncedTextarea(textareas),
   ]) {
     const content = reader();

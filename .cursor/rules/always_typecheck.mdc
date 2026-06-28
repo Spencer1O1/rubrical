@@ -1,0 +1,34 @@
+---
+description: Always run TypeScript typecheck after code changes
+alwaysApply: true
+---
+
+# Always typecheck
+
+After **any** change that touches TypeScript (edits, new files, refactors, dependency updates), run typecheck **before** saying the task is done.
+
+Do not skip this because tests passed — Vitest does not replace `tsc`.
+
+## Command
+
+From repo root:
+
+```bash
+pnpm --filter rubrical-extension typecheck
+```
+
+Or from `extension/`:
+
+```bash
+npm run typecheck
+```
+
+## When to run
+
+- After editing `.ts` files under `extension/`
+- After changing `extension/tsconfig.json` or types in `package.json`
+- Before committing or opening a PR that includes TypeScript changes
+
+## If typecheck fails
+
+Fix every reported error in the same change. Do not hand off with known `tsc` failures.

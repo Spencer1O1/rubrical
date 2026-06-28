@@ -5,15 +5,19 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
-	Addr              string
-	DatabaseURL       string
-	AIProvider        string
-	OpenAIKey         string
-	AnthropicKey      string
-	StrictExtraction  bool
+	Addr                   string
+	DatabaseURL            string
+	DataDir                string
+	AIProvider             string
+	OpenAIKey              string
+	AnthropicKey           string
+	StrictExtraction       bool
+	PostDueDateRetention   time.Duration
+	PostUploadRetention    time.Duration
 }
 
 func Load() (Config, error) {
@@ -22,11 +26,24 @@ func Load() (Config, error) {
 	cfg := Config{
 		Addr:             envOrDefault("RUBRICAL_ADDR", ":8787"),
 		DatabaseURL:      envOrDefault("DATABASE_URL", "postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable"),
+		DataDir:          envOrDefault("RUBRICAL_DATA_DIR", "./data"),
 		AIProvider:       envOrDefault("AI_PROVIDER", ""),
 		OpenAIKey:        os.Getenv("OPENAI_API_KEY"),
 		AnthropicKey:     os.Getenv("ANTHROPIC_API_KEY"),
 		StrictExtraction: envBool("RUBRICAL_STRICT_EXTRACTION"),
 	}
+
+	retention, err := envDuration("POST_DUE_DATE_RETENTION_TIME", 7*24*time.Hour)
+	if err != nil {
+		return Config{}, fmt.Errorf("POST_DUE_DATE_RETENTION_TIME: %w", err)
+	}
+	cfg.PostDueDateRetention = retention
+
+	uploadRetention, err := envDuration("POST_UPLOAD_RETENTION_TIME", 30*24*time.Hour)
+	if err != nil {
+		return Config{}, fmt.Errorf("POST_UPLOAD_RETENTION_TIME: %w", err)
+	}
+	cfg.PostUploadRetention = uploadRetention
 
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
@@ -59,4 +76,19 @@ func envBool(key string) bool {
 	default:
 		return false
 	}
+}
+
+func envDuration(key string, fallback time.Duration) (time.Duration, error) {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback, nil
+	}
+	d, err := time.ParseDuration(raw)
+	if err != nil {
+		return 0, err
+	}
+	if d < 0 {
+		return 0, fmt.Errorf("must be >= 0")
+	}
+	return d, nil
 }

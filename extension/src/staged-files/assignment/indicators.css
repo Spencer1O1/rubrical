@@ -1,0 +1,21 @@
+td[data-rubrical-file-indicator-cell] {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.rubrical-file-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid #fcd34d;
+  border-radius: 9999px;
+  background-color: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25;
+  vertical-align: middle;
+  white-space: nowrap;
+  cursor: default;
+  user-select: none;
+}

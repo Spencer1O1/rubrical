@@ -42,7 +42,15 @@ func EmbedLayout(title string, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " · Rubrical</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"><script src=\"https://unpkg.com/htmx.org@2.0.4\"></script></head><body class=\"min-h-full text-stone-900 antialiased\"><main class=\"mx-auto max-w-5xl px-4 py-6 sm:px-6\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " · Rubrical</title><link rel=\"stylesheet\" href=\"/static/css/app.css\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = MaterialSymbolsHead().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<script src=\"https://unpkg.com/htmx.org@2.0.4\"></script></head><body class=\"min-h-full text-stone-900 antialiased\"><script>\n\t\t\t\tfunction notifyParentDraftFilesChanged(event) {\n\t\t\t\t\tif (window.parent === window) return;\n\t\t\t\t\tconst detail = event.detail;\n\t\t\t\t\tif (!detail || detail.failed || detail.isError) return;\n\t\t\t\t\tconst path = String(\n\t\t\t\t\t\tdetail.pathInfo?.requestPath ??\n\t\t\t\t\t\t\tdetail.pathInfo?.finalRequestPath ??\n\t\t\t\t\t\t\tdetail.requestConfig?.path ??\n\t\t\t\t\t\t\t\"\",\n\t\t\t\t\t);\n\t\t\t\t\tif (!path.includes(\"/draft/files\") && !path.includes(\"/draft/upload\") && !path.includes(\"/draft/discussion-attachment\")) return;\n\t\t\t\t\twindow.parent.postMessage({ type: \"rubrical:draft-files-changed\" }, \"*\");\n\t\t\t\t}\n\t\t\t\tdocument.body.addEventListener(\"htmx:afterSwap\", notifyParentDraftFilesChanged);\n\t\t\t\tdocument.body.addEventListener(\"htmx:afterSettle\", notifyParentDraftFilesChanged);\n\t\t\t</script><main class=\"mx-auto max-w-5xl px-4 py-6 sm:px-6\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -50,7 +58,7 @@ func EmbedLayout(title string, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</main></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</main></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

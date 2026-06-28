@@ -8,9 +8,27 @@ templ EmbedLayout(title string, content templ.Component) {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ title } · Rubrical</title>
 			<link rel="stylesheet" href="/static/css/app.css"/>
+			@MaterialSymbolsHead()
 			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
 		</head>
 		<body class="min-h-full text-stone-900 antialiased">
+			<script>
+				function notifyParentDraftFilesChanged(event) {
+					if (window.parent === window) return;
+					const detail = event.detail;
+					if (!detail || detail.failed || detail.isError) return;
+					const path = String(
+						detail.pathInfo?.requestPath ??
+							detail.pathInfo?.finalRequestPath ??
+							detail.requestConfig?.path ??
+							"",
+					);
+					if (!path.includes("/draft/files") && !path.includes("/draft/upload") && !path.includes("/draft/discussion-attachment")) return;
+					window.parent.postMessage({ type: "rubrical:draft-files-changed" }, "*");
+				}
+				document.body.addEventListener("htmx:afterSwap", notifyParentDraftFilesChanged);
+				document.body.addEventListener("htmx:afterSettle", notifyParentDraftFilesChanged);
+			</script>
 			<main class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
 				@content
 			</main>

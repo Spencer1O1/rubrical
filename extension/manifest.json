@@ -3,12 +3,15 @@
   "name": "Rubrical",
   "description": "Check your assignment against the rubric before you submit.",
   "version": "0.1.0",
-  "permissions": ["activeTab"],
+  "permissions": ["activeTab", "storage"],
   "host_permissions": [
     "https://*.instructure.com/*",
     "http://localhost:8787/*",
     "http://127.0.0.1:8787/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["https://*.instructure.com/*"],

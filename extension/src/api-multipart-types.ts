@@ -1,0 +1,12 @@
+export type MultipartFetchResult =
+  | { ok: true; base: string }
+  | { ok: false; error: string };
+
+export type RubricalMultipartMessage = {
+  type: "rubrical-api:multipart";
+  path: string;
+  fileName: string;
+  mimeType: string;
+  bytes: ArrayBuffer;
+  canvasFileId?: string;
+};

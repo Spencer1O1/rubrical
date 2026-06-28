@@ -1,3 +1,5 @@
+import { refreshStagedFileIndicators } from "./staged-files";
+
 export const MODAL_ID = "rubrical-modal";
 export const MODAL_IFRAME_ID = "rubrical-modal-iframe";
 
@@ -16,6 +18,7 @@ export function closeAssignmentModal(): void {
   modal.remove();
   document.documentElement.style.overflow = "";
   document.removeEventListener("keydown", onEscape);
+  void refreshStagedFileIndicators();
 }
 
 export function openAssignmentModal(base: string, path: string, title: string): void {

@@ -9,9 +9,10 @@ type RubricRatingView struct {
 }
 
 type RubricRowView struct {
-	Criterion string
-	Ratings   []RubricRatingView
-	Points    string
+	Criterion                string
+	CriterionLongDescription string
+	Ratings                  []RubricRatingView
+	Points                   string
 }
 
 type RubricTableView struct {
