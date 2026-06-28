@@ -119,12 +119,12 @@ templ CriterionScale(scale CriterionScaleView) {
 			</div>
 			<div class={ "grid gap-1 pt-2", criterionScaleGridClass(len(scale.Ratings)) }>
 				for _, cell := range scale.Ratings {
-					<div class={ "rounded-md border px-2 py-2 text-center text-xs", criterionCellClass(cell.Selected) }>
-						if cell.Title != "" {
-							<p class="font-medium text-stone-800 line-clamp-2">{ cell.Title }</p>
+					<div class={ "rounded-md border px-2 py-2 text-left text-xs", criterionCellClass(cell.Selected) }>
+						if cell.Label != "" {
+							<p class="font-medium text-stone-800">{ cell.Label }</p>
 						}
-						if cell.Points != "" {
-							<p class="mt-1 tabular-nums text-stone-600">{ cell.Points }</p>
+						if cell.Description != "" {
+							<p class="mt-1 text-stone-600 line-clamp-4">{ cell.Description }</p>
 						}
 					</div>
 				}

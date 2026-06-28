@@ -90,5 +90,6 @@ func formatArrowStyle(percent float64) string {
 	if percent > 100 {
 		percent = 100
 	}
-	return fmt.Sprintf("left: %.2f%%", percent)
+	// Keep the 12px-wide arrow tip inside the bar at 0% and 100%.
+	return fmt.Sprintf("left: clamp(6px, %.2f%%, calc(100%% - 6px))", percent)
 }

@@ -95,14 +95,18 @@ func TestApplyRubricScoring_pointOnlyRow(t *testing.T) {
 	}
 }
 
-func TestArrowPercentForScore_topBandLeft(t *testing.T) {
-	row := RubricRow{Ratings: []RubricRating{
-		{Title: "Poor", Points: "2 pts"},
-		{Title: "Fair", Points: "4 pts"},
-		{Title: "Good", Points: "6 pts"},
-		{Title: "Excellent", Points: "8 pts"},
-	}}
-	if got := ArrowPercentForScore(row, 0.75); got != 12.5 {
-		t.Fatalf("arrow = %v, want 12.5", got)
+func TestArrowPercentForScore_linear(t *testing.T) {
+	cases := []struct {
+		score float64
+		want  float64
+	}{
+		{1, 0},
+		{0.75, 25},
+		{0, 100},
+	}
+	for _, tc := range cases {
+		if got := ArrowPercentForScore(tc.score); got != tc.want {
+			t.Fatalf("score %.2f -> arrow %v%%, want %v%%", tc.score, got, tc.want)
+		}
 	}
 }

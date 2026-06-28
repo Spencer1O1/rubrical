@@ -530,7 +530,7 @@ func CriterionScale(scale CriterionScaleView) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		for _, cell := range scale.Ratings {
-			var templ_7745c5c3_Var25 = []any{"rounded-md border px-2 py-2 text-center text-xs", criterionCellClass(cell.Selected)}
+			var templ_7745c5c3_Var25 = []any{"rounded-md border px-2 py-2 text-left text-xs", criterionCellClass(cell.Selected)}
 			templ_7745c5c3_Err = templ.RenderCSSItems(ctx, templ_7745c5c3_Buffer, templ_7745c5c3_Var25...)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
@@ -552,15 +552,15 @@ func CriterionScale(scale CriterionScaleView) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			if cell.Title != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<p class=\"font-medium text-stone-800 line-clamp-2\">")
+			if cell.Label != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 40, "<p class=\"font-medium text-stone-800\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var27 string
-				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(cell.Title)
+				templ_7745c5c3_Var27, templ_7745c5c3_Err = templ.JoinStringErrs(cell.Label)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/analysis.templ`, Line: 124, Col: 70}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/analysis.templ`, Line: 124, Col: 57}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var27))
 				if templ_7745c5c3_Err != nil {
@@ -571,15 +571,15 @@ func CriterionScale(scale CriterionScaleView) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			if cell.Points != "" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<p class=\"mt-1 tabular-nums text-stone-600\">")
+			if cell.Description != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 42, "<p class=\"mt-1 text-stone-600 line-clamp-4\">")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
 				var templ_7745c5c3_Var28 string
-				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(cell.Points)
+				templ_7745c5c3_Var28, templ_7745c5c3_Err = templ.JoinStringErrs(cell.Description)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/analysis.templ`, Line: 127, Col: 64}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/analysis.templ`, Line: 127, Col: 69}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var28))
 				if templ_7745c5c3_Err != nil {

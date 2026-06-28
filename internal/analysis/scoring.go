@@ -19,8 +19,9 @@ type scoredBand struct {
 }
 
 type RatingBandUI struct {
-	Title  string
-	Points float64
+	Title       string
+	Description string
+	Points      float64
 }
 
 func ApplyRubricScoring(resp *schema.ProviderResponse, rubric RubricContext) (*schema.ScoredAnalysis, error) {
@@ -139,20 +140,15 @@ func RatingBandsForUI(row RubricRow) []RatingBandUI {
 	sort.Slice(bands, func(i, j int) bool { return bands[i].points > bands[j].points })
 	out := make([]RatingBandUI, len(bands))
 	for i, b := range bands {
-		out[i] = RatingBandUI{Title: b.rating.Title, Points: b.points}
+		out[i] = RatingBandUI{Title: b.rating.Title, Description: b.rating.Description, Points: b.points}
 	}
 	return out
 }
 
-// ArrowPercentForScore: 0% = best (left/green), 100% = worst (right/red).
-func ArrowPercentForScore(row RubricRow, score float64) float64 {
+// ArrowPercentForScore: score 1 → 0% (left/green), score 0 → 100% (right/red).
+func ArrowPercentForScore(score float64) float64 {
 	score = clamp01(score)
-	bands := parseRatingBands(row.Ratings)
-	if len(bands) == 0 {
-		return (1 - score) * 100
-	}
-	displayIdx := len(bands) - 1 - bandIndex(score, len(bands))
-	return (float64(displayIdx) + 0.5) / float64(len(bands)) * 100
+	return (1 - score) * 100
 }
 
 func matchRubricRow(rubric RubricContext, name string) (RubricRow, bool) {

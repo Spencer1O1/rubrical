@@ -2,14 +2,15 @@ package pages
 
 import (
 	"fmt"
+	"strings"
 
 	"rubrical/internal/analysis"
 )
 
 type RatingCellView struct {
-	Title    string
-	Points   string
-	Selected bool
+	Label       string
+	Description string
+	Selected    bool
 }
 
 type CriterionScaleView struct {
@@ -96,7 +97,7 @@ func buildCriterionScale(rubric analysis.RubricContext, item analysis.FeedbackIt
 	if item.CriterionScore != nil {
 		score = *item.CriterionScore
 	}
-	arrow := analysis.ArrowPercentForScore(row, score)
+	arrow := analysis.ArrowPercentForScore(score)
 
 	bands := analysis.RatingBandsForUI(row)
 	if len(bands) == 0 {
@@ -104,8 +105,7 @@ func buildCriterionScale(rubric analysis.RubricContext, item analysis.FeedbackIt
 			HasBands:     false,
 			ArrowPercent: arrow,
 			Ratings: []RatingCellView{{
-				Title:    "Predicted",
-				Points:   formatPointsOnly(item.PredictedPoints, item.MaxPoints),
+				Label:    formatRatingLabel("Predicted", formatPointsOnly(item.PredictedPoints, item.MaxPoints)),
 				Selected: true,
 			}},
 		}
@@ -114,11 +114,10 @@ func buildCriterionScale(rubric analysis.RubricContext, item analysis.FeedbackIt
 	want := normalizeLabel(item.SelectedRating)
 	cells := make([]RatingCellView, len(bands))
 	for i, band := range bands {
-		title := band.Title
 		cells[i] = RatingCellView{
-			Title:    title,
-			Points:   formatBandPoints(band.Points),
-			Selected: normalizeLabel(title) == want,
+			Label:       formatRatingLabel(band.Title, formatBandPoints(band.Points)),
+			Description: strings.TrimSpace(band.Description),
+			Selected:    normalizeLabel(band.Title) == want,
 		}
 	}
 
@@ -136,13 +135,24 @@ func fallbackScale(item analysis.FeedbackItem) CriterionScaleView {
 	}
 	return CriterionScaleView{
 		HasBands:     false,
-		ArrowPercent: (1 - score) * 100,
+		ArrowPercent: analysis.ArrowPercentForScore(score),
 		Ratings: []RatingCellView{{
-			Title:    item.SelectedRating,
-			Points:   formatPointsOnly(item.PredictedPoints, item.MaxPoints),
+			Label:    formatRatingLabel(item.SelectedRating, formatPointsOnly(item.PredictedPoints, item.MaxPoints)),
 			Selected: true,
 		}},
 	}
+}
+
+func formatRatingLabel(title, points string) string {
+	title = strings.TrimSpace(title)
+	points = strings.TrimSpace(points)
+	if title == "" {
+		return points
+	}
+	if points == "" {
+		return title
+	}
+	return fmt.Sprintf("%s (%s)", title, points)
 }
 
 func formatBandPoints(pts float64) string {
