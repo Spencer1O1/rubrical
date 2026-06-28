@@ -45,7 +45,7 @@ func TestDraftManifestReturnsStoredFiles(t *testing.T) {
 		DraftFiles: []importpayload.DraftFile{{
 			FileName:      "report.pdf",
 			MimeType:      "application/pdf",
-			ContentBase64: "cGRm",
+			ContentBase64: "JVBERi0xLjQK",
 		}},
 	}); err != nil {
 		t.Fatal(err)
@@ -90,7 +90,7 @@ func TestDraftManifestReturnsCanvasFileID(t *testing.T) {
 		DraftFiles: []importpayload.DraftFile{{
 			FileName:      "resume.pdf",
 			MimeType:      "application/pdf",
-			ContentBase64: "cGRm",
+			ContentBase64: "JVBERi0xLjQK",
 			CanvasFileID:  "99543121",
 		}},
 	}); err != nil {

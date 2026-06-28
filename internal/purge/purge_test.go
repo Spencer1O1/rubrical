@@ -39,7 +39,7 @@ func TestPurgeDraftFiles_removesFilesPastDuePlusRetention(t *testing.T) {
 		_, _ = pool.Exec(ctx, `DELETE FROM assignment_snapshots WHERE id = $1`, assignmentID)
 	})
 
-	storageKey := insertDraftFile(t, ctx, pool, files, userID, assignmentID, "essay.pdf", []byte("draft bytes"))
+	storageKey := insertDraftFile(t, ctx, pool, files, userID, assignmentID, "essay.pdf", []byte("%PDF-1.4\ndraft bytes"))
 
 	n, err := PurgeDraftFiles(ctx, pool, files, Policy{PostDueDateRetention: 7 * 24 * time.Hour})
 	if err != nil {

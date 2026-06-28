@@ -28,6 +28,10 @@ const (
 	KindArchiveUnsupported
 )
 
+func IsValidPDF(data []byte) bool {
+	return len(data) >= 4 && bytes.HasPrefix(data, []byte("%PDF"))
+}
+
 func Classify(fileName, mimeType string, data []byte) FileKind {
 	name := strings.TrimSpace(fileName)
 	if name == "" {
@@ -36,7 +40,7 @@ func Classify(fileName, mimeType string, data []byte) FileKind {
 	mime := normalizeMime(mimeType, name)
 	ext := strings.ToLower(filepath.Ext(name))
 
-	if len(data) >= 4 && bytes.HasPrefix(data, []byte("%PDF")) {
+	if IsValidPDF(data) {
 		return KindPDF
 	}
 	if len(data) >= 2 && data[0] == 0x50 && data[1] == 0x4B {
@@ -50,7 +54,10 @@ func Classify(fileName, mimeType string, data []byte) FileKind {
 
 	switch {
 	case mime == "application/pdf" || ext == ".pdf":
-		return KindPDF
+		if IsValidPDF(data) {
+			return KindPDF
+		}
+		return KindUnknown
 	case strings.HasPrefix(mime, "image/"):
 		return KindImage
 	case ext == ".zip" || mime == "application/zip" || mime == "application/x-zip-compressed":

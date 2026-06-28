@@ -1,6 +1,7 @@
 import { RUBRICAL_API_BASES } from "./api-bases";
 import type { RubricalFetchRequest, RubricalFetchResult } from "./api-fetch-types";
 import type { MultipartFetchResult } from "./api-multipart-types";
+import { base64ToArrayBuffer } from "./staged-files/file-bytes";
 
 function isRetryableFetchError(message: string): boolean {
   const lower = message.toLowerCase();
@@ -64,7 +65,7 @@ export type MultipartUploadRequest = {
   path: string;
   fileName: string;
   mimeType: string;
-  bytes: ArrayBuffer;
+  bytesBase64: string;
   canvasFileId?: string;
 };
 
@@ -72,7 +73,7 @@ export async function executeRubricalMultipartDirect(
   request: MultipartUploadRequest,
 ): Promise<MultipartFetchResult> {
   let lastError = "Failed to fetch";
-  const blob = new Blob([request.bytes], {
+  const blob = new Blob([base64ToArrayBuffer(request.bytesBase64)], {
     type: request.mimeType || "application/octet-stream",
   });
 

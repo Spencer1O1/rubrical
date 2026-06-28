@@ -1,4 +1,5 @@
 import type { StagedFileRecord, StagedFilesMessage, StagedFilesResponse } from "./types";
+import { arrayBufferToBase64 } from "./file-bytes";
 
 const MAX_ATTEMPTS = 8;
 const RETRY_DELAY_MS = 250;
@@ -90,7 +91,16 @@ export async function putStagedFile(input: {
   canvasFileId?: string;
   blobBytes: ArrayBuffer;
 }): Promise<void> {
-  const response = await sendMessage({ type: "staged-files:put", ...input });
+  const response = await sendMessage({
+    type: "staged-files:put",
+    assignmentKey: input.assignmentKey,
+    fileName: input.fileName,
+    normalizedFileName: input.normalizedFileName,
+    stagedAt: input.stagedAt,
+    mimeType: input.mimeType,
+    canvasFileId: input.canvasFileId,
+    blobBase64: arrayBufferToBase64(input.blobBytes),
+  });
   if (!response.ok) {
     throw new Error(response.error ?? "staged file write failed");
   }

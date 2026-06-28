@@ -1,5 +1,6 @@
 import type { MultipartFetchResult, RubricalMultipartMessage } from "./api-multipart-types";
 import { executeRubricalMultipartDirect } from "./api-direct";
+import { arrayBufferToBase64 } from "./staged-files/file-bytes";
 
 export type { MultipartFetchResult } from "./api-multipart-types";
 
@@ -51,7 +52,7 @@ export async function postRubricalMultipart(
     path,
     fileName,
     mimeType: file.type || "application/octet-stream",
-    bytes,
+    bytesBase64: arrayBufferToBase64(bytes),
     canvasFileId: typeof canvasFileId === "string" && canvasFileId.trim() !== "" ? canvasFileId : undefined,
   };
 

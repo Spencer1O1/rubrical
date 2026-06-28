@@ -52,7 +52,7 @@ export type StagedFilesMessage =
       stagedAt: string;
       mimeType: string;
       canvasFileId?: string;
-      blobBytes: ArrayBuffer;
+      blobBase64: string;
     }
   | {
       type: "staged-files:delete";

@@ -2,6 +2,7 @@ import {
   canvasStorageKey,
   provisionalStorageKey,
 } from "./staging-key";
+import { base64ToArrayBuffer } from "./file-bytes";
 import type { StagedFileRecord, StagedFilesMessage, StagedFilesResponse } from "./types";
 
 const DB_NAME = "rubrical-staged-files";
@@ -59,6 +60,11 @@ function getRowInDb(db: IDBDatabase, id: string): Promise<StoredRow | undefined>
 }
 
 async function putFile(message: Extract<StagedFilesMessage, { type: "staged-files:put" }>): Promise<void> {
+  const encoded = message.blobBase64.trim();
+  if (encoded === "") {
+    throw new Error("staged file payload is empty");
+  }
+
   const db = await openDb();
   const id = rowId(
     message.assignmentKey,
@@ -74,7 +80,7 @@ async function putFile(message: Extract<StagedFilesMessage, { type: "staged-file
     normalizedFileName: message.normalizedFileName,
     stagedAt: message.stagedAt,
     mimeType: message.mimeType,
-    blob: new Blob([message.blobBytes], {
+    blob: new Blob([base64ToArrayBuffer(message.blobBase64)], {
       type: message.mimeType || "application/octet-stream",
     }),
   };

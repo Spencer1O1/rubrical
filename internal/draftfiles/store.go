@@ -1,6 +1,7 @@
 package draftfiles
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -27,6 +28,9 @@ func NewStore(root string) (*Store, error) {
 func (s *Store) Save(userID, assignmentID int64, filename string, data []byte) (storageKey string, err error) {
 	if len(data) == 0 {
 		return "", fmt.Errorf("empty file")
+	}
+	if err := validatePDFBytes(filename, data); err != nil {
+		return "", err
 	}
 
 	ext := sanitizeExtension(filepath.Ext(filename))
@@ -101,4 +105,15 @@ func randomID() (string, error) {
 		return "", fmt.Errorf("random id: %w", err)
 	}
 	return hex.EncodeToString(b[:]), nil
+}
+
+func validatePDFBytes(filename string, data []byte) error {
+	ext := strings.ToLower(filepath.Ext(strings.TrimSpace(filename)))
+	if ext != ".pdf" {
+		return nil
+	}
+	if len(data) >= 4 && bytes.HasPrefix(data, []byte("%PDF")) {
+		return nil
+	}
+	return fmt.Errorf("%q is not a valid PDF — re-upload the file", filename)
 }

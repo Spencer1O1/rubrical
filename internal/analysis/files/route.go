@@ -2,6 +2,7 @@ package files
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"rubrical/internal/analysis/files/extract"
@@ -10,6 +11,10 @@ import (
 func routeFile(provider string, raw RawFile) (inline *InlineSection, attachment *Attachment, skipNote string) {
 	if len(raw.Data) == 0 {
 		return nil, nil, fmt.Sprintf("%s: empty file", raw.Path.String())
+	}
+
+	if note := invalidPDFNote(raw); note != "" {
+		return nil, nil, note
 	}
 
 	kind := Classify(raw.FileName, raw.MimeType, raw.Data)
@@ -91,4 +96,16 @@ func mimeForDelivery(kind FileKind, mime string) string {
 		return mime
 	}
 	return "text/plain"
+}
+
+func invalidPDFNote(raw RawFile) string {
+	ext := strings.ToLower(filepath.Ext(raw.FileName))
+	mime := normalizeMime(raw.MimeType, raw.FileName)
+	if ext != ".pdf" && mime != "application/pdf" {
+		return ""
+	}
+	if IsValidPDF(raw.Data) {
+		return ""
+	}
+	return fmt.Sprintf("%s: file is not a valid PDF — delete it and re-upload", raw.Path.String())
 }

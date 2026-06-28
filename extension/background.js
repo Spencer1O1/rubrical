@@ -6,6 +6,16 @@
     "http://127.0.0.1:8787"
   ];
 
+  // src/staged-files/file-bytes.ts
+  function base64ToArrayBuffer(base64) {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes.buffer;
+  }
+
   // src/api-direct.ts
   function isRetryableFetchError(message) {
     const lower = message.toLowerCase();
@@ -50,7 +60,7 @@
   }
   async function executeRubricalMultipartDirect(request) {
     let lastError = "Failed to fetch";
-    const blob = new Blob([request.bytes], {
+    const blob = new Blob([base64ToArrayBuffer(request.bytesBase64)], {
       type: request.mimeType || "application/octet-stream"
     });
     for (const base of RUBRICAL_API_BASES) {
@@ -136,6 +146,10 @@
     });
   }
   async function putFile(message) {
+    const encoded = message.blobBase64.trim();
+    if (encoded === "") {
+      throw new Error("staged file payload is empty");
+    }
     const db = await openDb();
     const id = rowId(
       message.assignmentKey,
@@ -151,7 +165,7 @@
       normalizedFileName: message.normalizedFileName,
       stagedAt: message.stagedAt,
       mimeType: message.mimeType,
-      blob: new Blob([message.blobBytes], {
+      blob: new Blob([base64ToArrayBuffer(message.blobBase64)], {
         type: message.mimeType || "application/octet-stream"
       })
     };

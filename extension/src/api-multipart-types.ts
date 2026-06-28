@@ -7,6 +7,6 @@ export type RubricalMultipartMessage = {
   path: string;
   fileName: string;
   mimeType: string;
-  bytes: ArrayBuffer;
+  bytesBase64: string;
   canvasFileId?: string;
 };

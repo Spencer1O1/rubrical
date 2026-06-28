@@ -13,7 +13,7 @@ func TestStoreSaveDelete(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	key, err := store.Save(1, 42, "essay.pdf", []byte("pdf bytes"))
+	key, err := store.Save(1, 42, "essay.pdf", []byte("%PDF-1.4\npdf bytes"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,5 +44,39 @@ func TestStoreSaveSanitizesExtension(t *testing.T) {
 	}
 	if filepath.Ext(key) != ".bin" {
 		t.Fatalf("expected .bin extension, got %q", key)
+	}
+}
+
+func TestSaveRejectsCorruptPDF(t *testing.T) {
+	dir := t.TempDir()
+	store, err := NewStore(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = store.Save(1, 1, "essay.pdf", []byte("[object Object]"))
+	if err == nil {
+		t.Fatal("expected error for corrupt pdf")
+	}
+}
+
+func TestSaveAcceptsValidPDF(t *testing.T) {
+	dir := t.TempDir()
+	store, err := NewStore(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	key, err := store.Save(1, 1, "essay.pdf", []byte("%PDF-1.4\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, filepath.FromSlash(key)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "%PDF-1.4\n" {
+		t.Fatalf("stored=%q", string(data))
 	}
 }
