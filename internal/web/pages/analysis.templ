@@ -1,0 +1,103 @@
+package pages
+
+templ AnalysisSection(view AnalysisResultsView) {
+	if view.HasResults {
+		@AnalysisResults(view)
+	} else {
+		@AnalysisEmpty()
+	}
+}
+
+templ AnalysisEmpty() {
+	<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">
+		Run Analyze to get rubric-aware feedback on your draft.
+	</div>
+}
+
+templ AnalysisError(message string) {
+	<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+		<p class="font-medium">Analysis failed</p>
+		<p class="mt-1">{ message }</p>
+	</div>
+}
+
+templ AnalysisPending() {
+	<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-5 text-sm text-indigo-900">
+		<p class="font-medium">Analyzing your draft…</p>
+		<p class="mt-1 text-indigo-800">This can take up to a minute for files and long drafts.</p>
+	</div>
+}
+
+templ AnalysisResults(view AnalysisResultsView) {
+	<div class="space-y-4">
+		<div class="rounded-xl border border-stone-200 bg-white p-5">
+			<div class="flex flex-wrap items-start justify-between gap-3">
+				<h2 class="text-lg font-medium text-stone-900">Feedback</h2>
+				<div class="text-right text-xs text-stone-500">
+					if view.ScoreLabel != "" {
+						<p class="font-medium text-stone-800">{ view.ScoreLabel }</p>
+					}
+					if view.ConfidenceLabel != "" {
+						<p>{ view.ConfidenceLabel }</p>
+					}
+					if view.CompletedAtLabel != "" {
+						<p>Analyzed { view.CompletedAtLabel }</p>
+					}
+				</div>
+			</div>
+			<p class="mt-3 text-sm leading-relaxed text-stone-700">{ view.OverallSummary }</p>
+		</div>
+
+		if len(view.Criteria) > 0 {
+			<section class="space-y-3">
+				<h3 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Rubric criteria</h3>
+				for _, item := range view.Criteria {
+					@analysisFeedbackCard(item)
+				}
+			</section>
+		}
+
+		if len(view.MissingRequirements) > 0 {
+			<section class="space-y-3">
+				<h3 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Missing requirements</h3>
+				for _, item := range view.MissingRequirements {
+					@analysisFeedbackCard(item)
+				}
+			</section>
+		}
+
+		if len(view.Strengths) > 0 {
+			<section class="space-y-3">
+				<h3 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Strengths</h3>
+				for _, item := range view.Strengths {
+					@analysisFeedbackCard(item)
+				}
+			</section>
+		}
+
+		if len(view.Suggestions) > 0 {
+			<section class="space-y-3">
+				<h3 class="text-sm font-semibold uppercase tracking-wide text-stone-500">Revision suggestions</h3>
+				for _, item := range view.Suggestions {
+					@analysisFeedbackCard(item)
+				}
+			</section>
+		}
+	</div>
+}
+
+templ analysisFeedbackCard(item AnalysisFeedbackView) {
+	<article class={ "rounded-xl border p-4", feedbackSeverityClass(item.Severity) }>
+		<p class="text-xs font-medium uppercase tracking-wide text-stone-500">{ feedbackCategoryLabel(item.Category) }</p>
+		<h4 class="mt-1 text-sm font-semibold text-stone-900">{ item.Title }</h4>
+		if item.Explanation != "" {
+			<p class="mt-2 text-sm text-stone-700">{ item.Explanation }</p>
+		}
+		if item.Evidence != "" {
+			<p class="mt-2 text-sm text-stone-600"><span class="font-medium text-stone-800">Evidence:</span> { item.Evidence }</p>
+		}
+		if item.Suggestion != "" {
+			<p class="mt-2 text-sm text-stone-700"><span class="font-medium text-stone-800">Suggestion:</span> { item.Suggestion }</p>
+		}
+	</article>
+}

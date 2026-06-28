@@ -17,10 +17,9 @@ import (
 	"rubrical/internal/web/pages"
 )
 
-const maxImportRequestBytes = importpayload.MaxImportBodyBytes
 
 func (h *Handlers) ImportAssignment(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, maxImportRequestBytes)
+	r.Body = http.MaxBytesReader(w, r.Body, int64(h.importLimits.MaxBodyBytes))
 
 	var payload importpayload.Payload
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
@@ -28,7 +27,7 @@ func (h *Handlers) ImportAssignment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := importpayload.ValidateAndNormalize(&payload); err != nil {
+	if err := importpayload.ValidateAndNormalize(&payload, h.importLimits); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -307,6 +306,12 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64) (pages.Assignmen
 		view.DraftStatusLabel = pages.DiscussionDraftStatusLabel(draftWordCount, fileNames)
 	} else {
 		view.DraftStatusLabel = pages.DraftStatusLabel(draftWordCount, fileNames, view.DraftSubmissionURL, view.DraftMode)
+	}
+
+	if h.analysis != nil {
+		if result, err := h.analysis.LoadLatestResult(ctx, id); err == nil && result != nil {
+			view.Analysis = pages.AnalysisResultsFromResult(result)
+		}
 	}
 
 	return view, nil

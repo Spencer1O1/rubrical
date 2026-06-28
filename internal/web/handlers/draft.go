@@ -1,18 +1,18 @@
 package handlers
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"rubrical/internal/analysis"
 	"rubrical/internal/draftmode"
 	"rubrical/internal/drafturl"
 	"rubrical/internal/submissiontypes"
 	"rubrical/internal/web/pages"
 )
-
-const maxDraftUploadBytes = 32 << 20
 
 func renderHTMXDraftStatusError(w http.ResponseWriter, r *http.Request, assignmentID int64, message string) bool {
 	if r.Header.Get("HX-Request") != "true" {
@@ -73,7 +73,9 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseMultipartForm(maxDraftUploadBytes); err != nil {
+	maxBytes := h.maxDraftFileBytes()
+
+	if err := r.ParseMultipartForm(int64(maxBytes)); err != nil {
 		http.Error(w, "invalid upload", http.StatusBadRequest)
 		return
 	}
@@ -100,13 +102,13 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		data, err := io.ReadAll(io.LimitReader(file, maxDraftUploadBytes+1))
+		data, err := io.ReadAll(io.LimitReader(file, int64(maxBytes+1)))
 		file.Close()
 		if err != nil {
 			http.Error(w, "failed to read upload", http.StatusInternalServerError)
 			return
 		}
-		if len(data) > maxDraftUploadBytes {
+		if len(data) > maxBytes {
 			http.Error(w, "file too large", http.StatusBadRequest)
 			return
 		}
@@ -155,7 +157,9 @@ func (h *Handlers) UploadDiscussionAttachment(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	if err := r.ParseMultipartForm(maxDraftUploadBytes); err != nil {
+	maxBytes := h.maxDraftFileBytes()
+
+	if err := r.ParseMultipartForm(int64(maxBytes)); err != nil {
 		http.Error(w, "invalid upload", http.StatusBadRequest)
 		return
 	}
@@ -177,13 +181,13 @@ func (h *Handlers) UploadDiscussionAttachment(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	data, err := io.ReadAll(io.LimitReader(file, maxDraftUploadBytes+1))
+	data, err := io.ReadAll(io.LimitReader(file, int64(maxBytes+1)))
 	file.Close()
 	if err != nil {
 		http.Error(w, "failed to read upload", http.StatusInternalServerError)
 		return
 	}
-	if len(data) > maxDraftUploadBytes {
+	if len(data) > maxBytes {
 		http.Error(w, "file too large", http.StatusBadRequest)
 		return
 	}
@@ -366,7 +370,39 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	pages.AnalysisPending().Render(r.Context(), w)
+	if h.analysis == nil {
+		h.renderAnalysisError(w, r, analysis.ErrNotConfigured)
+		return
+	}
+
+	result, err := h.analysis.Run(r.Context(), id, h.userID)
+	if err != nil {
+		h.renderAnalysisError(w, r, err)
+		return
+	}
+
+	h.renderAnalysisResults(w, r, pages.AnalysisResultsFromResult(&result))
+}
+
+func (h *Handlers) renderAnalysisError(w http.ResponseWriter, r *http.Request, err error) {
+	message := "Analysis failed. Try again in a moment."
+	switch {
+	case h.analysis == nil || errors.Is(err, analysis.ErrNotConfigured):
+		message = "Configure AI in Settings (dashboard or extension popup): choose a provider, model, and API key."
+	case errors.Is(err, analysis.ErrNothingToAnalyze):
+		message = "Add draft text, upload a file, or enter a submission URL before analyzing."
+	case errors.Is(err, analysis.ErrRateLimited):
+		message = err.Error()
+	default:
+		if trimmed := strings.TrimSpace(err.Error()); trimmed != "" {
+			message = trimmed
+		}
+	}
+	pages.AnalysisError(message).Render(r.Context(), w)
+}
+
+func (h *Handlers) renderAnalysisResults(w http.ResponseWriter, r *http.Request, view pages.AnalysisResultsView) {
+	pages.AnalysisResults(view).Render(r.Context(), w)
 }
 
 func (h *Handlers) renderDraftPanel(w http.ResponseWriter, r *http.Request, id int64, statusFlash string) {
@@ -385,7 +421,28 @@ func (h *Handlers) renderDraftPanel(w http.ResponseWriter, r *http.Request, id i
 }
 
 func (h *Handlers) AnalysisResults(w http.ResponseWriter, r *http.Request) {
-	pages.AnalysisPending().Render(r.Context(), w)
+	id, err := parseID(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "invalid assignment id", http.StatusBadRequest)
+		return
+	}
+
+	if h.analysis == nil {
+		pages.AnalysisEmpty().Render(r.Context(), w)
+		return
+	}
+
+	result, err := h.analysis.LoadLatestResult(r.Context(), id)
+	if err != nil {
+		http.Error(w, "failed to load analysis", http.StatusInternalServerError)
+		return
+	}
+	if result == nil {
+		pages.AnalysisEmpty().Render(r.Context(), w)
+		return
+	}
+
+	h.renderAnalysisResults(w, r, pages.AnalysisResultsFromResult(result))
 }
 
 func (h *Handlers) ResolveFeedback(w http.ResponseWriter, r *http.Request) {

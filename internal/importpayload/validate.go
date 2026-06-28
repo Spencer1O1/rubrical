@@ -10,23 +10,6 @@ import (
 	"rubrical/internal/importurl"
 )
 
-const (
-	MaxImportBodyBytes      = 8 << 20
-	MaxTitleRunes           = 500
-	MaxCourseNameRunes      = 300
-	MaxMetadataFieldRunes   = 500
-	MaxVisibleTextBytes     = 512 << 10
-	MaxInstructionsBytes    = 512 << 10
-	MaxDraftTextBytes       = 512 << 10
-	MaxRubricRows           = 100
-	MaxRubricHeaderColumns  = 20
-	MaxRatingsPerRow        = 50
-	MaxRubricFieldRunes     = 4000
-	MaxDraftFileBytes       = 32 << 20
-	MaxDraftFileNameRunes   = 255
-	MaxDraftFiles           = 20
-)
-
 var allowedPageTypes = map[string]struct{}{
 	"assignment":  {},
 	"discussion":  {},
@@ -40,7 +23,8 @@ var allowedDraftEditorRoles = map[string]struct{}{
 }
 
 // ValidateAndNormalize checks production import payloads and trims string fields.
-func ValidateAndNormalize(payload *Payload) error {
+func ValidateAndNormalize(payload *Payload, limits Limits) error {
+	limits = limits.WithDefaults()
 	if payload == nil {
 		return fmt.Errorf("import payload is required")
 	}
@@ -60,22 +44,22 @@ func ValidateAndNormalize(payload *Payload) error {
 		return fmt.Errorf("pageType must be assignment, discussion, or unknown")
 	}
 
-	if err := limitRunes("title", payload.Title, MaxTitleRunes); err != nil {
+	if err := limitRunes("title", payload.Title, limits.MaxTitleRunes); err != nil {
 		return err
 	}
 	payload.Title = strings.TrimSpace(payload.Title)
 
-	if err := limitBytes("visibleText", payload.VisibleText, MaxVisibleTextBytes); err != nil {
+	if err := limitBytes("visibleText", payload.VisibleText, limits.MaxVisibleTextBytes); err != nil {
 		return err
 	}
-	if err := limitBytes("instructionsText", payload.InstructionsText, MaxInstructionsBytes); err != nil {
+	if err := limitBytes("instructionsText", payload.InstructionsText, limits.MaxInstructionsBytes); err != nil {
 		return err
 	}
-	if err := limitBytes("draftText", payload.DraftText, MaxDraftTextBytes); err != nil {
+	if err := limitBytes("draftText", payload.DraftText, limits.MaxDraftTextBytes); err != nil {
 		return err
 	}
 	payload.DraftURL = strings.TrimSpace(payload.DraftURL)
-	if err := limitRunes("draftUrl", payload.DraftURL, MaxMetadataFieldRunes); err != nil {
+	if err := limitRunes("draftUrl", payload.DraftURL, limits.MaxMetadataFieldRunes); err != nil {
 		return err
 	}
 
@@ -89,19 +73,19 @@ func ValidateAndNormalize(payload *Payload) error {
 		return fmt.Errorf("draftEditorRole must be topic_reply or thread_reply")
 	}
 
-	if err := validateMetadata(&payload.Metadata); err != nil {
+	if err := validateMetadata(&payload.Metadata, limits); err != nil {
 		return err
 	}
 
-	if err := validateDraftFiles(payload.DraftFiles); err != nil {
+	if err := validateDraftFiles(payload.DraftFiles, limits); err != nil {
 		return err
 	}
 
-	if err := validateDraftFileRefs(payload.DraftFileRefs, len(payload.DraftFiles)); err != nil {
+	if err := validateDraftFileRefs(payload.DraftFileRefs, len(payload.DraftFiles), limits); err != nil {
 		return err
 	}
 
-	if err := validateRubric(payload.Rubric); err != nil {
+	if err := validateRubric(payload.Rubric, limits); err != nil {
 		return err
 	}
 
@@ -112,20 +96,20 @@ func ValidateAndNormalize(payload *Payload) error {
 	return nil
 }
 
-func validateMetadata(metadata *Metadata) error {
-	if err := limitRunes("metadata.dueDateText", metadata.DueDateText, MaxMetadataFieldRunes); err != nil {
+func validateMetadata(metadata *Metadata, limits Limits) error {
+	if err := limitRunes("metadata.dueDateText", metadata.DueDateText, limits.MaxMetadataFieldRunes); err != nil {
 		return err
 	}
-	if err := limitRunes("metadata.dueAt", metadata.DueAt, MaxMetadataFieldRunes); err != nil {
+	if err := limitRunes("metadata.dueAt", metadata.DueAt, limits.MaxMetadataFieldRunes); err != nil {
 		return err
 	}
-	if err := limitRunes("metadata.pointsPossibleText", metadata.PointsPossibleText, MaxMetadataFieldRunes); err != nil {
+	if err := limitRunes("metadata.pointsPossibleText", metadata.PointsPossibleText, limits.MaxMetadataFieldRunes); err != nil {
 		return err
 	}
-	if err := limitRunes("metadata.submissionTypeText", metadata.SubmissionTypeText, MaxMetadataFieldRunes); err != nil {
+	if err := limitRunes("metadata.submissionTypeText", metadata.SubmissionTypeText, limits.MaxMetadataFieldRunes); err != nil {
 		return err
 	}
-	if err := limitRunes("metadata.courseName", metadata.CourseName, MaxCourseNameRunes); err != nil {
+	if err := limitRunes("metadata.courseName", metadata.CourseName, limits.MaxCourseNameRunes); err != nil {
 		return err
 	}
 
@@ -153,25 +137,25 @@ func validateMetadata(metadata *Metadata) error {
 	return nil
 }
 
-func validateDraftFiles(files []DraftFile) error {
+func validateDraftFiles(files []DraftFile, limits Limits) error {
 	if len(files) == 0 {
 		return nil
 	}
-	if len(files) > MaxDraftFiles {
+	if len(files) > limits.MaxFiles {
 		return fmt.Errorf("draftFiles exceeds maximum count")
 	}
 
 	for i := range files {
-		if err := validateDraftFileEntry(i, &files[i]); err != nil {
+		if err := validateDraftFileEntry(i, &files[i], limits); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func validateDraftFileEntry(index int, file *DraftFile) error {
+func validateDraftFileEntry(index int, file *DraftFile, limits Limits) error {
 	field := fmt.Sprintf("draftFiles[%d].fileName", index)
-	if err := limitRunes(field, file.FileName, MaxDraftFileNameRunes); err != nil {
+	if err := limitRunes(field, file.FileName, limits.MaxDraftFileNameRunes); err != nil {
 		return err
 	}
 	file.FileName = strings.TrimSpace(file.FileName)
@@ -189,7 +173,7 @@ func validateDraftFileEntry(index int, file *DraftFile) error {
 	if err != nil {
 		return fmt.Errorf("draftFiles[%d].contentBase64 is invalid", index)
 	}
-	if len(decoded) > MaxDraftFileBytes {
+	if len(decoded) > limits.MaxFileBytes {
 		return fmt.Errorf("draftFiles[%d] exceeds maximum size", index)
 	}
 
@@ -198,11 +182,11 @@ func validateDraftFileEntry(index int, file *DraftFile) error {
 	return nil
 }
 
-func validateDraftFileRefs(refs []DraftFileRef, newFileCount int) error {
+func validateDraftFileRefs(refs []DraftFileRef, newFileCount int, limits Limits) error {
 	if len(refs) == 0 {
 		return nil
 	}
-	if newFileCount+len(refs) > MaxDraftFiles {
+	if newFileCount+len(refs) > limits.MaxFiles {
 		return fmt.Errorf("draft file count exceeds maximum")
 	}
 
@@ -218,7 +202,7 @@ func validateDraftFileRefs(refs []DraftFileRef, newFileCount int) error {
 		seen[ref.ServerFileID] = struct{}{}
 
 		field := fmt.Sprintf("draftFileRefs[%d].fileName", i)
-		if err := limitRunes(field, ref.FileName, MaxDraftFileNameRunes); err != nil {
+		if err := limitRunes(field, ref.FileName, limits.MaxDraftFileNameRunes); err != nil {
 			return err
 		}
 		ref.FileName = strings.TrimSpace(ref.FileName)
@@ -228,45 +212,45 @@ func validateDraftFileRefs(refs []DraftFileRef, newFileCount int) error {
 	return nil
 }
 
-func validateRubric(rubric *RubricTable) error {
+func validateRubric(rubric *RubricTable, limits Limits) error {
 	if rubric == nil {
 		return nil
 	}
 
-	if len(rubric.Header) > MaxRubricHeaderColumns {
+	if len(rubric.Header) > limits.MaxRubricHeaderColumns {
 		return fmt.Errorf("rubric header exceeds maximum columns")
 	}
 	for i, header := range rubric.Header {
-		if err := limitRunes(fmt.Sprintf("rubric.header[%d]", i), header, MaxRubricFieldRunes); err != nil {
+		if err := limitRunes(fmt.Sprintf("rubric.header[%d]", i), header, limits.MaxRubricFieldRunes); err != nil {
 			return err
 		}
 	}
 
-	if len(rubric.Rows) > MaxRubricRows {
+	if len(rubric.Rows) > limits.MaxRubricRows {
 		return fmt.Errorf("rubric exceeds maximum rows")
 	}
 
 	for i, row := range rubric.Rows {
-		if err := limitRunes(fmt.Sprintf("rubric.rows[%d].criterion", i), row.Criterion, MaxRubricFieldRunes); err != nil {
+		if err := limitRunes(fmt.Sprintf("rubric.rows[%d].criterion", i), row.Criterion, limits.MaxRubricFieldRunes); err != nil {
 			return err
 		}
-		if err := limitRunes(fmt.Sprintf("rubric.rows[%d].criterionLongDescription", i), row.CriterionLongDescription, MaxRubricFieldRunes); err != nil {
+		if err := limitRunes(fmt.Sprintf("rubric.rows[%d].criterionLongDescription", i), row.CriterionLongDescription, limits.MaxRubricFieldRunes); err != nil {
 			return err
 		}
-		if err := limitRunes(fmt.Sprintf("rubric.rows[%d].points", i), row.Points, MaxRubricFieldRunes); err != nil {
+		if err := limitRunes(fmt.Sprintf("rubric.rows[%d].points", i), row.Points, limits.MaxRubricFieldRunes); err != nil {
 			return err
 		}
-		if len(row.Ratings) > MaxRatingsPerRow {
+		if len(row.Ratings) > limits.MaxRatingsPerRow {
 			return fmt.Errorf("rubric row %d exceeds maximum ratings", i)
 		}
 		for j, rating := range row.Ratings {
-			if err := limitRunes(fmt.Sprintf("rubric.rows[%d].ratings[%d].title", i, j), rating.Title, MaxRubricFieldRunes); err != nil {
+			if err := limitRunes(fmt.Sprintf("rubric.rows[%d].ratings[%d].title", i, j), rating.Title, limits.MaxRubricFieldRunes); err != nil {
 				return err
 			}
-			if err := limitRunes(fmt.Sprintf("rubric.rows[%d].ratings[%d].description", i, j), rating.Description, MaxRubricFieldRunes); err != nil {
+			if err := limitRunes(fmt.Sprintf("rubric.rows[%d].ratings[%d].description", i, j), rating.Description, limits.MaxRubricFieldRunes); err != nil {
 				return err
 			}
-			if err := limitRunes(fmt.Sprintf("rubric.rows[%d].ratings[%d].points", i, j), rating.Points, MaxRubricFieldRunes); err != nil {
+			if err := limitRunes(fmt.Sprintf("rubric.rows[%d].ratings[%d].points", i, j), rating.Points, limits.MaxRubricFieldRunes); err != nil {
 				return err
 			}
 		}

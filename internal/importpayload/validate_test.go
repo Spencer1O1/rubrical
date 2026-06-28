@@ -18,7 +18,7 @@ func TestValidateAndNormalize(t *testing.T) {
 		},
 		CapturedAt: time.Date(2026, 6, 26, 12, 0, 0, 0, time.UTC),
 	}
-	if err := ValidateAndNormalize(&valid); err != nil {
+	if err := ValidateAndNormalize(&valid, DefaultLimits()); err != nil {
 		t.Fatalf("valid payload: %v", err)
 	}
 	if valid.SourceURL != "https://school.instructure.com/courses/1/assignments/2" {
@@ -31,7 +31,7 @@ func TestValidateAndNormalizeRejectsBadSourceURL(t *testing.T) {
 		SourceURL: "https://example.com/courses/1/assignments/2",
 		PageType:  "assignment",
 	}
-	if err := ValidateAndNormalize(&payload); err == nil {
+	if err := ValidateAndNormalize(&payload, DefaultLimits()); err == nil {
 		t.Fatal("expected invalid sourceUrl error")
 	}
 }
@@ -45,7 +45,7 @@ func TestValidateAndNormalizeRejectsDuplicateDraftFileRef(t *testing.T) {
 			{ServerFileID: 1, FileName: "b.txt"},
 		},
 	}
-	if err := ValidateAndNormalize(&payload); err == nil {
+	if err := ValidateAndNormalize(&payload, DefaultLimits()); err == nil {
 		t.Fatal("expected duplicate serverFileId error")
 	}
 }
@@ -56,10 +56,10 @@ func TestValidateAndNormalizeRejectsOversizedDraftFile(t *testing.T) {
 		PageType:  "assignment",
 		DraftFiles: []DraftFile{{
 			FileName:      "big.txt",
-			ContentBase64: base64.StdEncoding.EncodeToString([]byte(strings.Repeat("a", MaxDraftFileBytes+1))),
+			ContentBase64: base64.StdEncoding.EncodeToString([]byte(strings.Repeat("a", DefaultLimits().MaxFileBytes+1))),
 		}},
 	}
-	if err := ValidateAndNormalize(&payload); err == nil {
+	if err := ValidateAndNormalize(&payload, DefaultLimits()); err == nil {
 		t.Fatal("expected draft file size error")
 	}
 }

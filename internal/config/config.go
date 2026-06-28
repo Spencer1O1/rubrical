@@ -8,29 +8,39 @@ import (
 	"time"
 )
 
+const DefaultDraftMaxFileBytes = 32 << 20
+
 type Config struct {
-	Addr                   string
-	DatabaseURL            string
-	DataDir                string
-	AIProvider             string
-	OpenAIKey              string
-	AnthropicKey           string
-	StrictExtraction       bool
-	PostDueDateRetention   time.Duration
-	PostUploadRetention    time.Duration
+	Addr                    string
+	DatabaseURL             string
+	DataDir                 string
+	DraftMaxFileBytes       int
+	DraftMaxFilesPerDraft   int
+	AIPromptMaxDraftChars   int
+	AIMaxRunsPerHour        int
+	AIMaxRunsPerDay         int
+	AIMinSecondsBetweenRuns int
+	AIEnforceRateLimits     bool
+	StrictExtraction        bool
+	PostDueDateRetention    time.Duration
+	PostUploadRetention     time.Duration
 }
 
 func Load() (Config, error) {
 	loadEnvFiles()
 
 	cfg := Config{
-		Addr:             envOrDefault("RUBRICAL_ADDR", ":8787"),
-		DatabaseURL:      envOrDefault("DATABASE_URL", "postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable"),
-		DataDir:          envOrDefault("RUBRICAL_DATA_DIR", "./data"),
-		AIProvider:       envOrDefault("AI_PROVIDER", ""),
-		OpenAIKey:        os.Getenv("OPENAI_API_KEY"),
-		AnthropicKey:     os.Getenv("ANTHROPIC_API_KEY"),
-		StrictExtraction: envBool("RUBRICAL_STRICT_EXTRACTION"),
+		Addr:                    envOrDefault("RUBRICAL_ADDR", ":8787"),
+		DatabaseURL:             envOrDefault("DATABASE_URL", "postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable"),
+		DataDir:                 envOrDefault("RUBRICAL_DATA_DIR", "./data"),
+		DraftMaxFileBytes:       envInt("DRAFT_MAX_FILE_BYTES", DefaultDraftMaxFileBytes),
+		DraftMaxFilesPerDraft:   envInt("DRAFT_MAX_FILES_PER_DRAFT", 20),
+		AIPromptMaxDraftChars:   envInt("AI_PROMPT_MAX_DRAFT_CHARS", 120_000),
+		AIMaxRunsPerHour:        envInt("AI_MAX_RUNS_PER_HOUR", 0),
+		AIMaxRunsPerDay:         envInt("AI_MAX_RUNS_PER_DAY", 0),
+		AIMinSecondsBetweenRuns: envInt("AI_MIN_SECONDS_BETWEEN_RUNS", 0),
+		AIEnforceRateLimits:     envBool("AI_ENFORCE_RATE_LIMITS"),
+		StrictExtraction:        envBool("RUBRICAL_STRICT_EXTRACTION"),
 	}
 
 	retention, err := envDuration("POST_DUE_DATE_RETENTION_TIME", 7*24*time.Hour)
@@ -76,6 +86,18 @@ func envBool(key string) bool {
 	default:
 		return false
 	}
+}
+
+func envInt(key string, fallback int) int {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n < 0 {
+		return fallback
+	}
+	return n
 }
 
 func envDuration(key string, fallback time.Duration) (time.Duration, error) {

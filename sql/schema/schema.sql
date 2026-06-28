@@ -8,6 +8,16 @@ CREATE TABLE users (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE user_ai_settings (
+    user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    ai_provider TEXT NOT NULL DEFAULT 'openai',
+    ai_model TEXT NOT NULL DEFAULT 'gpt-4o-mini',
+    openai_api_key TEXT NOT NULL DEFAULT '',
+    anthropic_api_key TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE assignment_snapshots (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,

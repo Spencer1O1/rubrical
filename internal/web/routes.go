@@ -5,13 +5,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"rubrical/internal/aisettings"
 	"rubrical/internal/config"
 	"rubrical/internal/db"
 	"rubrical/internal/draftfiles"
+	"rubrical/internal/analysis"
 	"rubrical/internal/web/handlers"
 )
 
-func NewRouter(database *db.DB, fileStore *draftfiles.Store, userID int64, cfg config.Config) http.Handler {
+func NewRouter(database *db.DB, fileStore *draftfiles.Store, userID int64, cfg config.Config, analysisSvc *analysis.Service) http.Handler {
 	r := chi.NewRouter()
 	r.Use(cors)
 	r.Use(middleware.RequestID)
@@ -19,10 +21,13 @@ func NewRouter(database *db.DB, fileStore *draftfiles.Store, userID int64, cfg c
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	h := handlers.New(database, fileStore, userID, cfg.StrictExtraction)
+	h := handlers.New(database, fileStore, userID, cfg, analysisSvc, aisettings.NewStore(database.Pool))
 
 	r.Get("/health", h.Health)
 	r.Get("/", h.Dashboard)
+	r.Get("/settings", h.SettingsPage)
+	r.Get("/settings/ai", h.GetAISettingsAPI)
+	r.Post("/settings/ai", h.SaveAISettings)
 	r.Get("/assignments/draft-manifest", h.DraftManifest)
 
 	r.Route("/assignments", func(r chi.Router) {

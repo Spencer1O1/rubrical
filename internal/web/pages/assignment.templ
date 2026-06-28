@@ -43,6 +43,7 @@ type AssignmentView struct {
 	DraftTextSaveURL          string
 	DraftSaveURL              string
 	StrictExtraction      bool
+	Analysis              AnalysisResultsView
 }
 
 // Assignment is the full revisit view from the dashboard.
@@ -293,7 +294,7 @@ templ DraftPanel(view AssignmentView) {
 			@draftAnalyzeBar(view)
 		}
 		<section id="analysis-results">
-			@AnalysisPending()
+			@AnalysisSection(view.Analysis)
 		</section>
 	</aside>
 }
@@ -501,6 +502,7 @@ templ draftAnalyzeBar(view AssignmentView) {
 		hx-post={ view.AnalyzeURL }
 		hx-target="#analysis-results"
 		hx-swap="innerHTML"
+		hx-indicator="#analysis-results"
 		if DraftModeAllowed(view.DraftMode, view.AllowedDraftModes) && view.DraftMode == "text" {
 			hx-include={ fmt.Sprintf("#%s", DraftTextareaID(view.ID)) }
 		}
@@ -528,10 +530,4 @@ templ DraftStatusText(label string) {
 
 templ DraftStatusError(message string) {
 	<p class="text-xs text-red-600">{ message }</p>
-}
-
-templ AnalysisPending() {
-	<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">
-		Analysis is not wired up yet. AI feedback will appear here in Phase 7.
-	</div>
 }

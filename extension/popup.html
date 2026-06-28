@@ -4,23 +4,131 @@
     <meta charset="UTF-8" />
     <title>Rubrical</title>
     <style>
+      :root {
+        color-scheme: light;
+      }
       body {
         font-family: system-ui, sans-serif;
         margin: 0;
         padding: 16px;
-        width: 260px;
+        width: 320px;
+        color: #292524;
+        background: #fafaf9;
       }
-      p {
-        margin: 0;
-        color: #44403c;
-        font-size: 14px;
+      h1 {
+        margin: 0 0 4px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #312e81;
+      }
+      .lede {
+        margin: 0 0 16px;
+        font-size: 13px;
         line-height: 1.5;
+        color: #57534e;
+      }
+      form {
+        display: grid;
+        gap: 12px;
+      }
+      label {
+        display: grid;
+        gap: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #44403c;
+      }
+      select,
+      input {
+        font: inherit;
+        padding: 8px 10px;
+        border: 1px solid #d6d3d1;
+        border-radius: 8px;
+        background: #fff;
+      }
+      input[type="password"] {
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+      }
+      button {
+        font: inherit;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 8px;
+        background: #4f46e5;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #4338ca;
+      }
+      #status {
+        margin: 12px 0 0;
+        min-height: 1.25em;
+        font-size: 12px;
+        color: #57534e;
+      }
+      #status[data-kind="success"] {
+        color: #047857;
+      }
+      #status[data-kind="error"] {
+        color: #b91c1c;
+      }
+      .hint {
+        margin: 0;
+        font-size: 11px;
+        line-height: 1.4;
+        color: #78716c;
+      }
+      .section {
+        display: grid;
+        gap: 8px;
+        padding-top: 4px;
       }
     </style>
   </head>
   <body>
-    <p>
-      Open a Canvas assignment and use <strong>Check with Rubrical</strong> on the page.
+    <h1>Rubrical</h1>
+    <p class="lede">
+      Configure AI for rubric feedback. Settings are saved to your Rubrical account on the local server.
     </p>
+
+    <form id="settings-form">
+      <label>
+        Provider
+        <select id="provider" name="provider">
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic</option>
+        </select>
+      </label>
+
+      <label>
+        Model
+        <select id="model" name="model"></select>
+      </label>
+
+      <div class="section">
+        <label>
+          OpenAI API key
+          <input id="openai-key" name="openaiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" />
+        </label>
+        <label>
+          Anthropic API key
+          <input id="anthropic-key" name="anthropicApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" />
+        </label>
+        <p class="hint">Save both keys if you switch providers often. Only the active provider’s key is used.</p>
+      </div>
+
+      <button type="submit">Save settings</button>
+    </form>
+
+    <p id="status" aria-live="polite"></p>
+
+    <p class="lede" style="margin-top: 16px; margin-bottom: 0">
+      On Canvas, use <strong>Check with Rubrical</strong> near the submit button.
+    </p>
+
+    <script type="module" src="popup.js"></script>
   </body>
 </html>

@@ -487,7 +487,12 @@ func testHandler(t *testing.T, pool *pgxpool.Pool) *Handlers {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &Handlers{db: &db.DB{Pool: pool}, files: files, userID: userID}
+	return &Handlers{
+		db:          &db.DB{Pool: pool},
+		files:       files,
+		userID:      userID,
+		importLimits: importpayload.DefaultLimits(),
+	}
 }
 
 func insertAssignment(t *testing.T, pool *pgxpool.Pool, userID int64, sourceURL string) int64 {

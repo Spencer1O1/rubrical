@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"rubrical/internal/aisettings"
+	"rubrical/internal/analysis"
+	"rubrical/internal/config"
 	"rubrical/internal/db"
 	"rubrical/internal/draftfiles"
+	"rubrical/internal/importpayload"
 )
 
 type Handlers struct {
@@ -10,13 +14,33 @@ type Handlers struct {
 	files            *draftfiles.Store
 	userID           int64
 	strictExtraction bool
+	analysis         *analysis.Service
+	aiSettings       *aisettings.Store
+	importLimits     importpayload.Limits
 }
 
-func New(database *db.DB, files *draftfiles.Store, userID int64, strictExtraction bool) *Handlers {
+func New(
+	database *db.DB,
+	files *draftfiles.Store,
+	userID int64,
+	cfg config.Config,
+	analysisSvc *analysis.Service,
+	aiSettings *aisettings.Store,
+) *Handlers {
 	return &Handlers{
 		db:               database,
 		files:            files,
 		userID:           userID,
-		strictExtraction: strictExtraction,
+		strictExtraction: cfg.StrictExtraction,
+		analysis:         analysisSvc,
+		aiSettings:       aiSettings,
+		importLimits:     importpayload.LimitsFromConfig(cfg.DraftMaxFileBytes, cfg.DraftMaxFilesPerDraft),
 	}
+}
+
+func (h *Handlers) maxDraftFileBytes() int {
+	if h == nil {
+		return importpayload.DefaultLimits().MaxFileBytes
+	}
+	return h.importLimits.MaxFileBytes
 }

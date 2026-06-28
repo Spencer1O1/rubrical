@@ -1,0 +1,151 @@
+package pages
+
+import (
+	"rubrical/internal/aisettings"
+	"rubrical/internal/web/components"
+)
+
+var AIProviderOptions = []struct {
+	ID    string
+	Label string
+}{
+	{ID: "openai", Label: "OpenAI"},
+	{ID: "anthropic", Label: "Anthropic"},
+}
+
+var OpenAIModelOptions = []struct {
+	ID    string
+	Label string
+}{
+	{ID: "gpt-4o-mini", Label: "GPT-4o mini (recommended)"},
+	{ID: "gpt-4o", Label: "GPT-4o"},
+	{ID: "gpt-4.1-mini", Label: "GPT-4.1 mini"},
+	{ID: "gpt-4.1", Label: "GPT-4.1"},
+}
+
+var AnthropicModelOptions = []struct {
+	ID    string
+	Label string
+}{
+	{ID: "claude-sonnet-4-20250514", Label: "Claude Sonnet 4"},
+	{ID: "claude-3-7-sonnet-20250219", Label: "Claude 3.7 Sonnet"},
+	{ID: "claude-3-5-haiku-20241022", Label: "Claude 3.5 Haiku"},
+}
+
+templ SettingsPage(settings aisettings.Settings, errorMessage string) {
+	@components.Layout("Settings", settingsPageContent(settings, errorMessage))
+}
+
+templ settingsPageContent(settings aisettings.Settings, errorMessage string) {
+	<section class="mx-auto max-w-xl space-y-6">
+		<div>
+			<h1 class="text-2xl font-semibold tracking-tight">AI settings</h1>
+			<p class="mt-2 text-sm text-stone-600">
+				Your API keys are stored in Rubrical and used only when you analyze a draft. During beta you bring your own keys; paid plans will use Rubrical-managed AI later.
+			</p>
+		</div>
+		@settingsForm(settings, errorMessage, false)
+	</section>
+}
+
+templ settingsForm(settings aisettings.Settings, errorMessage string, compact bool) {
+	<form
+		method="post"
+		action="/settings/ai"
+		class="space-y-4 rounded-xl border border-stone-200 bg-white p-5"
+		if !compact {
+			hx-post="/settings/ai"
+			hx-target="#settings-status"
+			hx-swap="innerHTML"
+		}
+	>
+		if errorMessage != "" {
+			<p class="text-sm text-red-600">{ errorMessage }</p>
+		}
+		<label class="block space-y-1 text-sm font-medium text-stone-900">
+			<span>Provider</span>
+			<select name="provider" class="block w-full rounded-lg border border-stone-300 px-3 py-2">
+				for _, option := range AIProviderOptions {
+					<option value={ option.ID } selected?={ settings.Provider == option.ID }>{ option.Label }</option>
+				}
+			</select>
+		</label>
+		<label class="block space-y-1 text-sm font-medium text-stone-900">
+			<span>Model</span>
+			<select name="model" class="block w-full rounded-lg border border-stone-300 px-3 py-2">
+				if settings.Provider == "anthropic" {
+					for _, option := range AnthropicModelOptions {
+						<option value={ option.ID } selected?={ settings.Model == option.ID }>{ option.Label }</option>
+					}
+				} else {
+					for _, option := range OpenAIModelOptions {
+						<option value={ option.ID } selected?={ settings.Model == option.ID }>{ option.Label }</option>
+					}
+				}
+			</select>
+		</label>
+		<label class="block space-y-1 text-sm font-medium text-stone-900">
+			<span>OpenAI API key</span>
+			<input
+				type="password"
+				name="openaiApiKey"
+				value={ settings.OpenAIAPIKey }
+				autocomplete="off"
+				placeholder="sk-…"
+				class="block w-full rounded-lg border border-stone-300 px-3 py-2 font-mono text-sm"
+			/>
+		</label>
+		<label class="block space-y-1 text-sm font-medium text-stone-900">
+			<span>Anthropic API key</span>
+			<input
+				type="password"
+				name="anthropicApiKey"
+				value={ settings.AnthropicAPIKey }
+				autocomplete="off"
+				placeholder="sk-ant-…"
+				class="block w-full rounded-lg border border-stone-300 px-3 py-2 font-mono text-sm"
+			/>
+		</label>
+		<p class="text-xs text-stone-500">Leave a key field blank to keep the saved value. Save both keys if you switch providers often.</p>
+		<button type="submit" class="inline-flex rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+			Save settings
+		</button>
+		<div id="settings-status"></div>
+	</form>
+	<script>
+		(() => {
+			const provider = document.querySelector('select[name="provider"]');
+			const model = document.querySelector('select[name="model"]');
+			if (!provider || !model) return;
+			const openai = [
+				["gpt-4o-mini", "GPT-4o mini (recommended)"],
+				["gpt-4o", "GPT-4o"],
+				["gpt-4.1-mini", "GPT-4.1 mini"],
+				["gpt-4.1", "GPT-4.1"],
+			];
+			const anthropic = [
+				["claude-sonnet-4-20250514", "Claude Sonnet 4"],
+				["claude-3-7-sonnet-20250219", "Claude 3.7 Sonnet"],
+				["claude-3-5-haiku-20241022", "Claude 3.5 Haiku"],
+			];
+			function fill(options, selected) {
+				model.replaceChildren();
+				for (const [value, label] of options) {
+					const option = document.createElement("option");
+					option.value = value;
+					option.textContent = label;
+					if (value === selected) option.selected = true;
+					model.appendChild(option);
+				}
+			}
+			provider.addEventListener("change", () => {
+				const options = provider.value === "anthropic" ? anthropic : openai;
+				fill(options, options[0][0]);
+			});
+		})();
+	</script>
+}
+
+templ SettingsSaved() {
+	<p class="text-sm text-emerald-600">Settings saved.</p>
+}

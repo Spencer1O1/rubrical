@@ -14,8 +14,6 @@ import (
 	"rubrical/internal/importpayload"
 )
 
-const maxDraftFilesPerDraft = 20
-
 type draftStoredFile struct {
 	StorageKey   string
 	FileName     string
@@ -67,7 +65,7 @@ func (h *Handlers) saveDraftFromImport(ctx context.Context, assignmentID int64, 
 
 	text := strings.TrimSpace(payload.DraftText)
 	url := strings.TrimSpace(payload.DraftURL)
-	importFiles, err := decodeImportDraftFiles(payload.DraftFiles)
+	importFiles, err := h.decodeImportDraftFiles(payload.DraftFiles)
 	if err != nil {
 		return err
 	}
@@ -124,7 +122,7 @@ func (h *Handlers) saveDraftFromImport(ctx context.Context, assignmentID int64, 
 
 func (h *Handlers) saveDiscussionDraftFromImport(ctx context.Context, assignmentID int64, payload importpayload.Payload) error {
 	text := strings.TrimSpace(payload.DraftText)
-	importFiles, err := decodeImportDraftFiles(payload.DraftFiles)
+	importFiles, err := h.decodeImportDraftFiles(payload.DraftFiles)
 	if err != nil {
 		return err
 	}
@@ -208,11 +206,11 @@ func (h *Handlers) replaceDraftFilesOnDraft(ctx context.Context, draftID int64, 
 	return h.touchDraftUpdatedAt(ctx, draftID)
 }
 
-func decodeImportDraftFiles(files []importpayload.DraftFile) ([]decodedDraftFile, error) {
+func (h *Handlers) decodeImportDraftFiles(files []importpayload.DraftFile) ([]decodedDraftFile, error) {
 	if len(files) == 0 {
 		return nil, nil
 	}
-	if len(files) > importpayload.MaxDraftFiles {
+	if len(files) > h.importLimits.MaxFiles {
 		return nil, fmt.Errorf("too many draft files")
 	}
 
@@ -230,7 +228,7 @@ func decodeImportDraftFiles(files []importpayload.DraftFile) ([]decodedDraftFile
 		if fileName == "" {
 			return nil, fmt.Errorf("draftFiles[%d].fileName is required", i)
 		}
-		if len(data) > importpayload.MaxDraftFileBytes {
+		if len(data) > h.importLimits.MaxFileBytes {
 			return nil, fmt.Errorf("draftFiles[%d] exceeds maximum size", i)
 		}
 		decoded = append(decoded, decodedDraftFile{
@@ -272,7 +270,7 @@ func (h *Handlers) appendUploadedDraftFiles(ctx context.Context, assignmentID in
 	if err != nil {
 		return err
 	}
-	if len(existing)+len(stored) > maxDraftFilesPerDraft {
+	if len(existing)+len(stored) > h.importLimits.MaxFiles {
 		for _, file := range stored {
 			_ = h.files.Delete(file.StorageKey)
 		}
@@ -685,7 +683,7 @@ func (h *Handlers) mergeImportDraftFiles(
 		merged = append(merged, mergedDraftFile{stored: file, sortOrder: sortOrder})
 	}
 
-	if len(merged) > maxDraftFilesPerDraft {
+	if len(merged) > h.importLimits.MaxFiles {
 		for _, file := range stored {
 			_ = h.files.Delete(file.StorageKey)
 		}

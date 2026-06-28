@@ -9,6 +9,8 @@ import (
 	"syscall"
 	"time"
 
+	"rubrical/internal/aisettings"
+	"rubrical/internal/analysis"
 	"rubrical/internal/auth"
 	"rubrical/internal/config"
 	"rubrical/internal/db"
@@ -44,6 +46,29 @@ func main() {
 		log.Fatalf("draft files: %v", err)
 	}
 
+	aiSettingsStore := aisettings.NewStore(database.Pool)
+	analysisSvc := analysis.NewService(
+		database.Pool,
+		fileStore,
+		aiSettingsStore,
+		analysis.NewLimiter(database.Pool, analysis.NewRateLimits(
+			cfg.AIMaxRunsPerHour,
+			cfg.AIMaxRunsPerDay,
+			cfg.AIMinSecondsBetweenRuns,
+		)),
+		cfg.AIEnforceRateLimits,
+		analysis.OptionsFromConfig(cfg.AIPromptMaxDraftChars, cfg.DraftMaxFileBytes),
+	)
+	if cfg.AIEnforceRateLimits {
+		log.Printf("ai analysis rate limits enabled: %d/hr %d/day min_gap=%ds",
+			cfg.AIMaxRunsPerHour,
+			cfg.AIMaxRunsPerDay,
+			cfg.AIMinSecondsBetweenRuns,
+		)
+	} else {
+		log.Printf("ai analysis: per-user keys from database; rate limits disabled (BYOK beta)")
+	}
+
 	purgeCtx, stopPurge := context.WithCancel(context.Background())
 	defer stopPurge()
 	policy := purge.Policy{
@@ -59,9 +84,9 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.Addr,
-		Handler:      web.NewRouter(database, fileStore, userID, cfg),
+		Handler:      web.NewRouter(database, fileStore, userID, cfg, analysisSvc),
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 60 * time.Second,
+		WriteTimeout: 180 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
 

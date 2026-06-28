@@ -70,6 +70,14 @@ func (s *Store) Delete(storageKey string) error {
 	return nil
 }
 
+func (s *Store) Read(storageKey string) ([]byte, error) {
+	if strings.TrimSpace(storageKey) == "" {
+		return nil, fmt.Errorf("empty storage key")
+	}
+	fullPath := filepath.Join(s.root, filepath.FromSlash(storageKey))
+	return os.ReadFile(fullPath)
+}
+
 func (s *Store) Path(storageKey string) string {
 	return filepath.Join(s.root, filepath.FromSlash(storageKey))
 }

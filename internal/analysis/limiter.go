@@ -1,0 +1,100 @@
+package analysis
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+var ErrRateLimited = errors.New("analysis rate limit exceeded")
+
+type RateLimits struct {
+	MaxPerHour              int
+	MaxPerDay               int
+	MinSecondsBetweenRuns   int
+}
+
+func NewRateLimits(maxPerHour, maxPerDay, minSeconds int) RateLimits {
+	return RateLimits{
+		MaxPerHour:            maxPerHour,
+		MaxPerDay:             maxPerDay,
+		MinSecondsBetweenRuns: minSeconds,
+	}
+}
+
+type Limiter struct {
+	pool   *pgxpool.Pool
+	limits RateLimits
+}
+
+func NewLimiter(pool *pgxpool.Pool, limits RateLimits) *Limiter {
+	return &Limiter{pool: pool, limits: limits}
+}
+
+func (l *Limiter) Check(ctx context.Context, userID, assignmentID int64) error {
+	if l == nil || l.pool == nil {
+		return nil
+	}
+
+	if l.limits.MaxPerHour > 0 {
+		var count int
+		err := l.pool.QueryRow(ctx, `
+			SELECT COUNT(*)
+			FROM analysis_runs ar
+			JOIN assignment_snapshots a ON a.id = ar.assignment_snapshot_id
+			WHERE a.user_id = $1
+			  AND ar.created_at > NOW() - INTERVAL '1 hour'
+			  AND ar.status IN ('completed', 'failed', 'pending', 'running')
+		`, userID).Scan(&count)
+		if err != nil {
+			return err
+		}
+		if count >= l.limits.MaxPerHour {
+			return fmt.Errorf("%w: %d analyses per hour (try again later)", ErrRateLimited, l.limits.MaxPerHour)
+		}
+	}
+
+	if l.limits.MaxPerDay > 0 {
+		var count int
+		err := l.pool.QueryRow(ctx, `
+			SELECT COUNT(*)
+			FROM analysis_runs ar
+			JOIN assignment_snapshots a ON a.id = ar.assignment_snapshot_id
+			WHERE a.user_id = $1
+			  AND ar.created_at > NOW() - INTERVAL '1 day'
+			  AND ar.status IN ('completed', 'failed', 'pending', 'running')
+		`, userID).Scan(&count)
+		if err != nil {
+			return err
+		}
+		if count >= l.limits.MaxPerDay {
+			return fmt.Errorf("%w: %d analyses per day (try again tomorrow)", ErrRateLimited, l.limits.MaxPerDay)
+		}
+	}
+
+	if l.limits.MinSecondsBetweenRuns > 0 {
+		var lastRun time.Time
+		err := l.pool.QueryRow(ctx, `
+			SELECT COALESCE(MAX(ar.created_at), 'epoch'::timestamptz)
+			FROM analysis_runs ar
+			WHERE ar.assignment_snapshot_id = $1
+			  AND ar.status IN ('completed', 'failed', 'pending', 'running')
+		`, assignmentID).Scan(&lastRun)
+		if err != nil {
+			return err
+		}
+		wait := time.Duration(l.limits.MinSecondsBetweenRuns)*time.Second - time.Since(lastRun)
+		if wait > 0 {
+			secs := int(wait.Seconds())
+			if secs < 1 {
+				secs = 1
+			}
+			return fmt.Errorf("%w: wait %d seconds before analyzing again", ErrRateLimited, secs)
+		}
+	}
+
+	return nil
+}
