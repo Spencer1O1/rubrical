@@ -73,7 +73,7 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	maxBytes := h.maxDraftFileBytes()
+	maxBytes := h.maxDraftUploadBytes()
 
 	if err := r.ParseMultipartForm(int64(maxBytes)); err != nil {
 		http.Error(w, "invalid upload", http.StatusBadRequest)
@@ -157,7 +157,7 @@ func (h *Handlers) UploadDiscussionAttachment(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	maxBytes := h.maxDraftFileBytes()
+	maxBytes := h.maxDraftUploadBytes()
 
 	if err := r.ParseMultipartForm(int64(maxBytes)); err != nil {
 		http.Error(w, "invalid upload", http.StatusBadRequest)
@@ -385,20 +385,25 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) renderAnalysisError(w http.ResponseWriter, r *http.Request, err error) {
+	embed := r.FormValue("embed") == "1"
 	message := "Analysis failed. Try again in a moment."
+	settingsURL := ""
 	switch {
 	case h.analysis == nil || errors.Is(err, analysis.ErrNotConfigured):
-		message = "Configure AI in Settings (dashboard or extension popup): choose a provider, model, and API key."
+		message = "Configure AI before analyzing: choose a provider, model, and API key."
+		settingsURL = pages.SettingsURL(embed)
 	case errors.Is(err, analysis.ErrNothingToAnalyze):
 		message = "Add draft text, upload a file, or enter a submission URL before analyzing."
-	case errors.Is(err, analysis.ErrRateLimited):
-		message = err.Error()
+	case errors.Is(err, analysis.ErrNoAnalyzableContent):
+		message = "No analyzable submission content. Upload supported files or add draft text."
 	default:
-		if trimmed := strings.TrimSpace(err.Error()); trimmed != "" {
+		if errors.Is(err, analysis.ErrRateLimited) {
+			message = err.Error()
+		} else if trimmed := strings.TrimSpace(err.Error()); trimmed != "" {
 			message = trimmed
 		}
 	}
-	pages.AnalysisError(message).Render(r.Context(), w)
+	pages.AnalysisError(message, settingsURL).Render(r.Context(), w)
 }
 
 func (h *Handlers) renderAnalysisResults(w http.ResponseWriter, r *http.Request, view pages.AnalysisResultsView) {

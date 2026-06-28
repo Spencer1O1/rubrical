@@ -57,7 +57,7 @@ func main() {
 			cfg.AIMinSecondsBetweenRuns,
 		)),
 		cfg.AIEnforceRateLimits,
-		analysis.OptionsFromConfig(cfg.AIPromptMaxDraftChars, cfg.DraftMaxFileBytes),
+		analysis.OptionsFromConfig(cfg),
 	)
 	if cfg.AIEnforceRateLimits {
 		log.Printf("ai analysis rate limits enabled: %d/hr %d/day min_gap=%ds",

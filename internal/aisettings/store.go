@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"rubrical/internal/config"
 )
 
 type Settings struct {
@@ -94,8 +95,8 @@ func (s *Store) ActiveAPIKey(settings Settings) (string, error) {
 
 func DefaultSettings() Settings {
 	return Settings{
-		Provider: "openai",
-		Model:    "gpt-4o-mini",
+		Provider: config.DefaultAIProvider,
+		Model:    config.DefaultOpenAIModel,
 	}
 }
 
@@ -108,9 +109,9 @@ func Normalize(settings Settings) Settings {
 	model := strings.TrimSpace(settings.Model)
 	if model == "" {
 		if provider == "anthropic" {
-			model = "claude-sonnet-4-20250514"
+			model = config.DefaultAnthropicModel
 		} else {
-			model = "gpt-4o-mini"
+			model = config.DefaultOpenAIModel
 		}
 	}
 

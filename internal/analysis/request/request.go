@@ -1,10 +1,18 @@
 package request
 
+type DeliveryKind string
+
+const (
+	DeliveryPDF          DeliveryKind = "pdf"
+	DeliveryImage        DeliveryKind = "image"
+	DeliveryProviderFile DeliveryKind = "provider_file"
+)
+
 type Attachment struct {
-	FileName string
+	Path     string // full logical path
 	MimeType string
 	Data     []byte
-	Kind     string
+	Delivery DeliveryKind
 }
 
 type Request struct {

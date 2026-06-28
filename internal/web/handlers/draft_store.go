@@ -210,7 +210,7 @@ func (h *Handlers) decodeImportDraftFiles(files []importpayload.DraftFile) ([]de
 	if len(files) == 0 {
 		return nil, nil
 	}
-	if len(files) > h.importLimits.MaxFiles {
+	if len(files) > h.importLimits.MaxUploadSlots {
 		return nil, fmt.Errorf("too many draft files")
 	}
 
@@ -228,7 +228,7 @@ func (h *Handlers) decodeImportDraftFiles(files []importpayload.DraftFile) ([]de
 		if fileName == "" {
 			return nil, fmt.Errorf("draftFiles[%d].fileName is required", i)
 		}
-		if len(data) > h.importLimits.MaxFileBytes {
+		if len(data) > h.importLimits.MaxUploadBytes {
 			return nil, fmt.Errorf("draftFiles[%d] exceeds maximum size", i)
 		}
 		decoded = append(decoded, decodedDraftFile{
@@ -270,11 +270,11 @@ func (h *Handlers) appendUploadedDraftFiles(ctx context.Context, assignmentID in
 	if err != nil {
 		return err
 	}
-	if len(existing)+len(stored) > h.importLimits.MaxFiles {
+	if len(existing)+len(stored) > h.importLimits.MaxUploadSlots {
 		for _, file := range stored {
 			_ = h.files.Delete(file.StorageKey)
 		}
-		return fmt.Errorf("draft file limit exceeded")
+		return fmt.Errorf("draft upload slot limit exceeded")
 	}
 
 	for i, file := range stored {
@@ -683,11 +683,11 @@ func (h *Handlers) mergeImportDraftFiles(
 		merged = append(merged, mergedDraftFile{stored: file, sortOrder: sortOrder})
 	}
 
-	if len(merged) > h.importLimits.MaxFiles {
+	if len(merged) > h.importLimits.MaxUploadSlots {
 		for _, file := range stored {
 			_ = h.files.Delete(file.StorageKey)
 		}
-		return nil, fmt.Errorf("draft file limit exceeded")
+		return nil, fmt.Errorf("draft upload slot limit exceeded")
 	}
 
 	sort.SliceStable(merged, func(i, j int) bool {

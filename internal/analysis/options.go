@@ -1,30 +1,37 @@
 package analysis
 
 import (
-	"rubrical/internal/analysis/prompt"
+	"rubrical/internal/analysis/files"
 	"rubrical/internal/config"
 )
 
-const defaultPromptMaxDraftChars = prompt.DefaultMaxDraftChars
-
 type Options struct {
-	PromptMaxDraftChars int
-	MaxFileBytes        int
+	MaxSubmissionTextChars int
+	MaxUploadBytes         int
+	MaxTotalBytes          int
 }
 
 func (o Options) withDefaults() Options {
-	if o.PromptMaxDraftChars <= 0 {
-		o.PromptMaxDraftChars = defaultPromptMaxDraftChars
+	if o.MaxSubmissionTextChars <= 0 {
+		o.MaxSubmissionTextChars = config.DefaultAnalysisMaxSubmissionTextChars
 	}
-	if o.MaxFileBytes <= 0 {
-		o.MaxFileBytes = config.DefaultDraftMaxFileBytes
+	if o.MaxUploadBytes <= 0 {
+		o.MaxUploadBytes = config.DefaultDraftMaxUploadBytes
+	}
+	if o.MaxTotalBytes <= 0 {
+		o.MaxTotalBytes = config.DefaultAnalysisMaxTotalBytes
 	}
 	return o
 }
 
-func OptionsFromConfig(promptMaxDraftChars, draftMaxFileBytes int) Options {
+func OptionsFromConfig(cfg config.Config) Options {
 	return Options{
-		PromptMaxDraftChars: promptMaxDraftChars,
-		MaxFileBytes:        draftMaxFileBytes,
+		MaxSubmissionTextChars: cfg.AnalysisMaxSubmissionTextChars,
+		MaxUploadBytes:         cfg.DraftMaxUploadBytes,
+		MaxTotalBytes:          cfg.AnalysisMaxTotalBytes,
 	}.withDefaults()
+}
+
+func (o Options) FileLimits() files.Limits {
+	return files.LimitsFromConfig(o.MaxUploadBytes, o.MaxTotalBytes)
 }

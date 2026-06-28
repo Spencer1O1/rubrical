@@ -11,7 +11,7 @@ func TestBuild_includesRubricAndDraft(t *testing.T) {
 		Rubric: Rubric{
 			Rows: []RubricRow{{Criterion: "Analysis", Points: "5"}},
 		},
-	}, DefaultMaxDraftChars)
+	}, DefaultMaxSubmissionTextChars)
 	if system == "" || user == "" {
 		t.Fatal("expected prompts")
 	}

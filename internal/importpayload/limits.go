@@ -2,63 +2,47 @@ package importpayload
 
 import "rubrical/internal/config"
 
-const (
-	defaultImportMaxBodyBytes   = 8 << 20
-	defaultMaxTitleRunes          = 500
-	defaultMaxCourseNameRunes     = 300
-	defaultMaxMetadataFieldRunes  = 500
-	defaultMaxVisibleTextBytes    = 512 << 10
-	defaultMaxInstructionsBytes   = 512 << 10
-	defaultMaxDraftTextBytes      = 512 << 10
-	defaultMaxRubricRows          = 100
-	defaultMaxRubricHeaderColumns = 20
-	defaultMaxRatingsPerRow       = 50
-	defaultMaxRubricFieldRunes    = 4000
-	defaultMaxDraftFileNameRunes  = 255
-	defaultMaxDraftFiles          = 20
-)
-
 // Limits caps extension import payloads (POST /imports).
 type Limits struct {
-	MaxBodyBytes          int
-	MaxTitleRunes         int
-	MaxCourseNameRunes    int
-	MaxMetadataFieldRunes int
-	MaxVisibleTextBytes   int
-	MaxInstructionsBytes  int
-	MaxDraftTextBytes     int
-	MaxRubricRows         int
+	MaxBodyBytes           int
+	MaxTitleRunes          int
+	MaxCourseNameRunes     int
+	MaxMetadataFieldRunes  int
+	MaxVisibleTextBytes    int
+	MaxInstructionsBytes   int
+	MaxDraftTextBytes      int
+	MaxRubricRows          int
 	MaxRubricHeaderColumns int
-	MaxRatingsPerRow      int
-	MaxRubricFieldRunes   int
-	MaxDraftFileNameRunes int
-	MaxFileBytes          int
-	MaxFiles              int
+	MaxRatingsPerRow       int
+	MaxRubricFieldRunes    int
+	MaxDraftFileNameRunes  int
+	MaxUploadBytes         int
+	MaxUploadSlots         int
 }
 
 func DefaultLimits() Limits {
 	return Limits{
-		MaxBodyBytes:           defaultImportMaxBodyBytes,
-		MaxTitleRunes:          defaultMaxTitleRunes,
-		MaxCourseNameRunes:     defaultMaxCourseNameRunes,
-		MaxMetadataFieldRunes:  defaultMaxMetadataFieldRunes,
-		MaxVisibleTextBytes:    defaultMaxVisibleTextBytes,
-		MaxInstructionsBytes:   defaultMaxInstructionsBytes,
-		MaxDraftTextBytes:      defaultMaxDraftTextBytes,
-		MaxRubricRows:          defaultMaxRubricRows,
-		MaxRubricHeaderColumns: defaultMaxRubricHeaderColumns,
-		MaxRatingsPerRow:       defaultMaxRatingsPerRow,
-		MaxRubricFieldRunes:    defaultMaxRubricFieldRunes,
-		MaxDraftFileNameRunes:  defaultMaxDraftFileNameRunes,
-		MaxFileBytes:           config.DefaultDraftMaxFileBytes,
-		MaxFiles:               defaultMaxDraftFiles,
+		MaxBodyBytes:           config.DefaultImportMaxBodyBytes,
+		MaxTitleRunes:          config.DefaultMaxTitleRunes,
+		MaxCourseNameRunes:     config.DefaultMaxCourseNameRunes,
+		MaxMetadataFieldRunes:  config.DefaultMaxMetadataFieldRunes,
+		MaxVisibleTextBytes:    config.DefaultMaxVisibleTextBytes,
+		MaxInstructionsBytes:   config.DefaultMaxInstructionsBytes,
+		MaxDraftTextBytes:      config.DefaultMaxDraftTextBytes,
+		MaxRubricRows:          config.DefaultMaxRubricRows,
+		MaxRubricHeaderColumns: config.DefaultMaxRubricHeaderColumns,
+		MaxRatingsPerRow:       config.DefaultMaxRatingsPerRow,
+		MaxRubricFieldRunes:    config.DefaultMaxRubricFieldRunes,
+		MaxDraftFileNameRunes:  config.DefaultMaxDraftFileNameRunes,
+		MaxUploadBytes:         config.DefaultDraftMaxUploadBytes,
+		MaxUploadSlots:         config.DefaultDraftMaxUploadSlots,
 	}
 }
 
-func LimitsFromConfig(draftMaxFileBytes, draftMaxFiles int) Limits {
+func LimitsFromConfig(draftMaxUploadBytes, draftMaxUploadSlots int) Limits {
 	return Limits{
-		MaxFileBytes: draftMaxFileBytes,
-		MaxFiles:     draftMaxFiles,
+		MaxUploadBytes: draftMaxUploadBytes,
+		MaxUploadSlots: draftMaxUploadSlots,
 	}.WithDefaults()
 }
 
@@ -100,11 +84,11 @@ func (l Limits) WithDefaults() Limits {
 	if l.MaxDraftFileNameRunes <= 0 {
 		l.MaxDraftFileNameRunes = d.MaxDraftFileNameRunes
 	}
-	if l.MaxFileBytes <= 0 {
-		l.MaxFileBytes = d.MaxFileBytes
+	if l.MaxUploadBytes <= 0 {
+		l.MaxUploadBytes = d.MaxUploadBytes
 	}
-	if l.MaxFiles <= 0 {
-		l.MaxFiles = d.MaxFiles
+	if l.MaxUploadSlots <= 0 {
+		l.MaxUploadSlots = d.MaxUploadSlots
 	}
 	return l
 }

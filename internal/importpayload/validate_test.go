@@ -56,7 +56,7 @@ func TestValidateAndNormalizeRejectsOversizedDraftFile(t *testing.T) {
 		PageType:  "assignment",
 		DraftFiles: []DraftFile{{
 			FileName:      "big.txt",
-			ContentBase64: base64.StdEncoding.EncodeToString([]byte(strings.Repeat("a", DefaultLimits().MaxFileBytes+1))),
+			ContentBase64: base64.StdEncoding.EncodeToString([]byte(strings.Repeat("a", DefaultLimits().MaxUploadBytes+1))),
 		}},
 	}
 	if err := ValidateAndNormalize(&payload, DefaultLimits()); err == nil {

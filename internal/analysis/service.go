@@ -7,20 +7,21 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"rubrical/internal/aisettings"
-	"rubrical/internal/analysis/filecontent"
+	"rubrical/internal/analysis/files"
 	"rubrical/internal/analysis/provider"
+	"rubrical/internal/config"
 	"rubrical/internal/draftfiles"
 	"rubrical/internal/draftmode"
 )
 
 var (
-	ErrNotConfigured    = errors.New("ai analysis is not configured")
-	ErrNothingToAnalyze = errors.New("add draft text, a file, or a submission url before analyzing")
+	ErrNotConfigured       = errors.New("ai analysis is not configured")
+	ErrNothingToAnalyze    = errors.New("add draft text, a file, or a submission url before analyzing")
+	ErrNoAnalyzableContent = files.ErrNoAnalyzableContent
 )
 
 type Service struct {
@@ -93,7 +94,15 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 		return Result{}, err
 	}
 
-	req := BuildProviderRequest(input, s.opts.PromptMaxDraftChars)
+	fileResult, err := s.processFiles(provider.Name(), input.Files)
+	if err != nil {
+		return Result{}, err
+	}
+	if err := validateProcessedContent(input, fileResult); err != nil {
+		return Result{}, err
+	}
+
+	req := BuildProviderRequest(input, fileResult, s.opts.MaxSubmissionTextChars)
 	inputLog, err := EncodePromptLog(req)
 	if err != nil {
 		return Result{}, err
@@ -120,6 +129,31 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 		return Result{}, err
 	}
 	return result, nil
+}
+
+func (s *Service) processFiles(providerName string, submissionFiles []SubmissionFile) (files.ProcessResult, error) {
+	inputs := make([]files.SubmissionInput, len(submissionFiles))
+	for i, file := range submissionFiles {
+		inputs[i] = files.SubmissionInput{
+			FileName: file.FileName,
+			MimeType: file.MimeType,
+			Data:     file.Data,
+		}
+	}
+	return files.Process(providerName, inputs, s.opts.FileLimits())
+}
+
+func validateProcessedContent(input Input, result files.ProcessResult) error {
+	if result.HasContent() {
+		return nil
+	}
+	if strings.TrimSpace(input.DraftText) != "" {
+		return nil
+	}
+	if draftmode.Normalize(input.DraftMode) == draftmode.URL && strings.TrimSpace(input.DraftURL) != "" {
+		return nil
+	}
+	return files.ErrNoAnalyzableContent
 }
 
 func (s *Service) LoadLatestResult(ctx context.Context, assignmentID int64) (*Result, error) {
@@ -209,43 +243,7 @@ func (s *Service) loadInput(ctx context.Context, assignmentID, userID int64) (In
 		}
 	}
 
-	mergedText, attachments, err := s.mergeFileContent(input)
-	if err != nil {
-		return Input{}, 0, err
-	}
-	if mergedText != "" {
-		if strings.TrimSpace(input.DraftText) != "" {
-			input.DraftText = strings.TrimSpace(input.DraftText) + "\n\n" + mergedText
-		} else {
-			input.DraftText = mergedText
-		}
-	}
-	input.Files = attachments
-
 	return input, draftID, nil
-}
-
-func (s *Service) mergeFileContent(input Input) (extractedText string, attachments []SubmissionFile, err error) {
-	var textParts []string
-	for _, file := range input.Files {
-		prepared, prepErr := filecontent.Prepare(file.FileName, file.MimeType, file.Data, s.opts.MaxFileBytes)
-		if prepErr != nil {
-			return "", nil, prepErr
-		}
-		switch prepared.Kind {
-		case "text":
-			if strings.TrimSpace(prepared.Text) != "" {
-				textParts = append(textParts, fmt.Sprintf("--- %s ---\n%s", prepared.FileName, prepared.Text))
-			}
-		case "pdf", "image":
-			attachments = append(attachments, SubmissionFile{
-				FileName: prepared.FileName,
-				MimeType: prepared.MimeType,
-				Data:     prepared.Data,
-			})
-		}
-	}
-	return strings.Join(textParts, "\n\n"), attachments, nil
 }
 
 func (s *Service) loadDraftFiles(ctx context.Context, draftID int64) ([]SubmissionFile, error) {
@@ -285,7 +283,7 @@ type URLFetcher struct {
 
 func NewURLFetcher() *URLFetcher {
 	return &URLFetcher{
-		client: &http.Client{Timeout: 15 * time.Second},
+		client: &http.Client{Timeout: config.DefaultURLFetchTimeout},
 	}
 }
 

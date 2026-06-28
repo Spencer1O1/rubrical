@@ -138,6 +138,20 @@ func AnalyzeURL(id int64) string {
 	return fmt.Sprintf("/assignments/%d/analyze", id)
 }
 
+func SettingsURL(embed bool) string {
+	if embed {
+		return "/settings?embed=1"
+	}
+	return "/settings"
+}
+
+func SettingsFormAction(embed bool) string {
+	if embed {
+		return "/settings/ai?embed=1"
+	}
+	return "/settings/ai"
+}
+
 func DraftUploadURL(id int64) string {
 	return fmt.Sprintf("/assignments/%d/draft/upload", id)
 }
@@ -148,10 +162,6 @@ func DraftDiscussionUploadURL(id int64) string {
 
 func DraftRemoveFileURL(assignmentID, fileID int64) string {
 	return fmt.Sprintf("/assignments/%d/draft/files/%d/remove", assignmentID, fileID)
-}
-
-func DraftFileAcceptAttribute() string {
-	return ".txt,.md,.markdown,.docx,.pdf,.png,.jpg,.jpeg,.gif,.webp,.zip,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/png,image/jpeg,image/gif,image/webp,application/zip,application/x-zip-compressed"
 }
 
 func DraftFileInputID(id int64) string {

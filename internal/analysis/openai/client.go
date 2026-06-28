@@ -9,13 +9,13 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"rubrical/internal/analysis/schema"
+	"rubrical/internal/config"
 )
 
-const defaultModel = "gpt-4o-mini"
-const defaultBaseURL = "https://api.openai.com/v1"
+const defaultModel = config.DefaultOpenAIModel
+const defaultBaseURL = config.DefaultOpenAIBaseURL
 
 type Client struct {
 	apiKey     string
@@ -31,10 +31,10 @@ type Request struct {
 }
 
 type Attachment struct {
-	FileName string
+	Path     string
 	MimeType string
 	Data     []byte
-	Kind     string
+	Delivery string
 }
 
 func New(apiKey, model string) *Client {
@@ -47,7 +47,7 @@ func New(apiKey, model string) *Client {
 		model:   model,
 		baseURL: defaultBaseURL,
 		httpClient: &http.Client{
-			Timeout: 120 * time.Second,
+			Timeout: config.DefaultProviderTimeout,
 		},
 	}
 }
@@ -73,7 +73,7 @@ func (c *Client) CompleteJSON(ctx context.Context, req Request) ([]byte, error) 
 		Instructions: req.SystemPrompt,
 		Input:        buildResponsesInput(req),
 		Store:        false,
-		Temperature:  0.2,
+		Temperature:  config.DefaultOpenAITemperature,
 		Text: responsesTextConfig{
 			Format: responsesJSONSchemaFormat{
 				Type:   "json_schema",
@@ -123,11 +123,11 @@ func (c *Client) CompleteJSON(ctx context.Context, req Request) ([]byte, error) 
 func buildResponsesInput(req Request) []inputMessage {
 	parts := []inputContentPart{{Type: "input_text", Text: req.UserPrompt}}
 	for _, file := range req.Attachments {
-		switch file.Kind {
-		case "pdf":
+		switch file.Delivery {
+		case "pdf", "provider_file":
 			parts = append(parts, inputContentPart{
 				Type:     "input_file",
-				Filename: file.FileName,
+				Filename: file.Path,
 				FileData: dataURL(file.MimeType, file.Data),
 			})
 		case "image":

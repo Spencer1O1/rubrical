@@ -34,10 +34,10 @@ func (p *Provider) Analyze(ctx context.Context, req request.Request) (*schema.Mo
 	attachments := make([]Attachment, len(req.Attachments))
 	for i, file := range req.Attachments {
 		attachments[i] = Attachment{
-			FileName: file.FileName,
+			Path:     file.Path,
 			MimeType: file.MimeType,
 			Data:     file.Data,
-			Kind:     file.Kind,
+			Delivery: string(file.Delivery),
 		}
 	}
 

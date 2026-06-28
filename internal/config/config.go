@@ -8,15 +8,14 @@ import (
 	"time"
 )
 
-const DefaultDraftMaxFileBytes = 32 << 20
-
 type Config struct {
 	Addr                    string
 	DatabaseURL             string
 	DataDir                 string
-	DraftMaxFileBytes       int
-	DraftMaxFilesPerDraft   int
-	AIPromptMaxDraftChars   int
+	DraftMaxUploadBytes     int
+	DraftMaxUploadSlots     int
+	AnalysisMaxSubmissionTextChars int
+	AnalysisMaxTotalBytes          int
 	AIMaxRunsPerHour        int
 	AIMaxRunsPerDay         int
 	AIMinSecondsBetweenRuns int
@@ -30,26 +29,27 @@ func Load() (Config, error) {
 	loadEnvFiles()
 
 	cfg := Config{
-		Addr:                    envOrDefault("RUBRICAL_ADDR", ":8787"),
-		DatabaseURL:             envOrDefault("DATABASE_URL", "postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable"),
-		DataDir:                 envOrDefault("RUBRICAL_DATA_DIR", "./data"),
-		DraftMaxFileBytes:       envInt("DRAFT_MAX_FILE_BYTES", DefaultDraftMaxFileBytes),
-		DraftMaxFilesPerDraft:   envInt("DRAFT_MAX_FILES_PER_DRAFT", 20),
-		AIPromptMaxDraftChars:   envInt("AI_PROMPT_MAX_DRAFT_CHARS", 120_000),
-		AIMaxRunsPerHour:        envInt("AI_MAX_RUNS_PER_HOUR", 0),
-		AIMaxRunsPerDay:         envInt("AI_MAX_RUNS_PER_DAY", 0),
-		AIMinSecondsBetweenRuns: envInt("AI_MIN_SECONDS_BETWEEN_RUNS", 0),
+		Addr:                    envOrDefault("RUBRICAL_ADDR", DefaultAddr),
+		DatabaseURL:             envOrDefault("DATABASE_URL", DefaultDatabaseURL),
+		DataDir:                 envOrDefault("RUBRICAL_DATA_DIR", DefaultDataDir),
+		DraftMaxUploadBytes:     envInt("DRAFT_MAX_UPLOAD_BYTES", DefaultDraftMaxUploadBytes),
+		DraftMaxUploadSlots:     envInt("DRAFT_MAX_UPLOAD_SLOTS", DefaultDraftMaxUploadSlots),
+		AnalysisMaxSubmissionTextChars: envInt("ANALYSIS_MAX_SUBMISSION_TEXT_CHARS", DefaultAnalysisMaxSubmissionTextChars),
+		AnalysisMaxTotalBytes:          envInt("ANALYSIS_MAX_TOTAL_BYTES", DefaultAnalysisMaxTotalBytes),
+		AIMaxRunsPerHour:        envInt("AI_MAX_RUNS_PER_HOUR", DefaultAIMaxRunsPerHour),
+		AIMaxRunsPerDay:         envInt("AI_MAX_RUNS_PER_DAY", DefaultAIMaxRunsPerDay),
+		AIMinSecondsBetweenRuns: envInt("AI_MIN_SECONDS_BETWEEN_RUNS", DefaultAIMinSecondsBetweenRuns),
 		AIEnforceRateLimits:     envBool("AI_ENFORCE_RATE_LIMITS"),
 		StrictExtraction:        envBool("RUBRICAL_STRICT_EXTRACTION"),
 	}
 
-	retention, err := envDuration("POST_DUE_DATE_RETENTION_TIME", 7*24*time.Hour)
+	retention, err := envDuration("POST_DUE_DATE_RETENTION_TIME", DefaultPostDueDateRetention)
 	if err != nil {
 		return Config{}, fmt.Errorf("POST_DUE_DATE_RETENTION_TIME: %w", err)
 	}
 	cfg.PostDueDateRetention = retention
 
-	uploadRetention, err := envDuration("POST_UPLOAD_RETENTION_TIME", 30*24*time.Hour)
+	uploadRetention, err := envDuration("POST_UPLOAD_RETENTION_TIME", DefaultPostUploadRetention)
 	if err != nil {
 		return Config{}, fmt.Errorf("POST_UPLOAD_RETENTION_TIME: %w", err)
 	}

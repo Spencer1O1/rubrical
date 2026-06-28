@@ -15,6 +15,10 @@ func (h *Handlers) SettingsPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to load ai settings", http.StatusInternalServerError)
 		return
 	}
+	if r.URL.Query().Get("embed") == "1" {
+		pages.SettingsEmbed(settings, "").Render(r.Context(), w)
+		return
+	}
 	pages.SettingsPage(settings, "").Render(r.Context(), w)
 }
 
@@ -28,6 +32,8 @@ func (h *Handlers) GetAISettingsAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
+	embed := r.FormValue("embed") == "1" || r.URL.Query().Get("embed") == "1"
+
 	var incoming aisettings.Settings
 	if isJSONRequest(r) {
 		if err := json.NewDecoder(r.Body).Decode(&incoming); err != nil {
@@ -39,6 +45,7 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "invalid form", http.StatusBadRequest)
 			return
 		}
+		embed = embed || r.FormValue("embed") == "1"
 		incoming = aisettings.Settings{
 			Provider:        r.FormValue("provider"),
 			Model:           r.FormValue("model"),
@@ -57,7 +64,11 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 		if loadErr != nil {
 			current = incoming
 		}
-		pages.SettingsPage(current, err.Error()).Render(r.Context(), w)
+		if embed {
+			pages.SettingsEmbed(current, err.Error()).Render(r.Context(), w)
+		} else {
+			pages.SettingsPage(current, err.Error()).Render(r.Context(), w)
+		}
 		return
 	}
 
@@ -71,6 +82,10 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if embed {
+		http.Redirect(w, r, pages.SettingsURL(true), http.StatusSeeOther)
+		return
+	}
 	http.Redirect(w, r, "/settings", http.StatusSeeOther)
 }
 

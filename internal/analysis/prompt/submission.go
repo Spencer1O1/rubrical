@@ -5,57 +5,103 @@ import (
 	"strings"
 )
 
-func BuildSubmission(input Input, maxDraftChars int) string {
+func BuildSubmission(input Input, maxSubmissionTextChars int) string {
+	budget := newTextBudget(maxSubmissionTextChars)
 	var b strings.Builder
 	b.WriteString("\n\n## Student submission\n")
 
 	switch strings.TrimSpace(input.DraftMode) {
 	case "url":
-		writeURLSubmission(&b, input, maxDraftChars)
+		writeURLSubmission(&b, input, &budget)
 	case "file":
-		writeFileSubmission(&b, input, maxDraftChars)
+		writeFileSubmission(&b, input, &budget)
 	default:
-		writeTextSubmission(&b, input, maxDraftChars)
+		writeTextSubmission(&b, input, &budget)
 	}
+
+	writeFileContext(&b, input.Files, &budget)
 
 	return b.String()
 }
 
-func writeURLSubmission(b *strings.Builder, input Input, maxDraftChars int) {
+func writeURLSubmission(b *strings.Builder, input Input, budget *textBudget) {
 	url := strings.TrimSpace(input.DraftURL)
 	if url == "" {
 		return
 	}
 	fmt.Fprintf(b, "Submission type: website URL\nURL: %s\n", url)
-	if text := strings.TrimSpace(input.DraftText); text != "" {
+	if text := budget.take(input.DraftText); text != "" {
 		b.WriteString("\nFetched page text (may be incomplete):\n")
-		b.WriteString(truncate(text, maxDraftChars/4))
+		b.WriteString(text)
 		b.WriteByte('\n')
 	}
 }
 
-func writeFileSubmission(b *strings.Builder, input Input, maxDraftChars int) {
+func writeFileSubmission(b *strings.Builder, input Input, budget *textBudget) {
 	b.WriteString("Submission type: file upload\n")
-	if text := strings.TrimSpace(input.DraftText); text != "" {
-		b.WriteString("Extracted file text:\n")
-		b.WriteString(truncate(text, maxDraftChars))
+	if text := budget.take(input.DraftText); text != "" {
+		b.WriteString("Additional draft text:\n")
+		b.WriteString(text)
 		b.WriteByte('\n')
-	}
-	for _, file := range input.Files {
-		fmt.Fprintf(b, "- Attached file: %s (%s, %d bytes)\n", file.FileName, file.MimeType, len(file.Data))
 	}
 }
 
-func writeTextSubmission(b *strings.Builder, input Input, maxDraftChars int) {
+func writeTextSubmission(b *strings.Builder, input Input, budget *textBudget) {
 	b.WriteString("Submission type: text\n")
-	draft := strings.TrimSpace(input.DraftText)
-	if draft == "" {
+	draft := budget.take(input.DraftText)
+	if draft == "" && !hasFileContext(input.Files) {
 		b.WriteString("(empty)\n")
-	} else {
-		b.WriteString(truncate(draft, maxDraftChars))
+	} else if draft != "" {
+		b.WriteString(draft)
 		b.WriteByte('\n')
 	}
-	for _, file := range input.Files {
-		fmt.Fprintf(b, "- Additional attachment: %s (%s, %d bytes)\n", file.FileName, file.MimeType, len(file.Data))
+}
+
+func writeFileContext(b *strings.Builder, files FileContext, budget *textBudget) {
+	for _, manifest := range files.Manifests {
+		if tree := strings.TrimSpace(manifest.Tree); tree != "" {
+			b.WriteByte('\n')
+			b.WriteString(tree)
+		}
 	}
+
+	if len(files.InlineSections) > 0 {
+		b.WriteString("\n## Submission files (text)\n")
+		for _, section := range files.InlineSections {
+			text := budget.take(section.Text)
+			if text == "" {
+				continue
+			}
+			heading := section.Path
+			if section.Extracted {
+				heading += " (extracted text)"
+			}
+			fmt.Fprintf(b, "### %s\n", heading)
+			b.WriteString(text)
+			b.WriteByte('\n')
+		}
+	}
+
+	if len(files.AttachedFiles) > 0 {
+		b.WriteString("\n## Attached files (sent to model API)\n")
+		for _, file := range files.AttachedFiles {
+			fmt.Fprintf(b, "- %s (%s, %d bytes)\n", file.Path, file.MimeType, file.Bytes)
+		}
+	}
+
+	if len(files.SkippedNotes) > 0 {
+		b.WriteString("\n## Skipped files\n")
+		for _, note := range files.SkippedNotes {
+			b.WriteString("- ")
+			b.WriteString(note)
+			b.WriteByte('\n')
+		}
+	}
+}
+
+func hasFileContext(files FileContext) bool {
+	return len(files.Manifests) > 0 ||
+		len(files.InlineSections) > 0 ||
+		len(files.AttachedFiles) > 0 ||
+		len(files.SkippedNotes) > 0
 }

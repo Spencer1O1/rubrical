@@ -20,6 +20,7 @@ func (h *Handlers) AssignmentDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "assignment not found", http.StatusNotFound)
 		return
 	}
+	assignment.Embed = r.URL.Query().Get("embed") == "1"
 
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 

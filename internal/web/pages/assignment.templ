@@ -43,7 +43,9 @@ type AssignmentView struct {
 	DraftTextSaveURL          string
 	DraftSaveURL              string
 	StrictExtraction      bool
+	Embed                 bool
 	Analysis              AnalysisResultsView
+	FilePreview           FilePreviewView
 }
 
 // Assignment is the full revisit view from the dashboard.
@@ -93,6 +95,10 @@ templ assignmentEmbedContent(view AssignmentView) {
 			@assignmentMetaBar(view)
 			<p class="mt-3 text-sm text-stone-500">
 				You already have the assignment open in Canvas — expand below only if you need to double-check instructions or the rubric here.
+			</p>
+			<p class="mt-2 text-sm">
+				<a href={ SettingsURL(true) } class="font-medium text-indigo-700 hover:text-indigo-900">AI settings</a>
+				<span class="text-stone-500"> — provider, model, and API keys</span>
 			</p>
 		</div>
 		@assignmentInstructionsDetails(view)
@@ -291,6 +297,7 @@ templ DraftPanel(view AssignmentView) {
 				}
 				@draftStatusLine(view)
 			</div>
+			@draftFilePreview(view)
 			@draftAnalyzeBar(view)
 		}
 		<section id="analysis-results">
@@ -307,6 +314,7 @@ templ DiscussionDraftPanel(view AssignmentView) {
 		}
 		@draftStatusLine(view)
 	</div>
+	@draftFilePreview(view)
 	@draftAnalyzeBar(view)
 }
 
@@ -357,13 +365,12 @@ templ discussionDraftAttachmentPanel(view AssignmentView) {
 			</div>
 			<p class="text-xs text-stone-500">Choose a file below to replace the attachment.</p>
 		} else {
-			<p class="text-xs text-stone-500">Upload an optional attachment (.pdf, .docx, .zip, .jpg, .png, etc.)</p>
+			<p class="text-xs text-stone-500">Upload an optional attachment. Unsupported file types are skipped during analysis with a note.</p>
 		}
 		<input
 			id={ DraftDiscussionFileInputID(view.ID) }
 			type="file"
 			name="draft_file"
-			accept={ DraftFileAcceptAttribute() }
 			class="block w-full text-sm text-stone-700 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
 		/>
 	</form>
@@ -451,14 +458,13 @@ templ draftFilePanel(view AssignmentView) {
 			</div>
 			<p class="text-xs text-stone-500">Choose files to add more, or remove individual files above.</p>
 		} else {
-			<p class="text-xs text-stone-500">Upload your submission (.pdf, .docx, .zip, .jpg, .png, etc.)</p>
+			<p class="text-xs text-stone-500">Upload your submission. Unsupported file types are skipped during analysis with a note.</p>
 		}
 		<input
 			id={ DraftFileInputID(view.ID) }
 			type="file"
 			name="draft_file"
 			multiple
-			accept={ DraftFileAcceptAttribute() }
 			class="block w-full text-sm text-stone-700 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
 		/>
 	</form>
@@ -497,12 +503,52 @@ templ draftStatusLine(view AssignmentView) {
 	</div>
 }
 
+templ draftFilePreview(view AssignmentView) {
+	if view.FilePreview.HasPreview {
+		<div class="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-700">
+			<p class="font-medium text-stone-900">File processing preview ({ view.FilePreview.ProviderLabel })</p>
+			<p class="mt-1 text-xs text-stone-500">How your uploaded files will be sent when you analyze. Unsupported types are skipped with a note to the model.</p>
+			if len(view.FilePreview.AttachedPaths) > 0 {
+				<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Native attachments</p>
+				<ul class="mt-1 list-inside list-disc space-y-0.5 text-xs">
+					for _, path := range view.FilePreview.AttachedPaths {
+						<li class="truncate">{ path }</li>
+					}
+				</ul>
+			}
+			if len(view.FilePreview.InlinePaths) > 0 {
+				<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-stone-500">Inline text in prompt</p>
+				<ul class="mt-1 list-inside list-disc space-y-0.5 text-xs">
+					for _, path := range view.FilePreview.InlinePaths {
+						<li class="truncate">{ path }</li>
+					}
+				</ul>
+			}
+			if len(view.FilePreview.SkippedNotes) > 0 {
+				<p class="mt-3 text-xs font-semibold uppercase tracking-wide text-amber-700">Will be skipped</p>
+				<ul class="mt-1 list-inside list-disc space-y-0.5 text-xs text-amber-900">
+					for _, note := range view.FilePreview.SkippedNotes {
+						<li>{ note }</li>
+					}
+				</ul>
+			}
+		</div>
+	}
+}
+
 templ draftAnalyzeBar(view AssignmentView) {
+	<div id={ fmt.Sprintf("analyze-pending-%d", view.ID) } hidden>
+		@AnalysisPending()
+	</div>
 	<form
 		hx-post={ view.AnalyzeURL }
 		hx-target="#analysis-results"
 		hx-swap="innerHTML"
-		hx-indicator="#analysis-results"
+		hx-disabled-elt="find button[type='submit']"
+		data-analyze-pending-id={ fmt.Sprintf("analyze-pending-%d", view.ID) }
+		if view.Embed {
+			hx-vals='{"embed":"1"}'
+		}
 		if DraftModeAllowed(view.DraftMode, view.AllowedDraftModes) && view.DraftMode == "text" {
 			hx-include={ fmt.Sprintf("#%s", DraftTextareaID(view.ID)) }
 		}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"rubrical/internal/config"
 	"rubrical/internal/draftmode"
 	"rubrical/internal/importmeta"
 	"rubrical/internal/importpayload"
@@ -311,6 +312,18 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64) (pages.Assignmen
 	if h.analysis != nil {
 		if result, err := h.analysis.LoadLatestResult(ctx, id); err == nil && result != nil {
 			view.Analysis = pages.AnalysisResultsFromResult(result)
+		}
+	}
+
+	if h.analysis != nil && view.HasDraftFiles {
+		if preview, err := h.analysis.PreviewFiles(ctx, h.userID, id); err == nil {
+			provider := config.DefaultAIProvider
+			if h.aiSettings != nil {
+				if stored, err := h.aiSettings.Get(ctx, h.userID); err == nil && strings.TrimSpace(stored.Provider) != "" {
+					provider = stored.Provider
+				}
+			}
+			view.FilePreview = pages.FilePreviewFromResult(provider, preview)
 		}
 	}
 

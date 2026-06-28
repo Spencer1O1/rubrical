@@ -14,17 +14,22 @@ templ AnalysisEmpty() {
 	</div>
 }
 
-templ AnalysisError(message string) {
+templ AnalysisError(message string, settingsURL string) {
 	<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
 		<p class="font-medium">Analysis failed</p>
 		<p class="mt-1">{ message }</p>
+		if settingsURL != "" {
+			<p class="mt-3">
+				<a href={ settingsURL } class="font-medium text-indigo-800 underline hover:text-indigo-950">Open AI settings</a>
+			</p>
+		}
 	</div>
 }
 
 templ AnalysisPending() {
-	<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-5 text-sm text-indigo-900">
+	<div class="rounded-xl border border-indigo-200 bg-indigo-50 p-5 text-sm text-indigo-900 animate-pulse">
 		<p class="font-medium">Analyzing your draft…</p>
-		<p class="mt-1 text-indigo-800">This can take up to a minute for files and long drafts.</p>
+		<p class="mt-1 text-indigo-800">Processing files and calling your AI provider. This can take up to a minute.</p>
 	</div>
 }
 

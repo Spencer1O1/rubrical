@@ -9,14 +9,8 @@ type Input struct {
 	DraftMode      string
 	DraftText      string
 	DraftURL       string
-	Files          []File
+	Files          FileContext
 	Rubric         Rubric
-}
-
-type File struct {
-	FileName string
-	MimeType string
-	Data     []byte
 }
 
 type Rubric struct {

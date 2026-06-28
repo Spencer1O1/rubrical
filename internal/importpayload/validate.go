@@ -141,8 +141,8 @@ func validateDraftFiles(files []DraftFile, limits Limits) error {
 	if len(files) == 0 {
 		return nil
 	}
-	if len(files) > limits.MaxFiles {
-		return fmt.Errorf("draftFiles exceeds maximum count")
+	if len(files) > limits.MaxUploadSlots {
+		return fmt.Errorf("draftFiles exceeds maximum upload slots")
 	}
 
 	for i := range files {
@@ -173,7 +173,7 @@ func validateDraftFileEntry(index int, file *DraftFile, limits Limits) error {
 	if err != nil {
 		return fmt.Errorf("draftFiles[%d].contentBase64 is invalid", index)
 	}
-	if len(decoded) > limits.MaxFileBytes {
+	if len(decoded) > limits.MaxUploadBytes {
 		return fmt.Errorf("draftFiles[%d] exceeds maximum size", index)
 	}
 
@@ -186,8 +186,8 @@ func validateDraftFileRefs(refs []DraftFileRef, newFileCount int, limits Limits)
 	if len(refs) == 0 {
 		return nil
 	}
-	if newFileCount+len(refs) > limits.MaxFiles {
-		return fmt.Errorf("draft file count exceeds maximum")
+	if newFileCount+len(refs) > limits.MaxUploadSlots {
+		return fmt.Errorf("draft upload slot count exceeds maximum")
 	}
 
 	seen := map[int64]struct{}{}

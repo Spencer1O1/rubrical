@@ -2,22 +2,23 @@ package analysis
 
 import (
 	"encoding/json"
-	"strings"
 
+	"rubrical/internal/analysis/files"
 	"rubrical/internal/analysis/prompt"
 	"rubrical/internal/analysis/request"
 )
 
-func BuildProviderRequest(input Input, maxPromptDraftChars int) request.Request {
-	system, user := prompt.Build(promptInputFrom(input), maxPromptDraftChars)
+func BuildProviderRequest(input Input, fileResult files.ProcessResult, maxSubmissionTextChars int) request.Request {
+	fileContext := promptFileContextFrom(fileResult)
+	system, user := prompt.Build(promptInputFrom(input, fileContext), maxSubmissionTextChars)
 
 	var attachments []request.Attachment
-	for _, file := range input.Files {
+	for _, file := range fileResult.Attachments {
 		attachments = append(attachments, request.Attachment{
-			FileName: file.FileName,
+			Path:     file.Path.String(),
 			MimeType: file.MimeType,
 			Data:     file.Data,
-			Kind:     attachmentKind(file.MimeType, file.FileName),
+			Delivery: request.DeliveryKind(file.Delivery),
 		})
 	}
 
@@ -28,16 +29,31 @@ func BuildProviderRequest(input Input, maxPromptDraftChars int) request.Request 
 	}
 }
 
-func promptInputFrom(input Input) prompt.Input {
-	files := make([]prompt.File, len(input.Files))
-	for i, file := range input.Files {
-		files[i] = prompt.File{
-			FileName: file.FileName,
-			MimeType: file.MimeType,
-			Data:     file.Data,
-		}
+func promptFileContextFrom(result files.ProcessResult) prompt.FileContext {
+	ctx := prompt.FileContext{
+		SkippedNotes: append([]string(nil), result.SkippedNotes...),
 	}
+	for _, manifest := range result.Manifests {
+		ctx.Manifests = append(ctx.Manifests, prompt.FileManifest{Tree: manifest.Tree})
+	}
+	for _, section := range result.InlineSections {
+		ctx.InlineSections = append(ctx.InlineSections, prompt.FileInlineSection{
+			Path:      section.Path.String(),
+			Text:      section.Text,
+			Extracted: section.Extracted,
+		})
+	}
+	for _, file := range result.Attachments {
+		ctx.AttachedFiles = append(ctx.AttachedFiles, prompt.AttachedFileIndex{
+			Path:     file.Path.String(),
+			MimeType: file.MimeType,
+			Bytes:    len(file.Data),
+		})
+	}
+	return ctx
+}
 
+func promptInputFrom(input Input, fileContext prompt.FileContext) prompt.Input {
 	rows := make([]prompt.RubricRow, len(input.Rubric.Rows))
 	for i, row := range input.Rubric.Rows {
 		ratings := make([]prompt.RubricRating, len(row.Ratings))
@@ -65,23 +81,11 @@ func promptInputFrom(input Input) prompt.Input {
 		DraftMode:      input.DraftMode,
 		DraftText:      input.DraftText,
 		DraftURL:       input.DraftURL,
-		Files:          files,
+		Files:          fileContext,
 		Rubric: prompt.Rubric{
 			Header: append([]string(nil), input.Rubric.Header...),
 			Rows:   rows,
 		},
-	}
-}
-
-func attachmentKind(mimeType, fileName string) string {
-	mime := strings.ToLower(strings.TrimSpace(mimeType))
-	switch {
-	case mime == "application/pdf" || strings.HasSuffix(strings.ToLower(fileName), ".pdf"):
-		return "pdf"
-	case strings.HasPrefix(mime, "image/"):
-		return "image"
-	default:
-		return "text"
 	}
 }
 
@@ -92,9 +96,9 @@ type PromptLog struct {
 }
 
 type PromptFileLog struct {
-	FileName string `json:"fileName"`
+	Path     string `json:"path"`
 	MimeType string `json:"mimeType"`
-	Kind     string `json:"kind"`
+	Delivery string `json:"delivery"`
 	Bytes    int    `json:"bytes"`
 }
 
@@ -105,9 +109,9 @@ func EncodePromptLog(req request.Request) ([]byte, error) {
 	}
 	for _, file := range req.Attachments {
 		log.Files = append(log.Files, PromptFileLog{
-			FileName: file.FileName,
+			Path:     file.Path,
 			MimeType: file.MimeType,
-			Kind:     file.Kind,
+			Delivery: string(file.Delivery),
 			Bytes:    len(file.Data),
 		})
 	}

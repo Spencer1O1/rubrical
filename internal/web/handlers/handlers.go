@@ -34,13 +34,13 @@ func New(
 		strictExtraction: cfg.StrictExtraction,
 		analysis:         analysisSvc,
 		aiSettings:       aiSettings,
-		importLimits:     importpayload.LimitsFromConfig(cfg.DraftMaxFileBytes, cfg.DraftMaxFilesPerDraft),
+		importLimits:     importpayload.LimitsFromConfig(cfg.DraftMaxUploadBytes, cfg.DraftMaxUploadSlots),
 	}
 }
 
-func (h *Handlers) maxDraftFileBytes() int {
+func (h *Handlers) maxDraftUploadBytes() int {
 	if h == nil {
-		return importpayload.DefaultLimits().MaxFileBytes
+		return importpayload.DefaultLimits().MaxUploadBytes
 	}
-	return h.importLimits.MaxFileBytes
+	return h.importLimits.MaxUploadBytes
 }

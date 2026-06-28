@@ -9,13 +9,13 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"rubrical/internal/analysis/schema"
+	"rubrical/internal/config"
 )
 
-const defaultModel = "claude-sonnet-4-20250514"
-const defaultBaseURL = "https://api.anthropic.com/v1"
+const defaultModel = config.DefaultAnthropicModel
+const defaultBaseURL = config.DefaultAnthropicBaseURL
 const anthropicVersion = "2023-06-01"
 
 type Client struct {
@@ -32,10 +32,10 @@ type Request struct {
 }
 
 type Attachment struct {
-	FileName string
+	Path     string
 	MimeType string
 	Data     []byte
-	Kind     string
+	Delivery string
 }
 
 func New(apiKey, model string) *Client {
@@ -48,7 +48,7 @@ func New(apiKey, model string) *Client {
 		model:   model,
 		baseURL: defaultBaseURL,
 		httpClient: &http.Client{
-			Timeout: 120 * time.Second,
+			Timeout: config.DefaultProviderTimeout,
 		},
 	}
 }
@@ -69,7 +69,7 @@ func (c *Client) CompleteJSON(ctx context.Context, req Request) ([]byte, error) 
 	content := buildUserContent(req)
 	payload := messagesRequest{
 		Model:     c.Model(),
-		MaxTokens: 8192,
+		MaxTokens: config.DefaultAnthropicMaxTokens,
 		System:    req.SystemPrompt,
 		Messages: []message{
 			{Role: "user", Content: content},
@@ -147,7 +147,7 @@ func extractMessagesJSON(respBody []byte) ([]byte, error) {
 func buildUserContent(req Request) any {
 	parts := []contentBlock{{Type: "text", Text: req.UserPrompt}}
 	for _, file := range req.Attachments {
-		switch file.Kind {
+		switch file.Delivery {
 		case "image":
 			parts = append(parts, contentBlock{
 				Type: "image",
