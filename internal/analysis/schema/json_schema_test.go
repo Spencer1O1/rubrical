@@ -8,7 +8,7 @@ func TestJSONSchema_hasRequiredTopLevelFields(t *testing.T) {
 	if !ok {
 		t.Fatal("expected required array")
 	}
-	if len(required) != 6 {
+	if len(required) != 5 {
 		t.Fatalf("required fields = %d", len(required))
 	}
 	props, ok := schema["properties"].(map[string]any)
@@ -18,8 +18,11 @@ func TestJSONSchema_hasRequiredTopLevelFields(t *testing.T) {
 	if _, ok := props["criteria"]; !ok {
 		t.Fatal("expected criteria property")
 	}
-	if _, ok := props["predictedScore"]; ok {
-		t.Fatal("predictedScore should not be in model schema")
+	if _, ok := props["guidance"]; !ok {
+		t.Fatal("expected guidance property")
+	}
+	if _, ok := props["missingRequirements"]; ok {
+		t.Fatal("missingRequirements should not be in model schema")
 	}
 	criteria, ok := props["criteria"].(map[string]any)
 	if !ok {
@@ -33,8 +36,10 @@ func TestJSONSchema_hasRequiredTopLevelFields(t *testing.T) {
 	if !ok {
 		t.Fatal("expected criterion properties")
 	}
-	if _, ok := itemProps["criterionScore"]; !ok {
-		t.Fatal("expected criterionScore on criterion")
+	for _, key := range []string{"selectedRating", "bandPosition", "scoreRationale", "fulfilledRequirements", "unfulfilledRequirements"} {
+		if _, ok := itemProps[key]; !ok {
+			t.Fatalf("expected %s on criterion", key)
+		}
 	}
 	if _, ok := itemProps["status"]; ok {
 		t.Fatal("status should not be in model schema")

@@ -2,6 +2,23 @@ package prompt
 
 import "testing"
 
+func TestBuildSystem_scoringGuidance(t *testing.T) {
+	got := BuildSystem()
+	if !containsAll(got,
+		"scoreRationale",
+		"fulfilledRequirements",
+		"unfulfilledRequirements",
+		"bandPosition",
+		"guidance",
+		"passion for helping students reach their full potential",
+	) {
+		t.Fatalf("system prompt missing scoring guidance: %q", got)
+	}
+	if contains(got, "predictedScore") || contains(got, "Do NOT return") {
+		t.Fatalf("system prompt should not mention server-only fields: %q", got)
+	}
+}
+
 func TestBuild_includesRubricAndDraft(t *testing.T) {
 	system, user := Build(Input{
 		Title:        "Essay 1",

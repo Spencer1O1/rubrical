@@ -1,6 +1,9 @@
 package analysis
 
-import "time"
+import (
+	"rubrical/internal/analysis/schema"
+	"time"
+)
 
 type Input struct {
 	AssignmentID   int64
@@ -42,30 +45,31 @@ type RubricRating struct {
 }
 
 type Result struct {
-	RunID            int64
-	Provider         string
-	Model            string
-	OverallSummary   string
+	RunID             int64
+	Provider          string
+	Model             string
+	OverallSummary    string
 	PredictedScore    *float64
 	PredictedScoreMax *float64
-	Confidence       string
-	Feedback         []FeedbackItem
-	CompletedAt      time.Time
+	Confidence        string
+	Feedback          []FeedbackItem
+	CompletedAt       time.Time
 }
 
 type FeedbackItem struct {
-	ID              int64
-	Category        string
-	Severity        string
-	Title           string
-	Explanation     string
-	Evidence        string
-	Suggestion      string
-	CriterionStatus string
-	CriterionScore  *float64
-	SelectedRating  string
-	PredictedPoints *float64
-	MaxPoints       *float64
-	Status          string
-	SortOrder       int
+	ID                      int64
+	Category                string
+	Severity                string
+	Title                   string
+	Explanation             string
+	ScoreRationale          string
+	FulfilledRequirements   []schema.FulfilledRequirement
+	UnfulfilledRequirements []schema.UnfulfilledRequirement
+	CriterionStatus         string
+	CriterionScore          *float64
+	SelectedRating          string
+	PredictedPoints         *float64
+	MaxPoints               *float64
+	Status                  string
+	SortOrder               int
 }

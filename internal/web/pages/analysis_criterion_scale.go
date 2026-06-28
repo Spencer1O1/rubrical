@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"rubrical/internal/analysis"
+	"rubrical/internal/analysis/schema"
 )
 
 type RatingCellView struct {
@@ -19,18 +20,31 @@ type CriterionScaleView struct {
 	Ratings      []RatingCellView
 }
 
+type FulfilledRequirementView struct {
+	Requirement string
+	Evidence    string
+}
+
+type UnfulfilledRequirementView struct {
+	Requirement string
+	Severity    string
+	Explanation string
+	Suggestion  string
+}
+
 type AnalysisFeedbackView struct {
-	ID              int64
-	Category        string
-	Severity        string
-	Title           string
-	Explanation     string
-	Evidence        string
-	Suggestion      string
-	CriterionStatus string
-	SelectedRating  string
-	PointsLabel     string
-	Scale           CriterionScaleView
+	ID                      int64
+	Category                string
+	Severity                string
+	Title                   string
+	Explanation             string
+	ScoreRationale          string
+	FulfilledRequirements   []FulfilledRequirementView
+	UnfulfilledRequirements []UnfulfilledRequirementView
+	CriterionStatus         string
+	SelectedRating          string
+	PointsLabel             string
+	Scale                   CriterionScaleView
 }
 
 type AnalysisResultsView struct {
@@ -40,9 +54,8 @@ type AnalysisResultsView struct {
 	ConfidenceLabel     string
 	CompletedAtLabel    string
 	Criteria            []AnalysisFeedbackView
-	MissingRequirements []AnalysisFeedbackView
 	Strengths           []AnalysisFeedbackView
-	Suggestions         []AnalysisFeedbackView
+	Guidance            []AnalysisFeedbackView
 }
 
 func AnalysisResultsFromResult(result *analysis.Result, rubric analysis.RubricContext) AnalysisResultsView {
@@ -60,31 +73,54 @@ func AnalysisResultsFromResult(result *analysis.Result, rubric analysis.RubricCo
 
 	for _, item := range result.Feedback {
 		feedback := AnalysisFeedbackView{
-			ID:              item.ID,
-			Category:        item.Category,
-			Severity:        item.Severity,
-			Title:           item.Title,
-			Explanation:     item.Explanation,
-			Evidence:        item.Evidence,
-			Suggestion:      item.Suggestion,
-			CriterionStatus: item.CriterionStatus,
-			SelectedRating:  item.SelectedRating,
-			PointsLabel:     formatPointsLabel(item.PredictedPoints, item.MaxPoints),
+			ID:                      item.ID,
+			Category:                item.Category,
+			Severity:                item.Severity,
+			Title:                   item.Title,
+			Explanation:             item.Explanation,
+			ScoreRationale:          item.ScoreRationale,
+			FulfilledRequirements:   mapFulfilledRequirements(item.FulfilledRequirements),
+			UnfulfilledRequirements: mapUnfulfilledRequirements(item.UnfulfilledRequirements),
+			CriterionStatus:         item.CriterionStatus,
+			SelectedRating:          item.SelectedRating,
+			PointsLabel:             formatPointsLabel(item.PredictedPoints, item.MaxPoints),
 		}
 		switch item.Category {
 		case "criterion":
 			feedback.Scale = buildCriterionScale(rubric, item)
 			view.Criteria = append(view.Criteria, feedback)
-		case "missing_requirement":
-			view.MissingRequirements = append(view.MissingRequirements, feedback)
 		case "strength":
 			view.Strengths = append(view.Strengths, feedback)
-		case "suggestion":
-			view.Suggestions = append(view.Suggestions, feedback)
+		case "guidance":
+			view.Guidance = append(view.Guidance, feedback)
 		}
 	}
 
 	return view
+}
+
+func mapFulfilledRequirements(items []schema.FulfilledRequirement) []FulfilledRequirementView {
+	out := make([]FulfilledRequirementView, len(items))
+	for i, item := range items {
+		out[i] = FulfilledRequirementView{
+			Requirement: item.Requirement,
+			Evidence:    item.Evidence,
+		}
+	}
+	return out
+}
+
+func mapUnfulfilledRequirements(items []schema.UnfulfilledRequirement) []UnfulfilledRequirementView {
+	out := make([]UnfulfilledRequirementView, len(items))
+	for i, item := range items {
+		out[i] = UnfulfilledRequirementView{
+			Requirement: item.Requirement,
+			Severity:    item.Severity,
+			Explanation: item.Explanation,
+			Suggestion:  item.Suggestion,
+		}
+	}
+	return out
 }
 
 func buildCriterionScale(rubric analysis.RubricContext, item analysis.FeedbackItem) CriterionScaleView {

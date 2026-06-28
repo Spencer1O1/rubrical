@@ -281,41 +281,24 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 
 	for _, criterion := range out.Criteria {
 		item := FeedbackItem{
-			Category:        "criterion",
-			Severity:        schema.SeverityForStatus(criterion.Status),
-			Title:           criterion.CriterionName,
-			Explanation:     criterionStatusLabel(criterion.Status),
-			Evidence:        criterion.Evidence,
-			Suggestion:      criterion.Suggestion,
-			CriterionStatus: criterion.Status,
-			CriterionScore:  floatPtr(criterion.CriterionScore),
-			SelectedRating:  criterion.SelectedRating,
-			PredictedPoints: criterion.PredictedPoints,
-			MaxPoints:       criterion.MaxPoints,
-			Status:          "open",
-			SortOrder:       sortOrder,
+			Category:                "criterion",
+			Severity:                schema.SeverityForStatus(criterion.Status),
+			Title:                   criterion.CriterionName,
+			Explanation:             criterionStatusLabel(criterion.Status),
+			ScoreRationale:          criterion.ScoreRationale,
+			FulfilledRequirements:   append([]schema.FulfilledRequirement(nil), criterion.FulfilledRequirements...),
+			UnfulfilledRequirements: append([]schema.UnfulfilledRequirement(nil), criterion.UnfulfilledRequirements...),
+			CriterionStatus:         criterion.Status,
+			CriterionScore:          floatPtr(criterion.CriterionScore),
+			SelectedRating:          criterion.SelectedRating,
+			PredictedPoints:         criterion.PredictedPoints,
+			MaxPoints:               criterion.MaxPoints,
+			Status:                  "open",
+			SortOrder:               sortOrder,
 		}
 		sortOrder++
 		criterionID := matchCriterionID(criterionIDs, criterion.CriterionName)
 		id, err := insertFeedbackItem(ctx, tx, runID, criterionID, item)
-		if err != nil {
-			return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
-		}
-		item.ID = id
-		feedback = append(feedback, item)
-	}
-
-	for _, missing := range out.MissingRequirements {
-		item := FeedbackItem{
-			Category:    "missing_requirement",
-			Severity:    "warning",
-			Title:       missing,
-			Explanation: "This requirement appears to be missing or incomplete.",
-			Status:      "open",
-			SortOrder:   sortOrder,
-		}
-		sortOrder++
-		id, err := insertFeedbackItem(ctx, tx, runID, nil, item)
 		if err != nil {
 			return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
 		}
@@ -340,21 +323,21 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 		feedback = append(feedback, item)
 	}
 
-	for _, suggestion := range out.RevisionSuggestions {
-		item := FeedbackItem{
-			Category:    "suggestion",
-			Severity:    "info",
-			Title:       suggestion,
-			Status:      "open",
-			SortOrder:   sortOrder,
+	for _, item := range out.Guidance {
+		feedbackItem := FeedbackItem{
+			Category:  "guidance",
+			Severity:  "info",
+			Title:     item,
+			Status:    "open",
+			SortOrder: sortOrder,
 		}
 		sortOrder++
-		id, err := insertFeedbackItem(ctx, tx, runID, nil, item)
+		id, err := insertFeedbackItem(ctx, tx, runID, nil, feedbackItem)
 		if err != nil {
 			return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
 		}
-		item.ID = id
-		feedback = append(feedback, item)
+		feedbackItem.ID = id
+		feedback = append(feedback, feedbackItem)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -446,8 +429,9 @@ func loadLatestResult(ctx context.Context, pool *pgxpool.Pool, assignmentID int6
 
 func loadFeedbackItems(ctx context.Context, pool *pgxpool.Pool, runID int64) ([]FeedbackItem, error) {
 	rows, err := pool.Query(ctx, `
-		SELECT id, category, severity, title, COALESCE(explanation, ''), COALESCE(evidence, ''),
-			COALESCE(suggestion, ''), COALESCE(criterion_status, ''), criterion_score, predicted_points, max_points,
+		SELECT id, category, severity, title, COALESCE(explanation, ''), COALESCE(score_rationale, ''),
+			COALESCE(fulfilled_requirements, '[]'::jsonb), COALESCE(unfulfilled_requirements, '[]'::jsonb),
+			COALESCE(criterion_status, ''), criterion_score, predicted_points, max_points,
 			COALESCE(selected_rating, ''), status, sort_order
 		FROM feedback_items
 		WHERE analysis_run_id = $1
@@ -462,14 +446,16 @@ func loadFeedbackItems(ctx context.Context, pool *pgxpool.Pool, runID int64) ([]
 	for rows.Next() {
 		var item FeedbackItem
 		var estPoints, maxPoints, criterionScore pgtype.Numeric
+		var fulfilledJSON, unfulfilledJSON []byte
 		if err := rows.Scan(
 			&item.ID,
 			&item.Category,
 			&item.Severity,
 			&item.Title,
 			&item.Explanation,
-			&item.Evidence,
-			&item.Suggestion,
+			&item.ScoreRationale,
+			&fulfilledJSON,
+			&unfulfilledJSON,
 			&item.CriterionStatus,
 			&criterionScore,
 			&estPoints,
@@ -480,6 +466,16 @@ func loadFeedbackItems(ctx context.Context, pool *pgxpool.Pool, runID int64) ([]
 		); err != nil {
 			return nil, err
 		}
+		if len(fulfilledJSON) > 0 {
+			if err := json.Unmarshal(fulfilledJSON, &item.FulfilledRequirements); err != nil {
+				return nil, fmt.Errorf("decode fulfilled requirements: %w", err)
+			}
+		}
+		if len(unfulfilledJSON) > 0 {
+			if err := json.Unmarshal(unfulfilledJSON, &item.UnfulfilledRequirements); err != nil {
+				return nil, fmt.Errorf("decode unfulfilled requirements: %w", err)
+			}
+		}
 		item.CriterionScore = numericToFloatPtr(criterionScore)
 		item.PredictedPoints = numericToFloatPtr(estPoints)
 		item.MaxPoints = numericToFloatPtr(maxPoints)
@@ -489,8 +485,16 @@ func loadFeedbackItems(ctx context.Context, pool *pgxpool.Pool, runID int64) ([]
 }
 
 func insertFeedbackItem(ctx context.Context, tx pgx.Tx, runID int64, criterionID *int64, item FeedbackItem) (int64, error) {
+	fulfilledJSON, err := json.Marshal(item.FulfilledRequirements)
+	if err != nil {
+		return 0, fmt.Errorf("encode fulfilled requirements: %w", err)
+	}
+	unfulfilledJSON, err := json.Marshal(item.UnfulfilledRequirements)
+	if err != nil {
+		return 0, fmt.Errorf("encode unfulfilled requirements: %w", err)
+	}
 	var id int64
-	err := tx.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 		INSERT INTO feedback_items (
 			analysis_run_id,
 			rubric_criterion_id,
@@ -498,8 +502,9 @@ func insertFeedbackItem(ctx context.Context, tx pgx.Tx, runID int64, criterionID
 			severity,
 			title,
 			explanation,
-			evidence,
-			suggestion,
+			score_rationale,
+			fulfilled_requirements,
+			unfulfilled_requirements,
 			criterion_status,
 			criterion_score,
 			predicted_points,
@@ -507,9 +512,10 @@ func insertFeedbackItem(ctx context.Context, tx pgx.Tx, runID int64, criterionID
 			selected_rating,
 			status,
 			sort_order
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		RETURNING id
-	`, runID, criterionID, item.Category, item.Severity, item.Title, item.Explanation, item.Evidence, item.Suggestion,
+	`, runID, criterionID, item.Category, item.Severity, item.Title, item.Explanation, nullIfEmpty(item.ScoreRationale),
+		fulfilledJSON, unfulfilledJSON,
 		nullIfEmpty(item.CriterionStatus), item.CriterionScore, item.PredictedPoints, item.MaxPoints, nullIfEmpty(item.SelectedRating),
 		item.Status, item.SortOrder).Scan(&id)
 	return id, err

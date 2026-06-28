@@ -50,10 +50,11 @@ type FeedbackItem struct {
 	Category          string             `json:"category"`
 	Severity          string             `json:"severity"`
 	Title             string             `json:"title"`
-	Explanation       pgtype.Text        `json:"explanation"`
-	Evidence          pgtype.Text        `json:"evidence"`
-	Suggestion        pgtype.Text        `json:"suggestion"`
-	Status            string             `json:"status"`
+	Explanation             pgtype.Text        `json:"explanation"`
+	ScoreRationale          pgtype.Text        `json:"score_rationale"`
+	FulfilledRequirements   []byte             `json:"fulfilled_requirements"`
+	UnfulfilledRequirements []byte             `json:"unfulfilled_requirements"`
+	Status                  string             `json:"status"`
 	SortOrder         int32              `json:"sort_order"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`

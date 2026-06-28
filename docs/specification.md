@@ -1002,8 +1002,9 @@ Fields:
 * severity
 * title
 * explanation
-* evidence
-* suggestion
+* score_rationale
+* fulfilled_requirements
+* unfulfilled_requirements
 * criterion_status
 * criterion_score
 * predicted_points
@@ -1016,14 +1017,8 @@ Fields:
 
 Feedback categories may include:
 
-* missing_requirement
-* weak_evidence
-* rubric_gap
-* structure_issue
-* citation_issue
-* word_count_issue
 * strength
-* revision_suggestion
+* guidance
 
 Severity values may include:
 
@@ -1129,7 +1124,7 @@ If multiple candidates are found, the extension should choose the most likely ac
 
 ## 11. AI Analysis Output Schema
 
-The AI returns structured JSON with `criterionScore` (0–1) per rubric criterion. The server splits [0,1] into **equal slices per rating band** (4 bands → [0, 0.25), [0.25, 0.5), [0.5, 0.75), [0.75, 1]), maps each slice to the corresponding band's title and points (worst→best by rubric order), derives `status` (bottom band → not met, top → met, middle → partially met), and sums `predictedScore`. Point-only rows (no bands) use score × max points with fixed status thresholds. The AI must not return `predictedScore`, `selectedRating`, `predictedPoints`, or `status`.
+The AI returns structured JSON per criterion: `selectedRating`, `bandPosition` (0–100 within that band), `scoreRationale`, `fulfilledRequirements`, and `unfulfilledRequirements` (one suggestion per gap). Top-level `strengths` and `guidance` summarize cross-cutting feedback. The server maps band + bandPosition to a continuous 0–1 position for the gradient arrow, assigns that band's points, derives `status`, and sums `predictedScore`.
 
 Example conceptual output:
 
@@ -1139,26 +1134,31 @@ Example conceptual output:
   "confidence": "medium",
   "criteria": [
     {
-      "criterionName": "Addresses live performance vs digital formats",
-      "criterionScore": 0.9,
-      "evidence": "The draft discusses digital performance as a lossy approximation.",
-      "suggestion": "No major change needed."
-    },
-    {
       "criterionName": "Connects to course concepts",
-      "criterionScore": 0.55,
-      "evidence": "Small's musicking is discussed directly.",
-      "suggestion": "Add a clearer sentence connecting Pearson's ephemeral performance concept to silence, breath, or audience presence."
+      "selectedRating": "Full Credit",
+      "bandPosition": 18,
+      "scoreRationale": "The draft reaches the full-credit band because it directly discusses Small's concept of musicking, but it sits low in the band because the Pearson connection is only implied.",
+      "fulfilledRequirements": [
+        {
+          "requirement": "Discusses Small's idea of musicking",
+          "evidence": "The draft identifies performers, guests, relatives, and staff as contributors to the musical event."
+        }
+      ],
+      "unfulfilledRequirements": [
+        {
+          "requirement": "Connects Pearson's idea of ephemerality to the live event",
+          "severity": "medium",
+          "explanation": "The draft describes the atmosphere and audience laughter, but does not explicitly tie those details to Pearson's idea that performance exists only in the moment.",
+          "suggestion": "Add a direct sentence explaining how the pauses, laughter, and shared attention made the performance unrepeatable."
+        }
+      ]
     }
   ],
-  "missingRequirements": [],
   "strengths": [
-    "Specific personal example from Carmina Burana",
-    "Clear argument for why live performance persists"
+    "The draft uses a specific personal live-performance example."
   ],
-  "revisionSuggestions": [
-    "Make the Pearson connection more explicit.",
-    "Replace a few unnatural phrases if the tone should be more academic."
+  "guidance": [
+    "Make the Pearson connection explicit because it is the highest-impact missing course concept."
   ]
 }
 ```

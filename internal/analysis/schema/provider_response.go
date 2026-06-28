@@ -6,15 +6,28 @@ type ProviderResponse struct {
 	OverallSummary      string                `json:"overallSummary"`
 	Confidence          string                `json:"confidence"`
 	Criteria            []CriterionAssessment `json:"criteria"`
-	MissingRequirements []string              `json:"missingRequirements"`
 	Strengths           []string              `json:"strengths"`
-	RevisionSuggestions []string              `json:"revisionSuggestions"`
+	Guidance            []string              `json:"guidance"`
 }
 
 // CriterionAssessment is one rubric row as judged by the model.
 type CriterionAssessment struct {
-	CriterionName  string  `json:"criterionName"`
-	CriterionScore float64 `json:"criterionScore"`
-	Evidence       string  `json:"evidence"`
-	Suggestion     string  `json:"suggestion"`
+	CriterionName            string                   `json:"criterionName"`
+	SelectedRating           string                   `json:"selectedRating"`
+	BandPosition             int                      `json:"bandPosition"`
+	ScoreRationale           string                   `json:"scoreRationale"`
+	FulfilledRequirements    []FulfilledRequirement   `json:"fulfilledRequirements"`
+	UnfulfilledRequirements  []UnfulfilledRequirement `json:"unfulfilledRequirements"`
+}
+
+type FulfilledRequirement struct {
+	Requirement string `json:"requirement"`
+	Evidence    string `json:"evidence"`
+}
+
+type UnfulfilledRequirement struct {
+	Requirement string `json:"requirement"`
+	Severity    string `json:"severity"`
+	Explanation string `json:"explanation"`
+	Suggestion  string `json:"suggestion"`
 }

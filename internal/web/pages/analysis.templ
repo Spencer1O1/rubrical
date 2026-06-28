@@ -51,7 +51,7 @@ templ AnalysisResults(view AnalysisResultsView) {
 				</div>
 			</div>
 			<p class="mt-3 text-sm leading-relaxed text-stone-700">{ view.OverallSummary }</p>
-			<p class="mt-3 text-xs text-stone-500">Scores are AI predictions — mapped to rubric bands for points. Your instructor makes the final grade.</p>
+			<p class="mt-3 text-xs text-stone-500">Scores are AI predictions — mapped to rubric ratings. Your instructor makes the final grade.</p>
 		</div>
 
 		if len(view.Criteria) > 0 {
@@ -63,16 +63,12 @@ templ AnalysisResults(view AnalysisResultsView) {
 			</section>
 		}
 
-		if len(view.MissingRequirements) > 0 {
-			@analysisBulletSection("Missing requirements", "text-amber-900", view.MissingRequirements)
-		}
-
 		if len(view.Strengths) > 0 {
 			@analysisBulletSection("Strengths", "text-emerald-900", view.Strengths)
 		}
 
-		if len(view.Suggestions) > 0 {
-			@analysisBulletSection("Revision suggestions", "text-stone-900", view.Suggestions)
+		if len(view.Guidance) > 0 {
+			@analysisBulletSection("Guidance", "text-stone-900", view.Guidance)
 		}
 	</div>
 }
@@ -95,11 +91,40 @@ templ criterionResultCard(item AnalysisFeedbackView) {
 
 		@CriterionScale(item.Scale)
 
-		if item.Evidence != "" {
-			<p class="mt-3 text-sm text-stone-700"><span class="font-medium text-stone-800">Evidence:</span> { item.Evidence }</p>
+		if item.ScoreRationale != "" {
+			<p class="mt-3 text-sm text-stone-700"><span class="font-medium text-stone-800">Score rationale:</span> { item.ScoreRationale }</p>
 		}
-		if item.Suggestion != "" && !IsNoChangeSuggestion(item.Suggestion) {
-			<p class="mt-2 text-sm text-stone-700"><span class="font-medium text-stone-800">Suggestion:</span> { item.Suggestion }</p>
+		if len(item.FulfilledRequirements) > 0 {
+			<div class="mt-3 text-sm text-stone-700">
+				<p class="font-medium text-stone-800">Met requirements</p>
+				<ul class="mt-2 space-y-2">
+					for _, req := range item.FulfilledRequirements {
+						<li class="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+							<p class="font-medium text-emerald-950">{ req.Requirement }</p>
+							<p class="mt-1 text-emerald-900">{ req.Evidence }</p>
+						</li>
+					}
+				</ul>
+			</div>
+		}
+		if len(item.UnfulfilledRequirements) > 0 {
+			<div class="mt-3 text-sm text-stone-700">
+				<p class="font-medium text-stone-800">Gaps to address</p>
+				<ul class="mt-2 space-y-2">
+					for _, gap := range item.UnfulfilledRequirements {
+						<li class="rounded-md border border-stone-200 bg-stone-50 px-3 py-2">
+							<div class="flex flex-wrap items-center gap-2">
+								<p class="font-medium text-stone-900">{ gap.Requirement }</p>
+								<span class={ "rounded-full px-2 py-0.5 text-xs font-medium", gapSeverityClass(gap.Severity) }>
+									{ gapSeverityLabel(gap.Severity) }
+								</span>
+							</div>
+							<p class="mt-1 text-stone-700">{ gap.Explanation }</p>
+							<p class="mt-2 text-stone-800"><span class="font-medium">Suggestion:</span> { gap.Suggestion }</p>
+						</li>
+					}
+				</ul>
+			</div>
 		}
 	</article>
 }

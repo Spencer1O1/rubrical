@@ -8,16 +8,20 @@ type ScoredAnalysis struct {
 	PredictedScoreMax   *float64          `json:"predictedScoreMax,omitempty"`
 	Confidence          string            `json:"confidence"`
 	Criteria            []ScoredCriterion `json:"criteria"`
-	MissingRequirements []string          `json:"missingRequirements"`
 	Strengths           []string          `json:"strengths"`
-	RevisionSuggestions []string          `json:"revisionSuggestions"`
+	Guidance            []string          `json:"guidance"`
 }
 
 // ScoredCriterion combines model judgment with server-derived rubric fields.
+// CriterionScore is normalized 0–1 for display and persistence.
 type ScoredCriterion struct {
-	CriterionAssessment
-	Status          string   `json:"status"`
-	SelectedRating  string   `json:"selectedRating,omitempty"`
-	PredictedPoints *float64 `json:"predictedPoints,omitempty"`
-	MaxPoints       *float64 `json:"maxPoints,omitempty"`
+	CriterionName           string                   `json:"criterionName"`
+	CriterionScore          float64                  `json:"criterionScore"`
+	ScoreRationale          string                   `json:"scoreRationale"`
+	FulfilledRequirements   []FulfilledRequirement   `json:"fulfilledRequirements"`
+	UnfulfilledRequirements []UnfulfilledRequirement `json:"unfulfilledRequirements"`
+	Status                  string                   `json:"status"`
+	SelectedRating          string                   `json:"selectedRating,omitempty"`
+	PredictedPoints         *float64                 `json:"predictedPoints,omitempty"`
+	MaxPoints               *float64                 `json:"maxPoints,omitempty"`
 }

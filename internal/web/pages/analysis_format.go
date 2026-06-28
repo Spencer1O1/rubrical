@@ -78,9 +78,30 @@ func criterionStatusClass(status string) string {
 	}
 }
 
-func IsNoChangeSuggestion(s string) bool {
-	lower := strings.ToLower(strings.TrimSpace(s))
-	return lower == "no major change needed." || lower == "no change needed." || lower == "none."
+func gapSeverityLabel(severity string) string {
+	switch strings.ToLower(strings.TrimSpace(severity)) {
+	case "low":
+		return "Low impact"
+	case "medium":
+		return "Medium impact"
+	case "high":
+		return "High impact"
+	default:
+		return severity
+	}
+}
+
+func gapSeverityClass(severity string) string {
+	switch strings.ToLower(strings.TrimSpace(severity)) {
+	case "low":
+		return "bg-stone-100 text-stone-700"
+	case "medium":
+		return "bg-amber-100 text-amber-900"
+	case "high":
+		return "bg-red-100 text-red-800"
+	default:
+		return "bg-stone-100 text-stone-700"
+	}
 }
 
 func formatArrowStyle(percent float64) string {

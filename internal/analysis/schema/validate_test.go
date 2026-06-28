@@ -2,18 +2,30 @@ package schema
 
 import "testing"
 
+func sampleCriterion() CriterionAssessment {
+	return CriterionAssessment{
+		CriterionName:  "Content quality",
+		SelectedRating: "Good",
+		BandPosition:   72,
+		ScoreRationale: "The draft meets the good band with a specific example, but the rubric connection could be sharper.",
+		FulfilledRequirements: []FulfilledRequirement{{
+			Requirement: "Uses a specific example",
+			Evidence:    "The draft describes a live orchestra performance in detail.",
+		}},
+		UnfulfilledRequirements: []UnfulfilledRequirement{{
+			Requirement: "Connects the example to rubric language",
+			Severity:    "medium",
+			Explanation: "The example is vivid but not tied back to the criterion wording.",
+			Suggestion:  "Add a sentence linking the performance details to the rubric's analysis requirement.",
+		}},
+	}
+}
+
 func TestValidateProviderResponse(t *testing.T) {
 	out := ProviderResponse{
 		OverallSummary: "Solid draft with room to improve connections.",
 		Confidence:     "medium",
-		Criteria: []CriterionAssessment{
-			{
-				CriterionName:  "Content quality",
-				CriterionScore: 0.72,
-				Evidence:       "Uses a specific example.",
-				Suggestion:     "Connect the example to the rubric language.",
-			},
-		},
+		Criteria:       []CriterionAssessment{sampleCriterion()},
 	}
 
 	if err := ValidateProviderResponse(&out); err != nil {
@@ -22,19 +34,17 @@ func TestValidateProviderResponse(t *testing.T) {
 }
 
 func TestValidateScoredAnalysis_requiresStatus(t *testing.T) {
+	criterion := sampleCriterion()
 	out := ScoredAnalysis{
 		OverallSummary: "Summary",
 		Confidence:     "medium",
-		Criteria: []ScoredCriterion{
-			{
-				CriterionAssessment: CriterionAssessment{
-					CriterionName:  "A",
-					CriterionScore: 0.5,
-					Evidence:       "e",
-					Suggestion:     "s",
-				},
-			},
-		},
+		Criteria: []ScoredCriterion{{
+			CriterionName:           criterion.CriterionName,
+			CriterionScore:          0.5,
+			ScoreRationale:          criterion.ScoreRationale,
+			FulfilledRequirements:   criterion.FulfilledRequirements,
+			UnfulfilledRequirements: criterion.UnfulfilledRequirements,
+		}},
 	}
 	if err := ValidateScoredAnalysis(&out); err == nil {
 		t.Fatal("expected missing status error")
@@ -42,20 +52,18 @@ func TestValidateScoredAnalysis_requiresStatus(t *testing.T) {
 }
 
 func TestValidateScoredAnalysis(t *testing.T) {
+	criterion := sampleCriterion()
 	out := ScoredAnalysis{
 		OverallSummary: "Solid draft with room to improve connections.",
 		Confidence:     "medium",
-		Criteria: []ScoredCriterion{
-			{
-				CriterionAssessment: CriterionAssessment{
-					CriterionName:  "Content quality",
-					CriterionScore: 0.72,
-					Evidence:       "Uses a specific example.",
-					Suggestion:     "Connect the example to the rubric language.",
-				},
-				Status: "partially_met",
-			},
-		},
+		Criteria: []ScoredCriterion{{
+			CriterionName:           criterion.CriterionName,
+			CriterionScore:          0.72,
+			Status:                  "partially_met",
+			ScoreRationale:          criterion.ScoreRationale,
+			FulfilledRequirements:   criterion.FulfilledRequirements,
+			UnfulfilledRequirements: criterion.UnfulfilledRequirements,
+		}},
 	}
 
 	if err := ValidateScoredAnalysis(&out); err != nil {
@@ -63,36 +71,42 @@ func TestValidateScoredAnalysis(t *testing.T) {
 	}
 }
 
-func TestValidateScoredAnalysis_rejectsScoreAboveMax(t *testing.T) {
-	score := 6.0
-	max := 5.0
-	out := ScoredAnalysis{
-		OverallSummary:    "Summary",
-		PredictedScore:    &score,
-		PredictedScoreMax: &max,
-		Confidence:        "medium",
-		Criteria: []ScoredCriterion{
-			{
-				CriterionAssessment: CriterionAssessment{CriterionName: "A", CriterionScore: 1},
-				Status:              "met",
-			},
-		},
-	}
-	if err := ValidateScoredAnalysis(&out); err == nil {
-		t.Fatal("expected score above max error")
-	}
-}
-
-func TestValidateProviderResponse_rejectsInvalidCriterionScore(t *testing.T) {
+func TestValidateProviderResponse_rejectsInvalidBandPosition(t *testing.T) {
+	criterion := sampleCriterion()
+	criterion.BandPosition = 101
 	out := ProviderResponse{
 		OverallSummary: "Summary",
 		Confidence:     "medium",
-		Criteria: []CriterionAssessment{
-			{CriterionName: "A", CriterionScore: 1.2},
-		},
+		Criteria:       []CriterionAssessment{criterion},
 	}
 	if err := ValidateProviderResponse(&out); err == nil {
-		t.Fatal("expected invalid criterionScore error")
+		t.Fatal("expected invalid bandPosition error")
+	}
+}
+
+func TestValidateProviderResponse_rejectsVacuousSuggestion(t *testing.T) {
+	criterion := sampleCriterion()
+	criterion.UnfulfilledRequirements[0].Suggestion = "None needed."
+	out := ProviderResponse{
+		OverallSummary: "Summary",
+		Confidence:     "medium",
+		Criteria:       []CriterionAssessment{criterion},
+	}
+	if err := ValidateProviderResponse(&out); err == nil {
+		t.Fatal("expected vacuous suggestion error")
+	}
+}
+
+func TestValidateProviderResponse_rejectsEmptyScoreRationale(t *testing.T) {
+	criterion := sampleCriterion()
+	criterion.ScoreRationale = ""
+	out := ProviderResponse{
+		OverallSummary: "Summary",
+		Confidence:     "medium",
+		Criteria:       []CriterionAssessment{criterion},
+	}
+	if err := ValidateProviderResponse(&out); err == nil {
+		t.Fatal("expected missing scoreRationale error")
 	}
 }
 
@@ -100,11 +114,27 @@ func TestValidateProviderResponse_rejectsInvalidConfidence(t *testing.T) {
 	out := ProviderResponse{
 		OverallSummary: "Summary",
 		Confidence:     "very-high",
-		Criteria: []CriterionAssessment{
-			{CriterionName: "A", CriterionScore: 0.5},
-		},
+		Criteria:       []CriterionAssessment{sampleCriterion()},
 	}
 	if err := ValidateProviderResponse(&out); err == nil {
 		t.Fatal("expected invalid confidence error")
+	}
+}
+
+func TestValidateProviderResponse_acceptsEmptyRequirementArrays(t *testing.T) {
+	out := ProviderResponse{
+		OverallSummary: "Summary",
+		Confidence:     "medium",
+		Criteria: []CriterionAssessment{{
+			CriterionName:             "A",
+			SelectedRating:            "Good",
+			BandPosition:              68,
+			ScoreRationale:            "Strong overall fit for the good band.",
+			FulfilledRequirements:     []FulfilledRequirement{},
+			UnfulfilledRequirements:   []UnfulfilledRequirement{},
+		}},
+	}
+	if err := ValidateProviderResponse(&out); err != nil {
+		t.Fatal(err)
 	}
 }

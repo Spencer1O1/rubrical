@@ -32,9 +32,8 @@ func ApplyRubricScoring(resp *schema.ProviderResponse, rubric RubricContext) (*s
 	scored := &schema.ScoredAnalysis{
 		OverallSummary:      resp.OverallSummary,
 		Confidence:          resp.Confidence,
-		MissingRequirements: resp.MissingRequirements,
 		Strengths:           resp.Strengths,
-		RevisionSuggestions: resp.RevisionSuggestions,
+		Guidance:            resp.Guidance,
 		Criteria:            make([]schema.ScoredCriterion, len(resp.Criteria)),
 	}
 
@@ -46,8 +45,8 @@ func ApplyRubricScoring(resp *schema.ProviderResponse, rubric RubricContext) (*s
 		if !ok {
 			return nil, fmt.Errorf("criteria[%d] criterionName %q not found in rubric", i, assessment.CriterionName)
 		}
-		if assessment.CriterionScore < 0 || assessment.CriterionScore > 1 {
-			return nil, fmt.Errorf("criteria[%d] %q: criterionScore must be between 0 and 1", i, assessment.CriterionName)
+		if assessment.BandPosition < 0 || assessment.BandPosition > 100 {
+			return nil, fmt.Errorf("criteria[%d] %q: bandPosition must be between 0 and 100", i, assessment.CriterionName)
 		}
 
 		maxPts, ok := criterionMaxPoints(row)
@@ -55,13 +54,38 @@ func ApplyRubricScoring(resp *schema.ProviderResponse, rubric RubricContext) (*s
 			return nil, fmt.Errorf("criteria[%d] %q: could not determine max points from rubric", i, assessment.CriterionName)
 		}
 
-		title, pts := scoreToBand(row, assessment.CriterionScore)
+		bands := parseRatingBands(row.Ratings)
+		var score float64
+		var title string
+		var pts float64
+		var status string
+
+		if len(bands) == 0 {
+			score = float64(assessment.BandPosition) / 100
+			pts = roundScore(score * maxPts)
+			title = strings.TrimSpace(assessment.SelectedRating)
+			status = criterionStatusFromScore(score, 0)
+		} else {
+			bandIdx, band, err := matchRatingBand(row, assessment.SelectedRating)
+			if err != nil {
+				return nil, fmt.Errorf("criteria[%d] %q: %w", i, assessment.CriterionName, err)
+			}
+			score = continuousScore(bandIdx, len(bands), assessment.BandPosition)
+			title = strings.TrimSpace(band.rating.Title)
+			pts = band.points
+			status = criterionStatusFromBandIndex(bandIdx, len(bands))
+		}
+
 		scored.Criteria[i] = schema.ScoredCriterion{
-			CriterionAssessment: assessment,
-			Status:              criterionStatusFromScore(assessment.CriterionScore, len(parseRatingBands(row.Ratings))),
-			SelectedRating:      title,
-			MaxPoints:           floatPtr(maxPts),
-			PredictedPoints:     floatPtr(roundScore(pts)),
+			CriterionName:           assessment.CriterionName,
+			CriterionScore:          score,
+			ScoreRationale:          assessment.ScoreRationale,
+			FulfilledRequirements:   append([]schema.FulfilledRequirement(nil), assessment.FulfilledRequirements...),
+			UnfulfilledRequirements: append([]schema.UnfulfilledRequirement(nil), assessment.UnfulfilledRequirements...),
+			Status:                  status,
+			SelectedRating:          title,
+			MaxPoints:               floatPtr(maxPts),
+			PredictedPoints:         floatPtr(roundScore(pts)),
 		}
 		total += pts
 		totalMax += maxPts
@@ -72,16 +96,53 @@ func ApplyRubricScoring(resp *schema.ProviderResponse, rubric RubricContext) (*s
 	return scored, nil
 }
 
-// scoreToBand maps criterionScore to a rubric band using equal [0,1) slices per band (worst→best by points).
-// Point-only rows (no bands): linear score × maxPoints.
-func scoreToBand(row RubricRow, score float64) (title string, points float64) {
-	maxPts, _ := criterionMaxPoints(row)
-	bands := parseRatingBands(row.Ratings)
-	if len(bands) == 0 {
-		return "", roundScore(score * maxPts)
+// continuousScore maps band index + within-band score to [0,1] for the gradient arrow.
+// Band i occupies [i/n, (i+1)/n]; bandPosition 0–100 picks a point inside that slice.
+func continuousScore(bandIdx, bandCount, bandPosition int) float64 {
+	if bandCount <= 0 {
+		return float64(bandPosition) / 100
 	}
-	b := bands[bandIndex(score, len(bands))]
-	return strings.TrimSpace(b.rating.Title), b.points
+	return (float64(bandIdx) + float64(bandPosition)/100) / float64(bandCount)
+}
+
+func matchRatingBand(row RubricRow, title string) (int, scoredBand, error) {
+	bands := parseRatingBands(row.Ratings)
+	want := normalizeCriterionLabel(title)
+	for i, b := range bands {
+		if normalizeCriterionLabel(b.rating.Title) == want {
+			return i, b, nil
+		}
+	}
+	return 0, scoredBand{}, fmt.Errorf("selectedRating %q not found in rubric", strings.TrimSpace(title))
+}
+
+func criterionStatusFromBandIndex(bandIdx, bandCount int) string {
+	if bandCount <= 1 {
+		return "met"
+	}
+	switch {
+	case bandIdx == 0:
+		return "not_met"
+	case bandIdx == bandCount-1:
+		return "met"
+	default:
+		return "partially_met"
+	}
+}
+
+// criterionStatusFromScore for point-only rows without rating bands.
+func criterionStatusFromScore(score float64, bandCount int) string {
+	if bandCount >= 2 {
+		return criterionStatusFromBandIndex(bandIndex(score, bandCount), bandCount)
+	}
+	switch {
+	case score >= 0.75:
+		return "met"
+	case score >= 0.25:
+		return "partially_met"
+	default:
+		return "not_met"
+	}
 }
 
 // bandIndex: n bands divide [0,1] into n equal slices; band 0 = lowest points, band n-1 = highest.
@@ -97,31 +158,6 @@ func bandIndex(score float64, n int) int {
 		return n - 1
 	}
 	return idx
-}
-
-// criterionStatusFromScore maps score to met | partially_met | not_met.
-// Banded rows: bottom band → not_met, top band → met, middle → partially_met.
-// Point-only rows: [0, 0.25) not_met, [0.25, 0.75) partially_met, [0.75, 1] met.
-func criterionStatusFromScore(score float64, bandCount int) string {
-	if bandCount >= 2 {
-		idx := bandIndex(score, bandCount)
-		switch {
-		case idx == 0:
-			return "not_met"
-		case idx == bandCount-1:
-			return "met"
-		default:
-			return "partially_met"
-		}
-	}
-	switch {
-	case score >= 0.75:
-		return "met"
-	case score >= 0.25:
-		return "partially_met"
-	default:
-		return "not_met"
-	}
 }
 
 func parseRatingBands(ratings []RubricRating) []scoredBand {

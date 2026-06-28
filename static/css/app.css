@@ -1612,6 +1612,11 @@ input:where([type='file']):focus {
   color: rgb(6 78 59 / var(--tw-text-opacity, 1));
 }
 
+.text-emerald-950 {
+  --tw-text-opacity: 1;
+  color: rgb(2 44 34 / var(--tw-text-opacity, 1));
+}
+
 .underline {
   text-decoration-line: underline;
 }
