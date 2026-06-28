@@ -2,6 +2,7 @@ package urlfetch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -13,6 +14,8 @@ import (
 	"rubrical/internal/config"
 	"rubrical/internal/drafturl"
 )
+
+var ErrNonHTMLContent = errors.New("url fetch returned non-html content")
 
 const maxResponseBytes = 512 << 10
 
@@ -77,6 +80,10 @@ func (f *SafeFetcher) Fetch(ctx context.Context, rawURL string) (string, error) 
 		return "", fmt.Errorf("url fetch status %d", resp.StatusCode)
 	}
 
+	if !isHTMLContentType(resp.Header.Get("Content-Type")) {
+		return "", ErrNonHTMLContent
+	}
+
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
 	if err != nil {
 		return "", err
@@ -120,4 +127,12 @@ func htmlToText(rawHTML string) string {
 
 func collapseWhitespace(s string) string {
 	return strings.Join(strings.Fields(s), " ")
+}
+
+func isHTMLContentType(contentType string) bool {
+	contentType = strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+	if contentType == "" {
+		return true
+	}
+	return contentType == "text/html" || contentType == "application/xhtml+xml"
 }

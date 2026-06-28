@@ -39,7 +39,7 @@ func NewLimiter(pool *pgxpool.Pool, limits RateLimits) *Limiter {
 	return &Limiter{pool: pool, limits: limits}
 }
 
-func (l *Limiter) checkInTx(ctx context.Context, tx pgx.Tx, userID, assignmentID int64) error {
+func (l *Limiter) checkInFlightInTx(ctx context.Context, tx pgx.Tx, assignmentID int64) error {
 	if l == nil {
 		return nil
 	}
@@ -58,6 +58,13 @@ func (l *Limiter) checkInTx(ctx context.Context, tx pgx.Tx, userID, assignmentID
 	}
 	if inFlight {
 		return ErrAnalysisInFlight
+	}
+	return nil
+}
+
+func (l *Limiter) checkRateLimitsInTx(ctx context.Context, tx pgx.Tx, userID, assignmentID int64) error {
+	if l == nil {
+		return nil
 	}
 
 	if l.limits.MaxPerHour > 0 {
@@ -116,6 +123,12 @@ func (l *Limiter) checkInTx(ctx context.Context, tx pgx.Tx, userID, assignmentID
 			return fmt.Errorf("%w: wait %d seconds before analyzing again", ErrRateLimited, secs)
 		}
 	}
-
 	return nil
+}
+
+func (l *Limiter) checkInTx(ctx context.Context, tx pgx.Tx, userID, assignmentID int64) error {
+	if err := l.checkInFlightInTx(ctx, tx, assignmentID); err != nil {
+		return err
+	}
+	return l.checkRateLimitsInTx(ctx, tx, userID, assignmentID)
 }

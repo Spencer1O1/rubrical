@@ -10,6 +10,8 @@ const emptyLive: LiveImportCapture = {
   draftKind: "text",
   draftFiles: [],
   draftFileRefs: [],
+  stagedUploads: [],
+  fileImportWarnings: [],
   capturedAt: "2026-01-01T00:00:00.000Z",
 };
 
@@ -47,5 +49,28 @@ describe("buildImportPayload", () => {
       "online_upload",
     ]);
     expect(payload.metadata.submissionTypeText).toBe("Online Text Entry, Online Upload");
+  });
+
+  it("includes file import warnings from live capture", () => {
+    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+
+    const payload = buildImportPayload(
+      cachedAssignment({
+        dueDateText: "",
+        dueAt: "",
+        pointsPossibleText: "",
+        submissionTypeText: "",
+        allowedSubmissionTypes: [],
+        courseName: "",
+      }),
+      {
+        ...emptyLive,
+        fileImportWarnings: ["Could not import 1 uploaded file: resume.pdf"],
+      },
+    );
+
+    expect(payload.fileImportWarnings).toEqual([
+      "Could not import 1 uploaded file: resume.pdf",
+    ]);
   });
 });

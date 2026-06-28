@@ -63,7 +63,14 @@ templ EmbedLayout(title string, content templ.Component) {
 							String(event.detail?.xhr?.status ?? "") === "0";
 						target.innerHTML = isTimeout
 							? '<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><p class="font-medium">Analysis timed out</p><p class="mt-1">The request took longer than two minutes. Try again with a shorter draft or fewer files.</p></div>'
-							: '<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">Run Analyze to get rubric-aware feedback on your draft.</div>';
+							: (function () {
+								const body = event.detail?.xhr?.responseText?.trim() ?? "";
+								if (body && body.includes("analysis-error")) {
+									return body;
+								}
+								const message = body || "Analysis failed. Try again in a moment.";
+								return '<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><p class="font-medium">Analysis failed</p><p class="mt-1">' + message.replace(/</g, "&lt;") + '</p></div>';
+							})();
 						return;
 					}
 					const message =

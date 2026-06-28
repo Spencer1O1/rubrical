@@ -169,7 +169,7 @@ func validateAnalyzable(input Input) error {
 			return nil
 		}
 	default:
-		if strings.TrimSpace(input.DraftText) != "" || len(input.Files) > 0 {
+		if strings.TrimSpace(input.DraftText) != "" {
 			return nil
 		}
 	}
@@ -226,7 +226,7 @@ func (s *Service) loadInput(ctx context.Context, assignmentID, userID int64) (In
 		input.DraftURL = strings.TrimSpace(*draftURL)
 	}
 
-	if draftID > 0 {
+	if draftID > 0 && draftmode.Normalize(input.DraftMode) == draftmode.File {
 		files, err := s.loadDraftFiles(ctx, draftID)
 		if err != nil {
 			return Input{}, 0, err
@@ -236,6 +236,9 @@ func (s *Service) loadInput(ctx context.Context, assignmentID, userID int64) (In
 
 	if draftmode.Normalize(input.DraftMode) == draftmode.URL && input.DraftURL != "" {
 		fetched, err := s.urlFetch.Fetch(ctx, input.DraftURL)
+		if errors.Is(err, urlfetch.ErrNonHTMLContent) {
+			return Input{}, 0, err
+		}
 		if err != nil || strings.TrimSpace(fetched) == "" {
 			return Input{}, 0, ErrURLFetchFailed
 		}
@@ -265,6 +268,9 @@ func (s *Service) loadDraftFiles(ctx context.Context, draftID int64) ([]Submissi
 		}
 		data, err := s.files.Read(storageKey)
 		if err != nil {
+			if errors.Is(err, draftfiles.ErrNotFound) {
+				return nil, fmt.Errorf("draft file %q is missing from storage — re-upload it", name)
+			}
 			return nil, fmt.Errorf("read draft file %q: %w", name, err)
 		}
 		files = append(files, SubmissionFile{

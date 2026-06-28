@@ -19,7 +19,6 @@ import {
   resumeStagedFilesSync,
   startStagedFilesSync,
 } from "./staged-files";
-import { pingStagedFilesServiceWorker } from "./staged-files/messages";
 import { RUBRICAL_BUTTON_LABEL } from "./labels";
 import { openAssignmentModal } from "./modal";
 import { isRubricalDraftFilesChangedMessage } from "./panel-bridge";
@@ -27,6 +26,8 @@ import { onLongDescriptionScrapeSession } from "./scrape-session";
 
 const PLACE_DEBOUNCE_MS = 300;
 const PREFETCH_DEBOUNCE_MS = 500;
+
+let importInFlight = false;
 
 function syncButtonReadyState(): void {
   if (!isSupportedCanvasPage()) {
@@ -36,12 +37,16 @@ function syncButtonReadyState(): void {
 }
 
 async function handleRubricalClick(pageType: string): Promise<void> {
-  if (!isAssignmentContextReady(pageType)) {
+  if (!isAssignmentContextReady(pageType) || importInFlight) {
     return;
   }
 
+  importInFlight = true;
   try {
-    const { redirect, title, base } = await runImportOnClick(pageType);
+    const { redirect, title, base, draftWarning } = await runImportOnClick(pageType);
+    if (draftWarning) {
+      alert(`Rubrical imported your work, but:\n\n${draftWarning}`);
+    }
     if (redirect) {
       openAssignmentModal(base, redirect, title);
     }
@@ -54,6 +59,8 @@ async function handleRubricalClick(pageType: string): Promise<void> {
       ? ""
       : `\n\nIf this is a connection problem, the extension tried:\n${RUBRICAL_API_BASES.join("\n")}\n\nFrom WSL run: make server\nFrom Windows test: curl http://localhost:8787/health -UseBasicParsing`;
     alert(`Rubrical import failed.\n\n${detail}${serverHint}`);
+  } finally {
+    importInFlight = false;
   }
 }
 
@@ -129,10 +136,6 @@ function onRubricalPanelMessage(event: MessageEvent): void {
 function boot(): void {
   window.addEventListener("message", onRubricalPanelMessage);
 
-  if (isSupportedCanvasPage()) {
-    void pingStagedFilesServiceWorker();
-  }
-
   subscribeAssignmentContextReady(() => {
     syncButtonReadyState();
     if (!isSupportedCanvasPage() || !isAssignmentContextReady(detectPageType())) {
@@ -141,6 +144,8 @@ function boot(): void {
     void startStagedFilesSync();
   });
 
+  // Long rubric description scrape pauses file staging (hooks disconnect) so DOM
+  // mutations from the scraper do not race with upload capture; staging resumes after.
   onLongDescriptionScrapeSession((active) => {
     if (active) {
       pauseStagedFilesSync();

@@ -162,3 +162,15 @@ make templ
 Then **Developer: Reload Window** in Cursor. The code was always valid if `go build ./...` passed — this was an LSP false positive from a version mismatch.
 
 See [spec-checklist.md](./spec-checklist.md) and specification §14 for the MVP build order.
+
+## Browser extension
+
+| Piece | Role |
+|-------|------|
+| **Content script** (`content.ts`) | Canvas DOM hooks, file staging (IndexedDB on the Canvas origin), import capture, row indicators |
+| **Service worker** (`background.ts`) | Proxies Rubrical API `fetch` / multipart from Canvas pages (Private Network Access to localhost) |
+| **Popup** | Extension settings |
+
+**File staging:** when a student picks a file on Canvas, the content script stores the `Blob` in IndexedDB via `staged-files/store.ts` (Canvas site origin). After **Check with Rubrical**, assignment files upload via multipart (`POST …/draft/upload`), not inline JSON.
+
+Rebuild after extension changes: `make extension-build`, then reload the extension in the browser.

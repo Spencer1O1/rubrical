@@ -8,6 +8,7 @@ export {
   refreshStagedFileIndicators,
   afterSuccessfulImportClearStaging,
 } from "./sync";
+export { awaitStagingIdle } from "./assignment/hooks";
 export { reloadDraftManifest } from "./assignment/manifest-client";
 export { resolveAssignmentFilesForImport } from "./assignment/import-resolve";
 export {

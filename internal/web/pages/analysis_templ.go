@@ -94,7 +94,7 @@ func AnalysisError(message string, settingsURL string) templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis failed</p><p class=\"mt-1\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<div class=\"analysis-error rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis failed</p><p class=\"mt-1\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

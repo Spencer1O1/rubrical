@@ -4,21 +4,21 @@ import { resolveDiscussionAttachmentForImport } from "./import-resolve";
 
 const listStagedFiles = vi.fn();
 const getStagedFilePayload = vi.fn();
-const putStagedFile = vi.fn();
+const putStagedFileBytes = vi.fn();
 
-vi.mock("../messages", () => ({
+vi.mock("../store", () => ({
   listStagedFiles: (...args: unknown[]) => listStagedFiles(...args),
   getStagedFilePayload: (...args: unknown[]) => getStagedFilePayload(...args),
-  putStagedFile: (...args: unknown[]) => putStagedFile(...args),
+  putStagedFileBytes: (...args: unknown[]) => putStagedFileBytes(...args),
 }));
 
 describe("resolveDiscussionAttachmentForImport", () => {
   beforeEach(() => {
     listStagedFiles.mockReset();
     getStagedFilePayload.mockReset();
-    putStagedFile.mockReset();
+    putStagedFileBytes.mockReset();
     listStagedFiles.mockResolvedValue([]);
-    putStagedFile.mockResolvedValue(undefined);
+    putStagedFileBytes.mockResolvedValue(undefined);
   });
 
   it("returns null when the composer has no attachment", async () => {
@@ -67,7 +67,7 @@ describe("resolveDiscussionAttachmentForImport", () => {
 
     expect(file?.fileName).toBe("resume-1.pdf");
     expect(file?.canvasFileId).toBe("99543507");
-    expect(putStagedFile).toHaveBeenCalledOnce();
+    expect(putStagedFileBytes).toHaveBeenCalledOnce();
     fetchMock.mockRestore();
   });
 });

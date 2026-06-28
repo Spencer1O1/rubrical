@@ -1,5 +1,6 @@
 import { rubricalDebugLog } from "../debug";
-import { putStagedFile } from "../messages";
+import { putStagedFile } from "../store";
+import { isStagedFileTooLarge, stagedFileSizeError } from "../size-limits";
 
 export type PendingUpload = {
   assignmentKey: string;
@@ -34,10 +35,24 @@ export function clearPendingUploads(assignmentKey: string): void {
   }
 }
 
+export function countPendingUploads(assignmentKey: string): number {
+  return [...pendingByKey.values()].filter((entry) => entry.assignmentKey === assignmentKey).length;
+}
+
+export function getPendingUploads(assignmentKey: string): PendingUpload[] {
+  return [...pendingByKey.values()].filter((entry) => entry.assignmentKey === assignmentKey);
+}
+
 export async function flushPendingUploads(assignmentKey: string): Promise<number> {
   let stored = 0;
 
   for (const upload of [...pendingByKey.values()].filter((entry) => entry.assignmentKey === assignmentKey)) {
+    if (isStagedFileTooLarge(upload.bytes.byteLength)) {
+      forgetPendingUpload(upload);
+      console.warn("[rubrical]", stagedFileSizeError(upload.fileName, upload.bytes.byteLength));
+      continue;
+    }
+
     try {
       await putStagedFile({
         assignmentKey: upload.assignmentKey,
@@ -45,7 +60,7 @@ export async function flushPendingUploads(assignmentKey: string): Promise<number
         normalizedFileName: upload.normalizedFileName,
         stagedAt: upload.stagedAt,
         mimeType: upload.mimeType,
-        blobBytes: upload.bytes,
+        blob: new Blob([upload.bytes], { type: upload.mimeType || "application/octet-stream" }),
       });
       forgetPendingUpload(upload);
       stored++;

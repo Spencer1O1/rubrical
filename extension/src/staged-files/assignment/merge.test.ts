@@ -42,6 +42,26 @@ describe("mergeRowAccessibility", () => {
     expect(rows[0]?.state).toBe("inaccessible");
   });
 
+  it("marks staging_failed when a pending upload matches the row", () => {
+    const rows = mergeRowAccessibility(
+      [{ fileName: "a.pdf", normalizedFileName: "a.pdf", fileId: "1" }],
+      [],
+      [],
+      [
+        {
+          assignmentKey: "1:assignment:2",
+          fileName: "a.pdf",
+          normalizedFileName: "a.pdf",
+          stagedAt: "2026-06-26T12:00:00.000Z",
+          mimeType: "application/pdf",
+          bytes: new ArrayBuffer(4),
+        },
+      ],
+    );
+
+    expect(rows[0]?.state).toBe("staging_failed");
+  });
+
   it("matches saved manifest rows by canvas file id when Canvas renamed the file", () => {
     const rows = mergeRowAccessibility(
       [
@@ -152,5 +172,29 @@ describe("mergeRowAccessibility", () => {
     expect(rows[0]?.serverFileId).toBe(1);
     expect(rows[1]?.state).toBe("saved");
     expect(rows[1]?.serverFileId).toBe(2);
+  });
+
+  it("matches staged provisional files by row order when Canvas truncates the displayed name", () => {
+    const rows = mergeRowAccessibility(
+      [
+        {
+          fileName: "recording...25444.mp4",
+          normalizedFileName: "recording...25444.mp4",
+          fileId: "5218393",
+        },
+      ],
+      [
+        {
+          assignmentKey: "807136:assignment:5218393",
+          fileName: "Recording 2026-06-27 225444.mp4",
+          normalizedFileName: "recording 2026-06-27 225444.mp4",
+          stagedAt: "2026-06-28T06:31:11.493Z",
+          mimeType: "video/mp4",
+        },
+      ],
+      [],
+    );
+
+    expect(rows[0]?.state).toBe("staged");
   });
 });

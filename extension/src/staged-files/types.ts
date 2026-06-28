@@ -1,4 +1,4 @@
-export type Accessibility = "staged" | "saved" | "inaccessible";
+export type Accessibility = "staged" | "saved" | "inaccessible" | "staging_failed";
 
 export type StagedFileRecord = {
   assignmentKey: string;
@@ -41,41 +41,3 @@ export type ReconcilePromotion = {
   stagedAt: string;
   canvasFileId: string;
 };
-
-export type StagedFilesMessage =
-  | { type: "staged-files:ping" }
-  | {
-      type: "staged-files:put";
-      assignmentKey: string;
-      fileName: string;
-      normalizedFileName: string;
-      stagedAt: string;
-      mimeType: string;
-      canvasFileId?: string;
-      blobBase64: string;
-    }
-  | {
-      type: "staged-files:delete";
-      assignmentKey: string;
-      canvasFileId?: string;
-      normalizedFileName?: string;
-      stagedAt?: string;
-    }
-  | { type: "staged-files:list"; assignmentKey: string }
-  | { type: "staged-files:clear-assignment"; assignmentKey: string }
-  | {
-      type: "staged-files:reconcile";
-      assignmentKey: string;
-      promotions: ReconcilePromotion[];
-    }
-  | {
-      type: "staged-files:get-blob";
-      assignmentKey: string;
-      canvasFileId?: string;
-      normalizedFileName?: string;
-      stagedAt?: string;
-    };
-
-export type StagedFilesResponse =
-  | { ok: true; files?: StagedFileRecord[]; blobBase64?: string; mimeType?: string }
-  | { ok: false; error: string };

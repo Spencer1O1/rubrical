@@ -15,7 +15,7 @@ templ AnalysisEmpty() {
 }
 
 templ AnalysisError(message string, settingsURL string) {
-	<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
+	<div class="analysis-error rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
 		<p class="font-medium">Analysis failed</p>
 		<p class="mt-1">{ message }</p>
 		if settingsURL != "" {

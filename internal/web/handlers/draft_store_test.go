@@ -2,6 +2,8 @@ package handlers
 
 import (
 	"context"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -319,8 +321,50 @@ func TestSaveDraftFromImportClearsStoredFilesWhenCanvasCaptureEmpty(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count != 0 {
-		t.Fatalf("file count=%d, want 0 after empty canvas file import", count)
+	if count != 1 {
+		t.Fatalf("file count=%d, want 1 after empty canvas file import (files should be preserved)", count)
+	}
+}
+
+func TestAnalyzeDraftPersistsFormText(t *testing.T) {
+	ctx := context.Background()
+	pool := testPool(t)
+	h := testHandler(t, pool)
+
+	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/analyze-form-text")
+
+	if err := h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
+		Mode:       draftmode.Text,
+		Body:       "old body",
+		SourceType: "manual_paste",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, "/", strings.NewReader("draft=updated+from+analyze+form"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if err := req.ParseForm(); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := h.persistDraftFromAnalyzeForm(ctx, assignmentID, req, draftmode.Text); err != nil {
+		t.Fatal(err)
+	}
+
+	var body string
+	err = pool.QueryRow(ctx, `
+		SELECT body FROM submission_drafts
+		WHERE assignment_snapshot_id = $1 AND user_id = $2
+		ORDER BY updated_at DESC LIMIT 1
+	`, assignmentID, h.userID).Scan(&body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if body != "updated from analyze form" {
+		t.Fatalf("body=%q, want updated from analyze form", body)
 	}
 }
 

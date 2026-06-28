@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"rubrical/internal/draftmode"
 	"rubrical/internal/drafturl"
 	"rubrical/internal/submissiontypes"
+	"rubrical/internal/urlfetch"
 	"rubrical/internal/web/pages"
 )
 
@@ -22,6 +25,9 @@ func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseForm(); err != nil {
+		if renderHTMXDraftStatusError(w, r, id, "invalid form") {
+			return
+		}
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
@@ -29,6 +35,9 @@ func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 	body := strings.TrimSpace(r.FormValue("draft"))
 	if body == "" {
 		if err := h.clearDraftTextBody(r.Context(), id); err != nil {
+			if renderHTMXDraftStatusError(w, r, id, "failed to clear draft") {
+				return
+			}
 			http.Error(w, "failed to clear draft", http.StatusInternalServerError)
 			return
 		}
@@ -45,12 +54,14 @@ func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 		Body:       body,
 		SourceType: "manual_paste",
 	}); err != nil {
+		if renderHTMXDraftStatusError(w, r, id, "failed to save draft") {
+			return
+		}
 		http.Error(w, "failed to save draft", http.StatusInternalServerError)
 		return
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		w.Header().Set("HX-Trigger", "draft-saved")
 		wordCount := len(strings.Fields(body))
 		pages.DraftSaved(pages.DraftSavedMessage(wordCount, "")).Render(r.Context(), w)
 		return
@@ -88,6 +99,8 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var uploads []decodedDraftFile
+	var skippedEmpty int
+	canvasFileID := strings.TrimSpace(r.FormValue("canvas_file_id"))
 	for _, header := range headers {
 		file, err := header.Open()
 		if err != nil {
@@ -106,17 +119,23 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if len(data) == 0 {
+			skippedEmpty++
 			continue
 		}
 
 		uploads = append(uploads, decodedDraftFile{
-			FileName: header.Filename,
-			MimeType: header.Header.Get("Content-Type"),
-			Data:     data,
+			FileName:     header.Filename,
+			MimeType:     header.Header.Get("Content-Type"),
+			Data:         data,
+			CanvasFileID: canvasFileID,
 		})
 	}
 
 	if len(uploads) == 0 {
+		if skippedEmpty > 0 {
+			h.renderHTMXDraftPanelError(w, r, id, "all selected files are empty")
+			return
+		}
 		h.renderHTMXDraftPanelError(w, r, id, "draft_file is required")
 		return
 	}
@@ -130,7 +149,11 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 	for _, upload := range uploads {
 		uploadedNames = append(uploadedNames, upload.FileName)
 	}
-	h.renderDraftPanel(w, r, id, pages.DraftFilesSavedMessage(uploadedNames))
+	flash := pages.DraftFilesSavedMessage(uploadedNames)
+	if skippedEmpty > 0 {
+		flash = pages.DraftFilesSavedWithSkippedEmpty(flash, skippedEmpty)
+	}
+	h.renderDraftPanel(w, r, id, flash)
 }
 
 func (h *Handlers) UploadDiscussionAttachment(w http.ResponseWriter, r *http.Request) {
@@ -217,6 +240,9 @@ func (h *Handlers) SaveDraftURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := r.ParseForm(); err != nil {
+		if renderHTMXDraftStatusError(w, r, id, "invalid form") {
+			return
+		}
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
@@ -224,6 +250,9 @@ func (h *Handlers) SaveDraftURL(w http.ResponseWriter, r *http.Request) {
 	rawURL := strings.TrimSpace(r.FormValue("submission_url"))
 	if rawURL == "" {
 		if err := h.clearDraftURL(r.Context(), id); err != nil {
+			if renderHTMXDraftStatusError(w, r, id, "failed to clear url") {
+				return
+			}
 			http.Error(w, "failed to clear url", http.StatusInternalServerError)
 			return
 		}
@@ -237,8 +266,7 @@ func (h *Handlers) SaveDraftURL(w http.ResponseWriter, r *http.Request) {
 
 	normalizedURL, err := drafturl.ParseSubmissionURL(rawURL)
 	if err != nil {
-		if r.Header.Get("HX-Request") == "true" {
-			pages.DraftStatusError(err.Error()).Render(r.Context(), w)
+		if renderHTMXDraftStatusError(w, r, id, err.Error()) {
 			return
 		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -246,14 +274,23 @@ func (h *Handlers) SaveDraftURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if allowed, err := h.loadAllowedDraftModes(r.Context(), id); err != nil {
+		if renderHTMXDraftStatusError(w, r, id, "assignment not found") {
+			return
+		}
 		http.Error(w, "assignment not found", http.StatusNotFound)
 		return
 	} else if !submissiontypes.ModeAllowed(draftmode.URL, allowed) {
+		if renderHTMXDraftStatusError(w, r, id, "website url submission not allowed for this assignment") {
+			return
+		}
 		http.Error(w, "website url submission not allowed for this assignment", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.saveDraftURL(r.Context(), id, normalizedURL, "manual_website_url", false); err != nil {
+		if renderHTMXDraftStatusError(w, r, id, "failed to save url") {
+			return
+		}
 		http.Error(w, "failed to save url", http.StatusInternalServerError)
 		return
 	}
@@ -278,6 +315,8 @@ func (h *Handlers) SetDraftMode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	panelError := strings.TrimSpace(r.FormValue("draft_panel_error"))
+
 	mode := draftmode.Normalize(r.FormValue("mode"))
 	allowed, err := h.loadAllowedDraftModes(r.Context(), id)
 	if err != nil {
@@ -294,6 +333,10 @@ func (h *Handlers) SetDraftMode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if panelError != "" {
+		h.renderDraftPanelWithError(w, r, id, panelError)
+		return
+	}
 	h.renderDraftPanel(w, r, id, "")
 }
 
@@ -350,27 +393,13 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 		mode = draftmode.Normalize(pages.DefaultDraftMode(allowed))
 	}
 
-	switch mode {
-	case draftmode.Text:
-		if _, ok := r.PostForm["draft"]; ok && strings.TrimSpace(r.FormValue("draft")) == "" {
-			if err := h.clearDraftTextBody(r.Context(), id); err != nil {
-				http.Error(w, "failed to clear draft", http.StatusInternalServerError)
-				return
-			}
+	if err := h.persistDraftFromAnalyzeForm(r.Context(), id, r, mode); err != nil {
+		if draftmode.Normalize(mode) == draftmode.URL {
+			renderAnalysisValidationError(w, r.Context(), err.Error(), embed, id)
+			return
 		}
-	case draftmode.URL:
-		if _, ok := r.PostForm["submission_url"]; ok {
-			rawURL := strings.TrimSpace(r.FormValue("submission_url"))
-			if rawURL == "" {
-				if err := h.clearDraftURL(r.Context(), id); err != nil {
-					http.Error(w, "failed to clear url", http.StatusInternalServerError)
-					return
-				}
-			} else if _, err := drafturl.ParseSubmissionURL(rawURL); err != nil {
-				renderAnalysisValidationError(w, r.Context(), err.Error(), embed, id)
-				return
-			}
-		}
+		http.Error(w, "failed to save draft before analyze", http.StatusInternalServerError)
+		return
 	}
 
 	if h.analysis == nil {
@@ -387,6 +416,46 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 	h.renderAnalysisResults(w, r, pages.AnalysisResultsFromResult(&result))
 }
 
+func (h *Handlers) persistDraftFromAnalyzeForm(ctx context.Context, assignmentID int64, r *http.Request, mode string) error {
+	switch draftmode.Normalize(mode) {
+	case draftmode.Text:
+		if _, ok := r.PostForm["draft"]; !ok {
+			return nil
+		}
+		body := strings.TrimSpace(r.FormValue("draft"))
+		if body == "" {
+			return h.clearDraftTextBody(ctx, assignmentID)
+		}
+		return h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
+			Mode:       draftmode.Text,
+			Body:       body,
+			SourceType: "manual_paste",
+		})
+	case draftmode.URL:
+		if _, ok := r.PostForm["submission_url"]; !ok {
+			return nil
+		}
+		rawURL := strings.TrimSpace(r.FormValue("submission_url"))
+		if rawURL == "" {
+			return h.clearDraftURL(ctx, assignmentID)
+		}
+		normalizedURL, err := drafturl.ParseSubmissionURL(rawURL)
+		if err != nil {
+			return err
+		}
+		allowed, err := h.loadAllowedDraftModes(ctx, assignmentID)
+		if err != nil {
+			return err
+		}
+		if !submissiontypes.ModeAllowed(draftmode.URL, allowed) {
+			return fmt.Errorf("website url submission not allowed for this assignment")
+		}
+		return h.saveDraftURL(ctx, assignmentID, normalizedURL, "manual_website_url", false)
+	default:
+		return nil
+	}
+}
+
 func (h *Handlers) renderAnalysisError(w http.ResponseWriter, r *http.Request, err error) {
 	embed := requestEmbed(r)
 	assignmentID, _ := parseID(chi.URLParam(r, "id"))
@@ -400,6 +469,8 @@ func (h *Handlers) renderAnalysisError(w http.ResponseWriter, r *http.Request, e
 		message = "Add draft text, upload a file, or enter a submission URL before analyzing."
 	case errors.Is(err, analysis.ErrNoAnalyzableContent):
 		message = "No analyzable submission content. Upload supported files or add draft text."
+	case errors.Is(err, urlfetch.ErrNonHTMLContent):
+		message = "The submission URL must point to an HTML page."
 	case errors.Is(err, analysis.ErrURLFetchFailed):
 		message = "Could not fetch content from the submission URL. Check the link and try again."
 	case errors.Is(err, analysis.ErrAnalysisInFlight):
@@ -410,7 +481,12 @@ func (h *Handlers) renderAnalysisError(w http.ResponseWriter, r *http.Request, e
 		if errors.Is(err, analysis.ErrRateLimited) {
 			message = err.Error()
 		} else if trimmed := strings.TrimSpace(err.Error()); trimmed != "" {
-			message = trimmed
+			lower := strings.ToLower(trimmed)
+			if strings.Contains(lower, "openai api error") || strings.Contains(lower, "anthropic api error") {
+				message = "The AI provider returned an error. Check your API key and settings, then try again."
+			} else {
+				message = trimmed
+			}
 		}
 	}
 	pages.AnalysisError(message, settingsURL).Render(r.Context(), w)

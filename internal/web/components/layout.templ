@@ -53,7 +53,14 @@ templ Layout(title string, content templ.Component) {
 							String(event.detail?.xhr?.status ?? "") === "0";
 						target.innerHTML = isTimeout
 							? '<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><p class="font-medium">Analysis timed out</p><p class="mt-1">The request took longer than two minutes. Try again with a shorter draft or fewer files.</p></div>'
-							: '<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">Run Analyze to get rubric-aware feedback on your draft.</div>';
+							: (function () {
+								const body = event.detail?.xhr?.responseText?.trim() ?? "";
+								if (body && body.includes("analysis-error")) {
+									return body;
+								}
+								const message = body || "Analysis failed. Try again in a moment.";
+								return '<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><p class="font-medium">Analysis failed</p><p class="mt-1">' + message.replace(/</g, "&lt;") + '</p></div>';
+							})();
 						return;
 					}
 					const message =
@@ -86,6 +93,10 @@ templ StatusBadge(status string) {
 	switch status {
 		case "analyzed":
 			<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Analyzed</span>
+		case "analyzing":
+			<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20">Analyzing</span>
+		case "analysis_failed", "analysis failed":
+			<span class="inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20">Analysis failed</span>
 		case "draft added", "draft_added":
 			<span class="inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20">Draft added</span>
 		default:

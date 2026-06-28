@@ -8,6 +8,7 @@ import {
   resolveAssignmentFilesForImport,
   resolveDiscussionAttachmentForImport,
 } from "../staged-files";
+import { scanAssignmentUploadedRows } from "../staged-files/assignment/canvas-rows";
 import type { LiveImportCapture } from "./types";
 
 function extractVisibleText(): string {
@@ -20,6 +21,32 @@ function rubricalDebugEnabled(): boolean {
   } catch {
     return false;
   }
+}
+
+function lingeringFileWarning(draftKind: string): string[] {
+  if (draftKind !== "text" && draftKind !== "url") {
+    return [];
+  }
+
+  const uploadedRows = scanAssignmentUploadedRows();
+  if (uploadedRows.length === 0) {
+    return [];
+  }
+
+  const names = uploadedRows.map((row) => row.fileName).join(", ");
+  return [
+    `Canvas shows uploaded file${uploadedRows.length === 1 ? "" : "s"} (${names}) but the active submission type is ${draftKind === "url" ? "URL" : "text"} — those files will not be imported`,
+  ];
+}
+
+function skippedFileWarnings(skipped: string[]): string[] {
+  if (skipped.length === 0) {
+    return [];
+  }
+
+  return [
+    `Could not import ${skipped.length} uploaded file${skipped.length === 1 ? "" : "s"}: ${skipped.join(", ")}`,
+  ];
 }
 
 /** Extract draft, submission files, and other student-owned state at click time. */
@@ -45,6 +72,8 @@ export async function extractLiveImportCapture(): Promise<LiveImportCapture> {
       draftKind: "text",
       draftFiles,
       draftFileRefs: [],
+      stagedUploads: [],
+      fileImportWarnings: [],
       capturedAt: new Date().toISOString(),
     };
   }
@@ -55,12 +84,16 @@ export async function extractLiveImportCapture(): Promise<LiveImportCapture> {
   let draftUrl = "";
   let draftFiles: LiveImportCapture["draftFiles"] = [];
   let draftFileRefs: LiveImportCapture["draftFileRefs"] = [];
+  let stagedUploads: LiveImportCapture["stagedUploads"] = [];
+  const fileImportWarnings: string[] = [];
 
   switch (draftKind) {
     case "file": {
       const resolved = await resolveAssignmentFilesForImport();
       draftFiles = resolved.draftFiles;
       draftFileRefs = resolved.draftFileRefs;
+      stagedUploads = resolved.stagedUploads;
+      fileImportWarnings.push(...skippedFileWarnings(resolved.skipped));
       break;
     }
     case "url":
@@ -71,6 +104,8 @@ export async function extractLiveImportCapture(): Promise<LiveImportCapture> {
       break;
   }
 
+  fileImportWarnings.push(...lingeringFileWarning(draftKind));
+
   if (rubricalDebugEnabled()) {
     console.info("[rubrical] live capture", {
       draftKind,
@@ -79,6 +114,7 @@ export async function extractLiveImportCapture(): Promise<LiveImportCapture> {
       draftFileCount: draftFiles.length,
       draftFileRefCount: draftFileRefs.length,
       draftFileNames: draftFiles.map((file) => file.fileName),
+      fileImportWarnings,
     });
   }
 
@@ -89,6 +125,8 @@ export async function extractLiveImportCapture(): Promise<LiveImportCapture> {
     draftKind,
     draftFiles,
     draftFileRefs,
+    stagedUploads,
+    fileImportWarnings,
     capturedAt: new Date().toISOString(),
   };
 }

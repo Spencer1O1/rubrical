@@ -13,6 +13,7 @@ type Payload struct {
 	DraftKind        string         `json:"draftKind"`
 	DraftFiles       []DraftFile    `json:"draftFiles"`
 	DraftFileRefs    []DraftFileRef `json:"draftFileRefs"`
+	FileImportWarnings []string     `json:"fileImportWarnings,omitempty"`
 	Rubric           *RubricTable   `json:"rubric"`
 	Metadata         Metadata       `json:"metadata"`
 	CapturedAt       time.Time      `json:"capturedAt"`

@@ -5,7 +5,7 @@
  * - **Live capture** — draft text/files/URL read from Canvas at click time.
  * - **Click (`run`)** — merges context + capture → POST /imports.
  *
- * Draft file bytes live under `staged-files/` (IDB staging, resolve, delivery).
+ * Draft file bytes live under `staged-files/store.ts` (Canvas page-origin IDB; multipart after import).
  */
 
 export type {

@@ -19,15 +19,15 @@ func Process(provider string, submissionFiles []SubmissionInput, limits Limits) 
 
 	for _, raw := range leaves.files {
 		fileBytes := len(raw.Data)
-		if analyzedBytes+fileBytes > limits.MaxTotalBytes {
-			result.SkippedNotes = append(result.SkippedNotes,
-				fmt.Sprintf("%s: skipped (analysis byte budget)", raw.Path.String()))
-			continue
-		}
 
 		inline, attachment, skip := routeFile(provider, raw)
 		if skip != "" {
 			result.SkippedNotes = append(result.SkippedNotes, skip)
+			continue
+		}
+		if analyzedBytes+fileBytes > limits.MaxTotalBytes {
+			result.SkippedNotes = append(result.SkippedNotes,
+				fmt.Sprintf("%s: skipped (analysis byte budget)", raw.Path.String()))
 			continue
 		}
 		if inline != nil {

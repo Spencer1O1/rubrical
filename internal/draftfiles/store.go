@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+var ErrNotFound = errors.New("draft file not found on disk")
 
 type Store struct {
 	root string
@@ -79,7 +82,14 @@ func (s *Store) Read(storageKey string) ([]byte, error) {
 		return nil, fmt.Errorf("empty storage key")
 	}
 	fullPath := filepath.Join(s.root, filepath.FromSlash(storageKey))
-	return os.ReadFile(fullPath)
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return data, nil
 }
 
 func (s *Store) Path(storageKey string) string {

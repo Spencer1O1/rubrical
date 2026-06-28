@@ -3,7 +3,7 @@ import { queryAnchor } from "../../canvas/query";
 import { postRubricalMultipart } from "../../api-multipart";
 import type { DraftFile } from "../../import/types";
 import { arrayBufferToBase64, draftFileToBlob, mimeTypeForFileName } from "../file-bytes";
-import { getStagedFilePayload, listStagedFiles, putStagedFile } from "../messages";
+import { getStagedFilePayload, listStagedFiles, putStagedFileBytes } from "../store";
 import { stagingKeyFromPage, normalizeFileName } from "../staging-key";
 import {
   readDiscussionComposerAttachment,
@@ -18,7 +18,7 @@ async function readSessionStagedFile(
     return null;
   }
 
-  const staged = await listStagedFiles(stagingKey);
+  const staged = await listStagedFiles(stagingKey).catch(() => [] as Awaited<ReturnType<typeof listStagedFiles>>);
   if (staged.length === 0) {
     return null;
   }
@@ -81,7 +81,7 @@ async function downloadAndStageComposerAttachment(
   const stagingKey = stagingKeyFromPage();
   if (stagingKey) {
     const stagedAt = new Date().toISOString();
-    await putStagedFile({
+    await putStagedFileBytes({
       assignmentKey: stagingKey,
       fileName: attachment.fileName,
       normalizedFileName: normalizeFileName(attachment.fileName),

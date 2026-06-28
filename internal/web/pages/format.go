@@ -39,6 +39,17 @@ func DraftFilesSavedMessage(fileNames []string) string {
 	return fmt.Sprintf("Files saved: %s", strings.Join(names, ", "))
 }
 
+func DraftFilesSavedWithSkippedEmpty(baseMessage string, skippedCount int) string {
+	if skippedCount <= 0 {
+		return baseMessage
+	}
+	label := "file"
+	if skippedCount != 1 {
+		label = "files"
+	}
+	return fmt.Sprintf("%s Skipped %d empty %s.", baseMessage, skippedCount, label)
+}
+
 func ImportedAtLabel(t time.Time) string {
 	return t.Format("Jan 2, 2006 3:04 PM")
 }

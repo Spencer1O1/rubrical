@@ -6,16 +6,20 @@ import {
   resumeStagedFilesSync,
   uploadDiscussionAttachmentAfterImport,
 } from "../staged-files";
+import { awaitStagingIdle } from "../staged-files/assignment/hooks";
+import { stagingKeyFromPage } from "../staged-files/staging-key";
 import { syncStrictExtractionFromServer } from "../server-config";
 import { extractLiveImportCapture } from "./live-capture";
 import { buildImportPayload } from "./payload";
 import { getOrPrefetchAssignmentContext } from "./prefetch";
 import type { ImportPayload } from "./types";
+import { uploadAssignmentStagedFilesAfterImport } from "./upload-staged";
 
 export type ImportResult = {
   redirect?: string;
   title: string;
   base: string;
+  draftWarning?: string;
 };
 
 function assignmentIdFromImportResponse(data: {
@@ -51,6 +55,11 @@ export async function runImportOnClick(pageType: string): Promise<ImportResult> 
       await reloadDraftManifest();
     }
 
+    const stagingKey = stagingKeyFromPage();
+    if (stagingKey) {
+      await awaitStagingIdle(stagingKey);
+    }
+
     const [assignment, live] = await Promise.all([
       getOrPrefetchAssignmentContext(pageType),
       extractLiveImportCapture(),
@@ -58,14 +67,15 @@ export async function runImportOnClick(pageType: string): Promise<ImportResult> 
 
     const payload = buildImportPayload(assignment, live);
     const discussionAttachment = pageType === "discussion" ? (live.draftFiles[0] ?? null) : null;
-    const importBody =
-      pageType === "discussion" ? importPayloadWithoutFileBytes(payload) : payload;
+    const stagedUploads = pageType === "discussion" ? [] : live.stagedUploads;
+    const importBody = importPayloadWithoutFileBytes(payload);
 
-    const { data, base } = await postImport(importBody);
+    const { data, base, draftWarning } = await postImport(importBody);
 
     let resolvedBase = base;
+    const assignmentId = assignmentIdFromImportResponse(data);
+
     if (discussionAttachment) {
-      const assignmentId = assignmentIdFromImportResponse(data);
       if (!assignmentId) {
         throw new Error("import succeeded but assignment id was missing");
       }
@@ -73,6 +83,11 @@ export async function runImportOnClick(pageType: string): Promise<ImportResult> 
         assignmentId,
         discussionAttachment,
       );
+    } else if (stagedUploads.length > 0) {
+      if (!assignmentId) {
+        throw new Error("import succeeded but assignment id was missing");
+      }
+      resolvedBase = await uploadAssignmentStagedFilesAfterImport(assignmentId, stagedUploads);
     }
 
     await afterSuccessfulImportClearStaging();
@@ -81,6 +96,7 @@ export async function runImportOnClick(pageType: string): Promise<ImportResult> 
       redirect: data.redirect,
       title: assignment.title,
       base: resolvedBase,
+      draftWarning,
     };
   } finally {
     resumeStagedFilesSync();

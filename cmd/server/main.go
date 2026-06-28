@@ -37,6 +37,9 @@ func main() {
 		log.Fatalf("local user: %v", err)
 	}
 	log.Printf("using local dev user id=%d (%s)", userID, auth.LocalDevEmail)
+	if err := analysis.FailAllStaleRuns(bootstrap, database.Pool, analysis.DefaultStaleRunTTL); err != nil {
+		log.Printf("stale analysis run cleanup: %v", err)
+	}
 	if cfg.StrictExtraction {
 		log.Printf("RUBRICAL_STRICT_EXTRACTION=1 — extraction/display fallbacks disabled")
 	}

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"rubrical/internal/draftfiles"
 	"rubrical/internal/draftmode"
 	"rubrical/internal/importpayload"
 )
@@ -84,7 +85,7 @@ func (h *Handlers) saveDraftFromImport(ctx context.Context, assignmentID int64, 
 			return h.replaceDraftFilesMerged(ctx, assignmentID, merged, "canvas_file_upload", true)
 		}
 
-		return h.replaceDraftFilesMerged(ctx, assignmentID, nil, "canvas_file_upload", true)
+		return h.switchDraftModeOnly(ctx, assignmentID, draftmode.File)
 
 	case draftmode.URL:
 		if url != "" {
@@ -502,6 +503,17 @@ func (h *Handlers) loadDraftFiles(ctx context.Context, draftID int64) ([]draftFi
 		files = append(files, file)
 	}
 	return files, rows.Err()
+}
+
+func (h *Handlers) readDraftFileData(fileName, storageKey string) ([]byte, error) {
+	data, err := h.files.Read(storageKey)
+	if errors.Is(err, draftfiles.ErrNotFound) {
+		return nil, fmt.Errorf("draft file %q is missing from storage — re-upload it", fileName)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read draft file %q: %w", fileName, err)
+	}
+	return data, nil
 }
 
 func (h *Handlers) ensureLatestDraftRow(ctx context.Context, assignmentID int64, opts draftUpsertOptions) (*draftRow, error) {

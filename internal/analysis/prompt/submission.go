@@ -16,11 +16,10 @@ func BuildSubmission(input Input, maxSubmissionTextChars int) string {
 		writeURLSubmission(&b, input, &budget)
 	case "file":
 		writeFileSubmission(&b, input, &budget)
+		writeFileContext(&b, input.Files, &budget, &manifestCap)
 	default:
 		writeTextSubmission(&b, input, &budget)
 	}
-
-	writeFileContext(&b, input.Files, &budget, &manifestCap)
 
 	return b.String()
 }

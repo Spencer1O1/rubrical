@@ -39,17 +39,32 @@ func (h *Handlers) ImportAssignment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var draftWarning string
 	if err := h.saveDraftFromImport(r.Context(), id, payload); err != nil {
-		// Assignment context still imports when draft/file capture fails.
-		_ = err
+		draftWarning = err.Error()
+	}
+	for _, warning := range payload.FileImportWarnings {
+		warning = strings.TrimSpace(warning)
+		if warning == "" {
+			continue
+		}
+		if draftWarning == "" {
+			draftWarning = warning
+		} else {
+			draftWarning += "; " + warning
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]any{
+	response := map[string]any{
 		"id":       id,
 		"created":  created,
 		"redirect": fmt.Sprintf("/assignments/%d", id),
-	})
+	}
+	if draftWarning != "" {
+		response["draftWarning"] = draftWarning
+	}
+	_ = json.NewEncoder(w).Encode(response)
 }
 
 func (h *Handlers) upsertAssignmentSnapshot(ctx context.Context, payload importpayload.Payload) (int64, bool, error) {
@@ -319,7 +334,7 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64, embed bool) (pag
 		}
 	}
 
-	if h.analysis != nil && view.HasDraftFiles {
+	if h.analysis != nil && view.DraftMode == draftmode.File && view.HasDraftFiles {
 		if preview, err := h.analysis.PreviewFiles(ctx, h.userID, id); err != nil {
 			view.FilePreviewError = err.Error()
 		} else {

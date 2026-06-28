@@ -14,6 +14,45 @@ import (
 	"rubrical/internal/analysis/schema"
 )
 
+const DefaultStaleRunTTL = 10 * time.Minute
+
+func failStaleRuns(ctx context.Context, pool *pgxpool.Pool, assignmentID int64, ttl time.Duration) error {
+	if pool == nil || ttl <= 0 {
+		return nil
+	}
+	payload, _ := json.Marshal(map[string]string{
+		"error": "analysis timed out or did not finish",
+	})
+	_, err := pool.Exec(ctx, `
+		UPDATE analysis_runs
+		SET status = 'failed',
+		    raw_model_output = $3::jsonb,
+		    completed_at = NOW()
+		WHERE assignment_snapshot_id = $1
+		  AND status IN ('pending', 'running')
+		  AND created_at < NOW() - $2::interval
+	`, assignmentID, fmt.Sprintf("%f seconds", ttl.Seconds()), string(payload))
+	return err
+}
+
+func FailAllStaleRuns(ctx context.Context, pool *pgxpool.Pool, ttl time.Duration) error {
+	if pool == nil || ttl <= 0 {
+		return nil
+	}
+	payload, _ := json.Marshal(map[string]string{
+		"error": "analysis timed out or did not finish",
+	})
+	_, err := pool.Exec(ctx, `
+		UPDATE analysis_runs
+		SET status = 'failed',
+		    raw_model_output = $2::jsonb,
+		    completed_at = NOW()
+		WHERE status IN ('pending', 'running')
+		  AND created_at < NOW() - $1::interval
+	`, fmt.Sprintf("%f seconds", ttl.Seconds()), string(payload))
+	return err
+}
+
 func loadRubricContext(ctx context.Context, pool *pgxpool.Pool, assignmentID int64) (RubricContext, error) {
 	var rubric RubricContext
 
@@ -91,9 +130,18 @@ func (s *Service) beginRun(ctx context.Context, userID, assignmentID, draftID in
 	}
 	defer tx.Rollback(ctx)
 
-	if s.enforceLimits && s.limiter != nil {
-		if err := s.limiter.checkInTx(ctx, tx, userID, assignmentID); err != nil {
+	if err := failStaleRuns(ctx, s.pool, assignmentID, DefaultStaleRunTTL); err != nil {
+		return 0, err
+	}
+
+	if s.limiter != nil {
+		if err := s.limiter.checkInFlightInTx(ctx, tx, assignmentID); err != nil {
 			return 0, err
+		}
+		if s.enforceLimits {
+			if err := s.limiter.checkRateLimitsInTx(ctx, tx, userID, assignmentID); err != nil {
+				return 0, err
+			}
 		}
 	}
 

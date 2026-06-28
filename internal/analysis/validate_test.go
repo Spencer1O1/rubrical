@@ -12,7 +12,7 @@ func TestEncodePromptLog(t *testing.T) {
 	fileResult, err := files.Process("openai", []files.SubmissionInput{{
 		FileName: "essay.pdf",
 		MimeType: "application/pdf",
-		Data:     []byte("%PDF-1.4\nabc"),
+		Data:     []byte("%PDF-1.4\nabc\n%%EOF\n"),
 	}}, files.Limits{})
 	if err != nil {
 		t.Fatal(err)
@@ -26,7 +26,7 @@ func TestEncodePromptLog(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if len(decoded.Files) != 1 || decoded.Files[0].Bytes != len("%PDF-1.4\nabc") {
+	if len(decoded.Files) != 1 || decoded.Files[0].Bytes != len("%PDF-1.4\nabc\n%%EOF\n") {
 		t.Fatalf("unexpected log: %+v", decoded)
 	}
 	if decoded.Files[0].Path != "essay.pdf" {

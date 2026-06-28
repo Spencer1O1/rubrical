@@ -173,7 +173,7 @@ Spec §5.5 and §5.4 require: when Canvas has no readable draft (file upload, ex
 | Import assignment + rubric without draft | ✅ |
 | Capture Canvas **online text entry** draft | ✅ |
 | Read Canvas file input / attachment link | ✅ |
-| **IndexedDB staging on Canvas upload/delete** | ✅ |
+| **IndexedDB staging on Canvas upload/delete (page-origin, content script)** | ✅ |
 | **Page-load draft manifest GET (metadata)** | ✅ |
 | **Per-row re-upload indicator when file not readable** | ✅ |
 | **File-upload tab HTML fixtures** (`fixtures/`) | 🟡 capture in-progress + complete |

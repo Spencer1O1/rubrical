@@ -16,6 +16,7 @@ export function buildImportPayload(
     draftKind: live.draftKind,
     draftFiles: live.draftFiles,
     draftFileRefs: live.draftFileRefs,
+    fileImportWarnings: live.fileImportWarnings,
     rubric: assignment.rubric,
     metadata: mergeSubmissionTypesAtClick(assignment.metadata),
     capturedAt: live.capturedAt,

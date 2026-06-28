@@ -52,7 +52,7 @@ function uploadedTableRows(root: Element): AssignmentUploadedRow[] {
   const rows: AssignmentUploadedRow[] = [];
   for (const row of Array.from(table.querySelectorAll("tbody tr"))) {
     const fileName = fileNameFromRow(row);
-    if (!fileName || !fileName.includes(".")) {
+    if (!fileName) {
       continue;
     }
 

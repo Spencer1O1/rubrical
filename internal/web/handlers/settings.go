@@ -66,6 +66,10 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+		if r.Header.Get("HX-Request") == "true" {
+			pages.SettingsStatusError(err.Error()).Render(r.Context(), w)
+			return
+		}
 		current, loadErr := h.aiSettings.Get(r.Context(), h.userID)
 		if loadErr != nil {
 			current = incoming

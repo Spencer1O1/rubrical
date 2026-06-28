@@ -5,11 +5,17 @@ import indicatorCss from "./indicators.css";
 
 const STYLE_ID = "rubrical-staged-file-indicator-styles";
 const REUPLOAD_LABEL = "Re-upload for Rubrical";
+const STAGING_FAILED_LABEL = "Staging failed — re-select file";
+const SUBMITTED_VIEW_LABEL = "Start a New Attempt to re-upload for Rubrical";
 
 const fileNameSelectors = [
   ...upload.fileRow.fileName.a2,
   ...upload.fileRow.fileName.classic,
 ] as const;
+
+export type IndicatorOptions = {
+  fileHooksUnavailable?: boolean;
+};
 
 function ensureIndicatorStyles(): void {
   if (document.getElementById(STYLE_ID)) {
@@ -97,7 +103,11 @@ function removeIndicatorFromRow(row: HTMLTableRowElement): void {
   delete cell.dataset.rubricalFileIndicatorCell;
 }
 
-function decorateReuploadRow(row: HTMLTableRowElement): void {
+function decorateIndicatorRow(
+  row: HTMLTableRowElement,
+  state: "reupload" | "staging_failed" | "submitted_view",
+  label: string,
+): void {
   const cell = ensureIndicatorCell(row);
   const existing = cell.querySelector<HTMLSpanElement>("[data-rubrical-file-indicator]");
 
@@ -107,11 +117,11 @@ function decorateReuploadRow(row: HTMLTableRowElement): void {
     }
   }
 
-  if (row.dataset.rubricalFileState === "reupload" && existing?.textContent === REUPLOAD_LABEL) {
+  if (row.dataset.rubricalFileState === state && existing?.textContent === label) {
     return;
   }
 
-  row.dataset.rubricalFileState = "reupload";
+  row.dataset.rubricalFileState = state;
 
   let badge = existing;
   if (!badge) {
@@ -122,9 +132,9 @@ function decorateReuploadRow(row: HTMLTableRowElement): void {
 
   badge.className = "rubrical-file-indicator";
   badge.setAttribute("role", "status");
-  badge.title = REUPLOAD_LABEL;
-  badge.setAttribute("aria-label", REUPLOAD_LABEL);
-  badge.textContent = REUPLOAD_LABEL;
+  badge.title = label;
+  badge.setAttribute("aria-label", label);
+  badge.textContent = label;
 }
 
 function clearStaleIndicators(activeRows: Set<HTMLTableRowElement>): void {
@@ -137,12 +147,25 @@ function clearStaleIndicators(activeRows: Set<HTMLTableRowElement>): void {
   }
 }
 
-/** Show a re-upload warning only for rows Rubrical cannot read (no staged bytes, no server ref). */
-export function decorateUploadedFileIndicators(rows: RowAccessibility[]): void {
+/** Show warnings for rows Rubrical cannot read or failed to stage. */
+export function decorateUploadedFileIndicators(
+  rows: RowAccessibility[],
+  options: IndicatorOptions = {},
+): void {
   ensureIndicatorStyles();
 
   const activeRows = new Set<HTMLTableRowElement>();
   for (const rowState of rows) {
+    if (rowState.state === "staging_failed") {
+      const row = findRowElement(rowState.fileName, rowState.fileId);
+      if (!row) {
+        continue;
+      }
+      activeRows.add(row);
+      decorateIndicatorRow(row, "staging_failed", STAGING_FAILED_LABEL);
+      continue;
+    }
+
     if (rowState.state !== "inaccessible") {
       continue;
     }
@@ -152,7 +175,12 @@ export function decorateUploadedFileIndicators(rows: RowAccessibility[]): void {
       continue;
     }
     activeRows.add(row);
-    decorateReuploadRow(row);
+
+    if (options.fileHooksUnavailable) {
+      decorateIndicatorRow(row, "submitted_view", SUBMITTED_VIEW_LABEL);
+    } else {
+      decorateIndicatorRow(row, "reupload", REUPLOAD_LABEL);
+    }
   }
 
   clearStaleIndicators(activeRows);

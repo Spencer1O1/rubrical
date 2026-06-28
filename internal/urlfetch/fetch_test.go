@@ -2,6 +2,7 @@ package urlfetch
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -62,6 +63,23 @@ func TestSafeFetcherRejectsEmptyText(t *testing.T) {
 	if _, err := fetcher.Fetch(context.Background(), localhostFetchURL(server.URL)); err == nil {
 		t.Fatal("expected empty extracted text to fail")
 	} else if !strings.Contains(err.Error(), "no text content") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestSafeFetcherRejectsNonHTMLContentType(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"message":"not html"}`))
+	}))
+	defer server.Close()
+
+	fetcher := NewSafeFetcher(true)
+	_, err := fetcher.Fetch(context.Background(), localhostFetchURL(server.URL))
+	if err == nil {
+		t.Fatal("expected non-html content type to fail")
+	}
+	if !errors.Is(err, ErrNonHTMLContent) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }

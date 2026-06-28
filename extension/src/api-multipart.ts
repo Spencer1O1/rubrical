@@ -1,6 +1,7 @@
 import type { MultipartFetchResult, RubricalMultipartMessage } from "./api-multipart-types";
 import { executeRubricalMultipartDirect } from "./api-direct";
 import { arrayBufferToBase64 } from "./staged-files/file-bytes";
+import { RUBRICAL_API_BASES } from "./api-bases";
 
 export type { MultipartFetchResult } from "./api-multipart-types";
 
@@ -61,4 +62,42 @@ export async function postRubricalMultipart(
   }
 
   return executeRubricalMultipartDirect(message);
+}
+
+/** Upload from a Blob in the content script — no base64 over sendMessage. */
+export async function postRubricalMultipartBlob(
+  path: string,
+  blob: Blob,
+  fileName: string,
+  canvasFileId?: string,
+): Promise<MultipartFetchResult> {
+  let lastError = "Failed to fetch";
+
+  for (const base of RUBRICAL_API_BASES) {
+    try {
+      const formData = new FormData();
+      formData.append("draft_file", blob, fileName);
+      if (canvasFileId?.trim()) {
+        formData.append("canvas_file_id", canvasFileId.trim());
+      }
+
+      const response = await fetch(`${base}${path}`, {
+        method: "POST",
+        body: formData,
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const detail = await response.text();
+        lastError = `HTTP ${response.status}: ${detail.slice(0, 200)}`;
+        continue;
+      }
+
+      return { ok: true, base };
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : "Failed to fetch";
+    }
+  }
+
+  return { ok: false, error: lastError };
 }

@@ -1,5 +1,5 @@
 import { rubricalDebugLog } from "../debug";
-import { clearStagedAssignment, listStagedFiles, pingStagedFilesServiceWorker } from "../messages";
+import { clearStagedAssignment, listStagedFiles } from "../store";
 import { normalizeFileName, stagingKeyFromPage } from "../staging-key";
 import { accessibilitySignature } from "./accessibility-signature";
 import { scanAssignmentUploadedRows } from "./canvas-rows";
@@ -18,12 +18,13 @@ import {
   reloadDraftManifest,
 } from "./manifest-client";
 import { mergeRowAccessibility } from "./merge";
-import { clearPendingUploads } from "./pending-staging";
+import { clearPendingUploads, getPendingUploads } from "./pending-staging";
 
 let hooksHandle: { disconnect: () => void } | null = null;
 let hooksStagingKey: string | null = null;
 let bootedStagingKey: string | null = null;
 let lastPaintedSignature = "";
+let assignmentFileHooksUnavailable = false;
 
 function canvasRowsForMerge() {
   return scanAssignmentUploadedRows().map((row) => ({
@@ -32,15 +33,34 @@ function canvasRowsForMerge() {
   }));
 }
 
+async function listStagedFilesSafe(stagingKey: string) {
+  try {
+    return await listStagedFiles(stagingKey);
+  } catch {
+    return [];
+  }
+}
+
+async function maybeClearOrphanStaging(stagingKey: string): Promise<void> {
+  const canvasRows = canvasRowsForMerge();
+  const manifest = getDraftManifest();
+  if (canvasRows.length === 0 && manifest.files.length === 0) {
+    await clearStagedAssignment(stagingKey);
+    clearPendingUploads(stagingKey);
+    rubricalDebugLog("cleared orphan staged files", { stagingKey });
+  }
+}
+
 async function paintIndicators(): Promise<void> {
   const stagingKey = stagingKeyFromPage();
   if (!stagingKey) {
     return;
   }
 
-  const staged = await listStagedFiles(stagingKey);
+  const staged = await listStagedFilesSafe(stagingKey);
   const manifest = getDraftManifest();
-  const merged = mergeRowAccessibility(canvasRowsForMerge(), staged, manifest.files);
+  const pending = getPendingUploads(stagingKey);
+  const merged = mergeRowAccessibility(canvasRowsForMerge(), staged, manifest.files, pending);
   const signature = accessibilitySignature(merged);
 
   if (signature === lastPaintedSignature) {
@@ -48,12 +68,12 @@ async function paintIndicators(): Promise<void> {
   }
   lastPaintedSignature = signature;
 
-  if (merged.every((row) => row.state !== "inaccessible")) {
+  if (merged.every((row) => row.state !== "inaccessible" && row.state !== "staging_failed")) {
     clearUploadedFileIndicators();
     return;
   }
 
-  decorateUploadedFileIndicators(merged);
+  decorateUploadedFileIndicators(merged, { fileHooksUnavailable: assignmentFileHooksUnavailable });
 }
 
 function disconnectHooks(): void {
@@ -80,6 +100,7 @@ function ensureHooksConnected(stagingKey: string): void {
       void paintIndicators();
     },
   });
+  assignmentFileHooksUnavailable = hooksHandle === null;
   hooksStagingKey = stagingKey;
 }
 
@@ -87,6 +108,7 @@ export function disconnectAssignmentStaging(): void {
   disconnectHooks();
   bootedStagingKey = null;
   lastPaintedSignature = "";
+  assignmentFileHooksUnavailable = false;
 }
 
 export function clearAssignmentIndicators(): void {
@@ -95,12 +117,6 @@ export function clearAssignmentIndicators(): void {
 }
 
 export async function syncAssignmentStaging(stagingKey: string): Promise<void> {
-  const stagingReady = await pingStagedFilesServiceWorker();
-  if (!stagingReady) {
-    rubricalDebugLog("service worker unavailable", { stagingKey });
-    return;
-  }
-
   ensureHooksConnected(stagingKey);
   await retryPendingStaging(stagingKey);
 
@@ -111,6 +127,7 @@ export async function syncAssignmentStaging(stagingKey: string): Promise<void> {
     rubricalDebugLog("staged files sync started", { stagingKey });
   }
 
+  await maybeClearOrphanStaging(stagingKey);
   await paintIndicators();
 }
 
@@ -119,16 +136,11 @@ export async function refreshAssignmentIndicators(): Promise<void> {
     return;
   }
 
-  const manifest = await reloadDraftManifest();
-  const stagingKey = stagingKeyFromPage();
-  if (stagingKey && manifest.files.length === 0) {
-    await clearStagedAssignment(stagingKey);
-    clearPendingUploads(stagingKey);
-  }
+  await reloadDraftManifest();
   lastPaintedSignature = "";
   await paintIndicators();
   rubricalDebugLog("repainted draft file indicators", {
-    manifestFileCount: manifest.files.length,
+    manifestFileCount: getDraftManifest().files.length,
   });
 }
 

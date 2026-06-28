@@ -48,11 +48,11 @@ export async function getRubricalJson<T>(path: string): Promise<T | null> {
 
 export async function postImport(
   payload: unknown,
-): Promise<{ data: { id?: number; redirect?: string }; base: string }> {
-  const { data, base } = await fetchRubricalApi<{ id?: number; redirect?: string }>("/imports", {
+): Promise<{ data: { id?: number; redirect?: string }; base: string; draftWarning?: string }> {
+  const { data, base } = await fetchRubricalApi<{ id?: number; redirect?: string; draftWarning?: string }>("/imports", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  return { data, base };
+  return { data, base, draftWarning: data.draftWarning };
 }

@@ -19,6 +19,25 @@ describe("scanAssignmentUploadedRows", () => {
     installFixture(loadFixtureHtml("1-text-submission-tab.html"));
     expect(scanAssignmentUploadedRows()).toEqual([]);
   });
+
+  it("includes filenames without a file extension", () => {
+    installFixture("<div></div>");
+    const root = document.createElement("div");
+    root.innerHTML = `
+      <table data-testid="uploaded_files_table">
+        <tbody>
+          <tr>
+            <td><span title="README">README</span></td>
+            <td><button id="123" type="button">Delete</button></td>
+          </tr>
+        </tbody>
+      </table>
+    `;
+    document.body.append(root);
+    expect(scanAssignmentUploadedRows(root)).toEqual([
+      { fileName: "README", fileId: "123" },
+    ]);
+  });
 });
 
 describe("assignment upload indicators", () => {

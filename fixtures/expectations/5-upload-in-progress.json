@@ -1,0 +1,44 @@
+{
+  "anchors": {
+    "dueDate": true,
+    "gradeDisplay": true,
+    "submitButton": true,
+    "discussionReply": false,
+    "uploadTable": true,
+    "uploadPane": true,
+    "fileInputDrop": true,
+    "urlInput": false,
+    "submissionTypeSelector": true,
+    "onlineUpload": true,
+    "onlineUrl": false,
+    "onlineTextEntry": true,
+    "textEditor": false,
+    "textEntryTextarea": false,
+    "textEntryEditorIframe": false,
+    "criterionRatings": true,
+    "rubricAssessment": true,
+    "studentView": true,
+    "assignmentDescription": true,
+    "discussionEditSubmit": false,
+    "discussionPrompt": false,
+    "discussionDraftTextarea": false,
+    "discussionDraftEditorIframe": false,
+    "discussionRubricModal": false,
+    "discussionPreviewRubric": false,
+    "discussionRubricTray": false,
+    "discussionGradedRubricInfo": false,
+    "discussionPostMenuTrigger": false,
+    "discussionShowRubricMenuItem": false
+  },
+  "extraction": {
+    "dueAt": "2026-07-11T05:59:00.000Z",
+    "dueDateText": "Due: Fri Jul 10, 2026 11:59pm",
+    "pointsPossibleText": "30 Points Possible",
+    "allowedSubmissionTypes": [
+      "online_text_entry",
+      "online_upload"
+    ],
+    "submissionTypeText": "Online Text Entry, Online Upload"
+  },
+  "fixture": "5-upload-in-progress.html"
+}

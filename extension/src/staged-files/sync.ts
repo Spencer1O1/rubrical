@@ -8,11 +8,13 @@ import {
   syncAssignmentStaging,
 } from "./assignment/sync";
 import { scanAssignmentUploadedRows } from "./assignment/canvas-rows";
+import { clearPendingUploads } from "./assignment/pending-staging";
 import {
   disconnectDiscussionSession,
   discussionSessionActive,
   syncDiscussionSession,
 } from "./discussion/session";
+import { clearStagedAssignment } from "./store";
 import { stagingKeyFromPage } from "./staging-key";
 
 let syncPaused = false;
@@ -77,7 +79,13 @@ export async function refreshStagedFileIndicators(): Promise<void> {
 }
 
 export async function afterSuccessfulImportClearStaging(): Promise<void> {
+  const stagingKey = stagingKeyFromPage();
   if (isDiscussionPage()) {
+    if (stagingKey) {
+      await clearStagedAssignment(stagingKey);
+      clearPendingUploads(stagingKey);
+      disconnectDiscussionSession();
+    }
     return;
   }
 

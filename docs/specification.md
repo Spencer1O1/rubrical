@@ -431,7 +431,9 @@ Future draft input:
 
 ### 6.5.1 Canvas file staging (extension)
 
-For file-upload assignments, the extension stages submission file **bytes in extension-origin IndexedDB** when the student selects files on Canvas or removes them from the upload table. Staging is cleared after a successful **Check with Rubrical** click.
+For file-upload assignments, the extension stages submission file **bytes in Canvas page-origin IndexedDB** (content script context) when the student selects files on Canvas or removes them from the upload table. Staging is cleared after a successful **Check with Rubrical** click.
+
+Large files (up to **500 MB** per file, aligned with server draft upload limits) are written directly as `Blob` values — they are **not** sent through the extension service worker, which avoids Chrome message-size limits.
 
 **Staging keys:**
 
@@ -446,13 +448,17 @@ The extension merges manifest metadata with IndexedDB staging and Canvas `upload
 
 **Click import:**
 
-`POST /imports` remains the only path that writes submission file bytes to the server. Payload may include `draftFiles` (base64 for staged bytes) and `draftFileRefs` (existing server file ids for rows still on Canvas). **No Canvas file API download** — bytes come only from extension staging or server refs.
+`POST /imports` writes assignment context and draft metadata. For **assignment file uploads**, staged bytes are **not** inlined in the JSON body — after import succeeds, the extension uploads each staged file via **`POST /assignments/{id}/draft/upload`** (multipart) from the content script. **`draftFileRefs`** (existing server file ids for rows still on Canvas) may still appear in the import JSON. **No Canvas file API download** — bytes come only from extension staging or server refs.
+
+Discussion attachments may still carry inline base64 in `draftFiles` when small enough; large discussion attachments follow the same multipart path after import.
 
 **Hooks:** file input `change` (stage bytes); trash-button click (delete staged row); canvas file id assignment (reconcile provisional → id when trash `button[id]` appears). The extension does **not** read Canvas upload-progress UI — bytes from the file picker are sufficient until click.
 
 **Indicators:** re-upload × only when a row has no staged bytes and no server manifest match.
 
-**Multi-device:** server manifest enables reuse via `draftFileRefs` on another device after a prior click; IndexedDB staging is per-browser only.
+**Multi-device:** server manifest enables reuse via `draftFileRefs` on another device after a prior click; IndexedDB staging is per-browser and per-Canvas-origin only (clearing Canvas site data clears staged bytes).
+
+**Service worker role:** the extension service worker proxies Rubrical API `fetch` / multipart requests from Canvas pages (Private Network Access). It does **not** store staged submission files.
 
 ### 6.6 Rubric Normalization
 

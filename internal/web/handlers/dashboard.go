@@ -28,6 +28,8 @@ func (h *Handlers) listAssignments(ctx context.Context) ([]pages.AssignmentListI
 			COALESCE(a.submission_type, ''),
 			CASE
 				WHEN ar.status = 'completed' THEN 'analyzed'
+				WHEN ar.status IN ('pending', 'running') THEN 'analyzing'
+				WHEN ar.status = 'failed' THEN 'analysis_failed'
 				WHEN sd.id IS NOT NULL AND (
 					COALESCE(sd.body, '') <> '' OR
 					COALESCE(sd.submission_url, '') <> '' OR

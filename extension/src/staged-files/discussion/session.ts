@@ -5,15 +5,15 @@ import { normalizeFileName } from "../staging-key";
 import {
   clearStagedAssignment,
   listStagedFiles,
-  pingStagedFilesServiceWorker,
   putStagedFile,
   reconcileStagedFiles,
-} from "../messages";
+} from "../store";
 import type { StagedFileRecord } from "../types";
 import {
   forgetPendingUpload,
   rememberPendingUpload,
 } from "../assignment/pending-staging";
+import { isStagedFileTooLarge, stagedFileSizeError } from "../size-limits";
 import { readDiscussionComposerAttachment } from "./composer";
 
 let workChain: Promise<void> = Promise.resolve();
@@ -28,6 +28,11 @@ function enqueueWork(work: () => Promise<void>): Promise<void> {
 
 async function stagePickedFile(stagingKey: string, file: File): Promise<void> {
   const buffer = await file.arrayBuffer();
+  if (isStagedFileTooLarge(buffer.byteLength)) {
+    console.warn("[rubrical]", stagedFileSizeError(file.name, buffer.byteLength));
+    return;
+  }
+
   const stagedAt = new Date().toISOString();
   const record = {
     assignmentKey: stagingKey,
@@ -39,11 +44,23 @@ async function stagePickedFile(stagingKey: string, file: File): Promise<void> {
   };
 
   try {
-    await putStagedFile({ ...record, blobBytes: buffer });
+    await putStagedFile({
+      assignmentKey: stagingKey,
+      fileName: file.name,
+      normalizedFileName: record.normalizedFileName,
+      stagedAt,
+      mimeType: record.mimeType,
+      blob: file,
+    });
     forgetPendingUpload(record);
     rubricalDebugLog("staged file", { fileName: file.name, stagedAt });
   } catch (err) {
     rememberPendingUpload(record);
+    console.warn("[rubrical] staged file failed", {
+      fileName: file.name,
+      stagedAt,
+      error: err instanceof Error ? err.message : String(err),
+    });
     rubricalDebugLog("staged file failed", {
       fileName: file.name,
       stagedAt,
@@ -75,7 +92,7 @@ async function promoteStagedCanvasId(stagingKey: string): Promise<void> {
     return;
   }
 
-  const staged = await listStagedFiles(stagingKey);
+  const staged = await listStagedFiles(stagingKey).catch(() => [] as StagedFileRecord[]);
   const provisional = provisionalStagedFile(staged);
   if (!provisional) {
     return;
@@ -183,7 +200,7 @@ async function clearSessionIfComposerEmpty(stagingKey: string): Promise<void> {
     return;
   }
 
-  const staged = await listStagedFiles(stagingKey);
+  const staged = await listStagedFiles(stagingKey).catch(() => [] as StagedFileRecord[]);
   if (staged.length === 0) {
     return;
   }
@@ -194,12 +211,6 @@ async function clearSessionIfComposerEmpty(stagingKey: string): Promise<void> {
 
 /** Keep one composer attachment mirrored in IDB for the current discussion reply. */
 export async function syncDiscussionSession(stagingKey: string): Promise<void> {
-  const stagingReady = await pingStagedFilesServiceWorker();
-  if (!stagingReady) {
-    rubricalDebugLog("service worker unavailable", { stagingKey });
-    return;
-  }
-
   if (!hooksHandle) {
     connectSessionHooks(stagingKey);
   }

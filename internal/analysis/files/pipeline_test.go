@@ -24,7 +24,7 @@ func TestClassify_codeAndSkipTypes(t *testing.T) {
 func TestProcess_openAIMixedDelivery(t *testing.T) {
 	result, err := Process("openai", []SubmissionInput{
 		{FileName: "notes.txt", MimeType: "text/plain", Data: []byte("hello")},
-		{FileName: "spec.pdf", MimeType: "application/pdf", Data: []byte("%PDF-1.4\n")},
+		{FileName: "spec.pdf", MimeType: "application/pdf", Data: []byte("%PDF-1.4\n%%EOF\n")},
 	}, Limits{})
 	if err != nil {
 		t.Fatal(err)
@@ -48,6 +48,21 @@ func TestProcess_anthropicInlineCode(t *testing.T) {
 		t.Fatalf("inline sections = %d", len(result.InlineSections))
 	}
 	if result.InlineSections[0].Path.String() != "main.go" {
+		t.Fatalf("path = %q", result.InlineSections[0].Path)
+	}
+}
+
+func TestProcess_anthropicInlineCSV(t *testing.T) {
+	result, err := Process("anthropic", []SubmissionInput{
+		{FileName: "grades.csv", MimeType: "text/csv", Data: []byte("name,score\nAda,100\n")},
+	}, Limits{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.InlineSections) != 1 {
+		t.Fatalf("inline sections = %d, want 1 for CSV with Anthropic", len(result.InlineSections))
+	}
+	if result.InlineSections[0].Path.String() != "grades.csv" {
 		t.Fatalf("path = %q", result.InlineSections[0].Path)
 	}
 }
@@ -97,6 +112,31 @@ func TestProcess_zipPreservesPaths(t *testing.T) {
 	}
 	if len(result.Manifests) == 0 || !bytes.Contains([]byte(result.Manifests[0].Tree), []byte("src/")) {
 		t.Fatalf("manifest = %#v", result.Manifests)
+	}
+}
+
+func TestProcess_largeMediaSkippedAsTypeNotByteBudget(t *testing.T) {
+	big := make([]byte, 70<<20) // 70 MiB — over default 64 MiB analysis budget
+	copy(big, []byte{0, 0, 0})
+
+	result, err := Process("openai", []SubmissionInput{
+		{FileName: "Recording 2026-06-27 225444.mp4", MimeType: "video/mp4", Data: big},
+	}, Limits{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Attachments) != 0 || len(result.InlineSections) != 0 {
+		t.Fatalf("expected no analyzed content, got attachments=%d inline=%d",
+			len(result.Attachments), len(result.InlineSections))
+	}
+	if len(result.SkippedNotes) != 1 {
+		t.Fatalf("skipped = %#v", result.SkippedNotes)
+	}
+	if bytes.Contains([]byte(result.SkippedNotes[0]), []byte("byte budget")) {
+		t.Fatalf("skip note = %q, want media/type skip not byte budget", result.SkippedNotes[0])
+	}
+	if !bytes.Contains([]byte(result.SkippedNotes[0]), []byte("unsupported media")) {
+		t.Fatalf("skip note = %q", result.SkippedNotes[0])
 	}
 }
 

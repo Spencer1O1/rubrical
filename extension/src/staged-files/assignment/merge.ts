@@ -1,4 +1,5 @@
 import type { DraftManifestFile, RowAccessibility, StagedFileRecord } from "../types";
+import type { PendingUpload } from "./pending-staging";
 
 export type CanvasRowForMerge = {
   fileName: string;
@@ -117,13 +118,50 @@ function matchStagedRow(
   return chosen;
 }
 
+function matchPendingRow(
+  row: CanvasRowForMerge,
+  rowIndex: number,
+  canvasRows: CanvasRowForMerge[],
+  pending: PendingUpload[],
+  usedPending: Set<string>,
+): PendingUpload | null {
+  const sortedPending = [...pending].sort(
+    (left, right) => new Date(left.stagedAt).getTime() - new Date(right.stagedAt).getTime(),
+  );
+
+  const available = sortedPending.filter(
+    (entry) => !usedPending.has(`${entry.normalizedFileName}:${entry.stagedAt}`),
+  );
+
+  const nameCandidates = available.filter(
+    (entry) => entry.normalizedFileName === row.normalizedFileName,
+  );
+
+  let chosen: PendingUpload | undefined;
+  if (nameCandidates.length > 0) {
+    chosen = nameCandidates[sameNameOccurrenceIndex(canvasRows, rowIndex)];
+  }
+  if (!chosen) {
+    chosen = available[rowIndex];
+  }
+
+  if (!chosen) {
+    return null;
+  }
+
+  usedPending.add(`${chosen.normalizedFileName}:${chosen.stagedAt}`);
+  return chosen;
+}
+
 export function mergeRowAccessibility(
   canvasRows: CanvasRowForMerge[],
   staged: StagedFileRecord[],
   manifest: DraftManifestFile[],
+  pending: PendingUpload[] = [],
 ): RowAccessibility[] {
   const usedServerIds = new Set<number>();
   const usedProvisional = new Set<string>();
+  const usedPending = new Set<string>();
 
   return canvasRows.map((row, rowIndex) => {
     const stagedMatch = matchStagedRow(row, rowIndex, canvasRows, staged, usedProvisional);
@@ -136,6 +174,19 @@ export function mergeRowAccessibility(
           normalizedFileName: stagedMatch.normalizedFileName,
           stagedAt: stagedMatch.stagedAt,
           canvasFileId: stagedMatch.canvasFileId,
+        },
+      };
+    }
+
+    const pendingMatch = matchPendingRow(row, rowIndex, canvasRows, pending, usedPending);
+    if (pendingMatch) {
+      return {
+        fileName: row.fileName,
+        fileId: row.fileId,
+        state: "staging_failed" as const,
+        stagedRecord: {
+          normalizedFileName: pendingMatch.normalizedFileName,
+          stagedAt: pendingMatch.stagedAt,
         },
       };
     }

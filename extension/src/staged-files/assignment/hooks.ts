@@ -1,12 +1,7 @@
 import { upload, uploadFileInputSelector } from "../../canvas/anchors";
 import { queryAnchor } from "../../canvas/query";
 import { rubricalDebugLog } from "../debug";
-import {
-  deleteStagedFile,
-  listStagedFiles,
-  putStagedFile,
-  reconcileStagedFiles,
-} from "../messages";
+import { deleteStagedFile, listStagedFiles, putStagedFile, reconcileStagedFiles } from "../store";
 import { normalizeFileName } from "../staging-key";
 import { scanAssignmentUploadedRows } from "./canvas-rows";
 import { newCanvasIdAssignments, snapshotFileIds } from "./id-map-diff";
@@ -14,7 +9,9 @@ import {
   flushPendingUploads,
   forgetPendingUpload,
   rememberPendingUpload,
+  countPendingUploads,
 } from "./pending-staging";
+import { isStagedFileTooLarge, stagedFileSizeError } from "../size-limits";
 import { findReconcilePromotions } from "./reconcile";
 
 let workChain: Promise<void> = Promise.resolve();
@@ -65,25 +62,50 @@ function canAttachFileHooks(): boolean {
 
 async function stageCapturedFiles(stagingKey: string, uploads: CapturedUpload[]): Promise<void> {
   for (const upload of uploads) {
-    const buffer = await upload.file.arrayBuffer();
+    if (isStagedFileTooLarge(upload.file.size)) {
+      console.warn("[rubrical]", stagedFileSizeError(upload.file.name, upload.file.size));
+      continue;
+    }
+
     const record = {
       assignmentKey: stagingKey,
       fileName: upload.file.name,
       normalizedFileName: upload.normalizedFileName,
       stagedAt: upload.stagedAt,
       mimeType: upload.file.type || "application/octet-stream",
-      bytes: buffer,
+      bytes: null as ArrayBuffer | null,
     };
 
     try {
-      await putStagedFile({ ...record, blobBytes: buffer });
-      forgetPendingUpload(record);
+      await putStagedFile({
+        assignmentKey: stagingKey,
+        fileName: upload.file.name,
+        normalizedFileName: upload.normalizedFileName,
+        stagedAt: upload.stagedAt,
+        mimeType: upload.file.type || "application/octet-stream",
+        blob: upload.file,
+      });
+      forgetPendingUpload({
+        assignmentKey: stagingKey,
+        normalizedFileName: upload.normalizedFileName,
+        stagedAt: upload.stagedAt,
+      });
       rubricalDebugLog("staged file", {
         fileName: upload.file.name,
         stagedAt: upload.stagedAt,
+        byteLength: upload.file.size,
       });
     } catch (err) {
-      rememberPendingUpload(record);
+      const buffer = await upload.file.arrayBuffer();
+      rememberPendingUpload({
+        ...record,
+        bytes: buffer,
+      });
+      console.warn("[rubrical] staged file failed", {
+        fileName: upload.file.name,
+        stagedAt: upload.stagedAt,
+        error: err instanceof Error ? err.message : String(err),
+      });
       rubricalDebugLog("staged file failed", {
         fileName: upload.file.name,
         stagedAt: upload.stagedAt,
@@ -102,7 +124,7 @@ async function reconcileFromTable(stagingKey: string, fileIdSnapshot: (string | 
     return nextSnapshot;
   }
 
-  const staged = await listStagedFiles(stagingKey);
+  const staged = await listStagedFiles(stagingKey).catch(() => [] as Awaited<ReturnType<typeof listStagedFiles>>);
   const promotions = findReconcilePromotions(assignments, staged);
   if (promotions.length === 0) {
     return nextSnapshot;
@@ -119,6 +141,18 @@ export async function reconcileStagingFromTable(stagingKey: string): Promise<voi
 
 export async function retryPendingStaging(stagingKey: string): Promise<number> {
   return flushPendingUploads(stagingKey);
+}
+
+/** Wait for in-flight staging work and pending retries before import capture. */
+export async function awaitStagingIdle(stagingKey: string): Promise<void> {
+  await workChain;
+  await flushPendingUploads(stagingKey);
+  const remaining = countPendingUploads(stagingKey);
+  if (remaining > 0) {
+    throw new Error(
+      `${remaining} uploaded file${remaining === 1 ? "" : "s"} could not be staged — refresh the page and try again`,
+    );
+  }
 }
 
 export type CanvasHooksCallbacks = {

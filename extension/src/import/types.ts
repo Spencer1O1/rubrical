@@ -1,5 +1,6 @@
 import type { AssignmentMetadata } from "../metadata";
 import type { RubricTable } from "../rubric";
+import type { StagedFileRecord } from "../staged-files/types";
 
 /**
  * Teacher-published assignment context.
@@ -32,6 +33,10 @@ export type DraftFileRef = {
   sortOrder?: number;
 };
 
+export type StagedUploadRecord = StagedFileRecord & {
+  sortOrder: number;
+};
+
 /**
  * Student-owned submission state.
  * Captured only when the user clicks Check with Rubrical.
@@ -43,6 +48,8 @@ export type LiveImportCapture = {
   draftKind: string;
   draftFiles: DraftFile[];
   draftFileRefs: DraftFileRef[];
+  stagedUploads: StagedUploadRecord[];
+  fileImportWarnings: string[];
   capturedAt: string;
 };
 
@@ -58,6 +65,7 @@ export type ImportPayload = {
   draftKind: string;
   draftFiles: DraftFile[];
   draftFileRefs: DraftFileRef[];
+  fileImportWarnings: string[];
   rubric: RubricTable | null;
   metadata: AssignmentMetadata;
   capturedAt: string;

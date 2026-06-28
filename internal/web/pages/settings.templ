@@ -206,3 +206,7 @@ templ settingsForm(settings aisettings.Settings, errorMessage string, saved bool
 templ SettingsSaved() {
 	<p class="text-sm text-emerald-600">Settings saved.</p>
 }
+
+templ SettingsStatusError(message string) {
+	<p class="text-sm text-red-600">{ message }</p>
+}

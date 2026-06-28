@@ -29,7 +29,14 @@ const (
 )
 
 func IsValidPDF(data []byte) bool {
-	return len(data) >= 4 && bytes.HasPrefix(data, []byte("%PDF"))
+	if len(data) < 8 || !bytes.HasPrefix(data, []byte("%PDF-")) {
+		return false
+	}
+	tail := data
+	if len(tail) > 1024 {
+		tail = tail[len(tail)-1024:]
+	}
+	return bytes.Contains(tail, []byte("%%EOF"))
 }
 
 func Classify(fileName, mimeType string, data []byte) FileKind {
@@ -101,7 +108,7 @@ func SkipReason(kind FileKind) string {
 	case KindExecutable:
 		return "unsupported binary (not analyzed)"
 	case KindMedia:
-		return "unsupported media (not analyzed)"
+		return "unsupported media type (not sent to model; noted in prompt)"
 	case KindArchiveUnsupported:
 		return "unsupported archive format (zip only)"
 	case KindLegacyDoc:

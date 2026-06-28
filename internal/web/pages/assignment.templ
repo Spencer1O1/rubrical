@@ -298,6 +298,7 @@ templ DraftPanel(view AssignmentView) {
 
 templ DraftPanelBody(view AssignmentView) {
 	<div id={ DraftPanelBodyID(view.ID) } class="space-y-4">
+		<input type="hidden" name="draft_panel_error" value={ view.DraftPanelError }/>
 		@draftPanelError(view)
 		if view.PageType == "discussion" {
 			@DiscussionDraftPanelContent(view)
@@ -434,6 +435,7 @@ templ draftModeButton(view AssignmentView, mode string) {
 		} else {
 			hx-vals={ fmt.Sprintf(`{"mode":"%s"}`, mode) }
 		}
+		hx-include={ fmt.Sprintf("#%s", DraftPanelBodyID(view.ID)) }
 		hx-target={ fmt.Sprintf("#%s", DraftPanelBodyID(view.ID)) }
 		hx-swap="outerHTML"
 		class={ DraftModeTileClass(view.DraftMode, mode) }
