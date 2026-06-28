@@ -117,6 +117,22 @@ CREATE TABLE analysis_runs (
     completed_at TIMESTAMPTZ
 );
 
+CREATE TABLE analysis_attempts (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    assignment_snapshot_id BIGINT NOT NULL REFERENCES assignment_snapshots(id) ON DELETE CASCADE,
+    analysis_run_id BIGINT REFERENCES analysis_runs(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'started',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX idx_analysis_attempts_user_created
+    ON analysis_attempts (user_id, created_at DESC);
+
+CREATE INDEX idx_analysis_attempts_assignment_created
+    ON analysis_attempts (assignment_snapshot_id, created_at DESC);
+
 CREATE TABLE feedback_items (
     id BIGSERIAL PRIMARY KEY,
     analysis_run_id BIGINT NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,

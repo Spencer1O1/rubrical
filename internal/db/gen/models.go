@@ -25,6 +25,16 @@ type AnalysisRun struct {
 	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
 }
 
+type AnalysisAttempt struct {
+	ID                   int64              `json:"id"`
+	UserID               int64              `json:"user_id"`
+	AssignmentSnapshotID int64              `json:"assignment_snapshot_id"`
+	AnalysisRunID        pgtype.Int8        `json:"analysis_run_id"`
+	Status               string             `json:"status"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
+}
+
 type AssignmentSnapshot struct {
 	ID               int64              `json:"id"`
 	UserID           pgtype.Int8        `json:"user_id"`

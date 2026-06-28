@@ -11,15 +11,15 @@ import (
 )
 
 var (
-	ErrRateLimited       = errors.New("analysis rate limit exceeded")
-	ErrAnalysisInFlight  = errors.New("analysis already in progress for this assignment")
+	ErrRateLimited           = errors.New("analysis rate limit exceeded")
+	ErrAnalysisInFlight      = errors.New("analysis already in progress for this assignment")
 	ErrFeedbackPersistFailed = errors.New("analysis completed but feedback could not be saved")
 )
 
 type RateLimits struct {
-	MaxPerHour              int
-	MaxPerDay               int
-	MinSecondsBetweenRuns   int
+	MaxPerHour            int
+	MaxPerDay             int
+	MinSecondsBetweenRuns int
 }
 
 func NewRateLimits(maxPerHour, maxPerDay, minSeconds int) RateLimits {
@@ -71,11 +71,10 @@ func (l *Limiter) checkRateLimitsInTx(ctx context.Context, tx pgx.Tx, userID, as
 		var count int
 		err := tx.QueryRow(ctx, `
 			SELECT COUNT(*)
-			FROM analysis_runs ar
-			JOIN assignment_snapshots a ON a.id = ar.assignment_snapshot_id
-			WHERE a.user_id = $1
-			  AND ar.created_at > NOW() - INTERVAL '1 hour'
-			  AND ar.status IN ('completed', 'pending', 'running')
+			FROM analysis_attempts
+			WHERE user_id = $1
+			  AND created_at > NOW() - INTERVAL '1 hour'
+			  AND status IN ('started', 'completed', 'failed')
 		`, userID).Scan(&count)
 		if err != nil {
 			return err
@@ -89,11 +88,10 @@ func (l *Limiter) checkRateLimitsInTx(ctx context.Context, tx pgx.Tx, userID, as
 		var count int
 		err := tx.QueryRow(ctx, `
 			SELECT COUNT(*)
-			FROM analysis_runs ar
-			JOIN assignment_snapshots a ON a.id = ar.assignment_snapshot_id
-			WHERE a.user_id = $1
-			  AND ar.created_at > NOW() - INTERVAL '1 day'
-			  AND ar.status IN ('completed', 'pending', 'running')
+			FROM analysis_attempts
+			WHERE user_id = $1
+			  AND created_at > NOW() - INTERVAL '1 day'
+			  AND status IN ('started', 'completed', 'failed')
 		`, userID).Scan(&count)
 		if err != nil {
 			return err
@@ -104,17 +102,17 @@ func (l *Limiter) checkRateLimitsInTx(ctx context.Context, tx pgx.Tx, userID, as
 	}
 
 	if l.limits.MinSecondsBetweenRuns > 0 {
-		var lastRun time.Time
+		var lastAttempt time.Time
 		err := tx.QueryRow(ctx, `
-			SELECT COALESCE(MAX(ar.created_at), 'epoch'::timestamptz)
-			FROM analysis_runs ar
-			WHERE ar.assignment_snapshot_id = $1
-			  AND ar.status IN ('completed', 'pending', 'running')
-		`, assignmentID).Scan(&lastRun)
+			SELECT COALESCE(MAX(created_at), 'epoch'::timestamptz)
+			FROM analysis_attempts
+			WHERE assignment_snapshot_id = $1
+			  AND status IN ('started', 'completed', 'failed')
+		`, assignmentID).Scan(&lastAttempt)
 		if err != nil {
 			return err
 		}
-		wait := time.Duration(l.limits.MinSecondsBetweenRuns)*time.Second - time.Since(lastRun)
+		wait := time.Duration(l.limits.MinSecondsBetweenRuns)*time.Second - time.Since(lastAttempt)
 		if wait > 0 {
 			secs := int(wait.Seconds())
 			if secs < 1 {

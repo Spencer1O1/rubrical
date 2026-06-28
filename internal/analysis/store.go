@@ -24,7 +24,7 @@ func failStaleRuns(ctx context.Context, pool *pgxpool.Pool, assignmentID int64, 
 	payload, _ := json.Marshal(map[string]string{
 		"error": "analysis timed out or did not finish",
 	})
-	_, err := pool.Exec(ctx, `
+	rows, err := pool.Query(ctx, `
 		UPDATE analysis_runs
 		SET status = 'failed',
 		    raw_model_output = $3::jsonb,
@@ -32,8 +32,25 @@ func failStaleRuns(ctx context.Context, pool *pgxpool.Pool, assignmentID int64, 
 		WHERE assignment_snapshot_id = $1
 		  AND status IN ('pending', 'running')
 		  AND created_at < NOW() - $2::interval
+		RETURNING id
 	`, assignmentID, fmt.Sprintf("%f seconds", ttl.Seconds()), string(payload))
-	return err
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var staleRunIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+		staleRunIDs = append(staleRunIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	return markAttemptsFailed(ctx, pool, staleRunIDs)
 }
 
 func FailAllStaleRuns(ctx context.Context, pool *pgxpool.Pool, ttl time.Duration) error {
@@ -43,14 +60,45 @@ func FailAllStaleRuns(ctx context.Context, pool *pgxpool.Pool, ttl time.Duration
 	payload, _ := json.Marshal(map[string]string{
 		"error": "analysis timed out or did not finish",
 	})
-	_, err := pool.Exec(ctx, `
+	rows, err := pool.Query(ctx, `
 		UPDATE analysis_runs
 		SET status = 'failed',
 		    raw_model_output = $2::jsonb,
 		    completed_at = NOW()
 		WHERE status IN ('pending', 'running')
 		  AND created_at < NOW() - $1::interval
+		RETURNING id
 	`, fmt.Sprintf("%f seconds", ttl.Seconds()), string(payload))
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var staleRunIDs []int64
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return err
+		}
+		staleRunIDs = append(staleRunIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	return markAttemptsFailed(ctx, pool, staleRunIDs)
+}
+
+func markAttemptsFailed(ctx context.Context, pool *pgxpool.Pool, runIDs []int64) error {
+	if len(runIDs) == 0 {
+		return nil
+	}
+	_, err := pool.Exec(ctx, `
+		UPDATE analysis_attempts
+		SET status = 'failed',
+		    completed_at = NOW()
+		WHERE analysis_run_id = ANY($1)
+		  AND status = 'started'
+	`, runIDs)
 	return err
 }
 
@@ -124,24 +172,24 @@ func loadRubricContext(ctx context.Context, pool *pgxpool.Pool, assignmentID int
 	return rubric, rows.Err()
 }
 
-func (s *Service) beginRun(ctx context.Context, userID, assignmentID, draftID int64, provider, model string, inputLog []byte) (int64, error) {
+func (s *Service) beginRun(ctx context.Context, userID, assignmentID, draftID int64, provider, model string, inputLog []byte) (RunHandle, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		return 0, err
+		return RunHandle{}, err
 	}
 	defer tx.Rollback(ctx)
 
 	if err := failStaleRuns(ctx, s.pool, assignmentID, DefaultStaleRunTTL); err != nil {
-		return 0, err
+		return RunHandle{}, err
 	}
 
 	if s.limiter != nil {
 		if err := s.limiter.checkInFlightInTx(ctx, tx, assignmentID); err != nil {
-			return 0, err
+			return RunHandle{}, err
 		}
 		if s.enforceLimits {
 			if err := s.limiter.checkRateLimitsInTx(ctx, tx, userID, assignmentID); err != nil {
-				return 0, err
+				return RunHandle{}, err
 			}
 		}
 	}
@@ -163,13 +211,27 @@ func (s *Service) beginRun(ctx context.Context, userID, assignmentID, draftID in
 		RETURNING id
 	`, assignmentID, draftRef, provider, model, string(inputLog)).Scan(&runID)
 	if err != nil {
-		return 0, err
+		return RunHandle{}, err
+	}
+
+	var attemptID int64
+	err = tx.QueryRow(ctx, `
+		INSERT INTO analysis_attempts (
+			user_id,
+			assignment_snapshot_id,
+			analysis_run_id,
+			status
+		) VALUES ($1, $2, $3, 'started')
+		RETURNING id
+	`, userID, assignmentID, runID).Scan(&attemptID)
+	if err != nil {
+		return RunHandle{}, err
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return 0, err
+		return RunHandle{}, err
 	}
-	return runID, nil
+	return RunHandle{RunID: runID, AttemptID: attemptID}, nil
 }
 
 func (s *Service) saveScoredAnalysis(ctx context.Context, runID int64, out *schema.ScoredAnalysis) error {
@@ -195,18 +257,36 @@ func (s *Service) scoredAnalysisSaved(ctx context.Context, runID int64) (bool, e
 	return saved, err
 }
 
-func (s *Service) markRunFailed(ctx context.Context, runID int64, runErr error) error {
+func (s *Service) markRunFailed(ctx context.Context, handle RunHandle, runErr error) error {
 	payload, _ := json.Marshal(map[string]string{"error": runErr.Error()})
 	now := time.Now().UTC()
-	_, err := s.pool.Exec(ctx, `
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `
 		UPDATE analysis_runs
 		SET status = 'failed', raw_model_output = $2::jsonb, completed_at = $3
 		WHERE id = $1
-	`, runID, string(payload), now)
-	return err
+	`, handle.RunID, string(payload), now); err != nil {
+		return err
+	}
+	if handle.AttemptID > 0 {
+		if _, err := tx.Exec(ctx, `
+			UPDATE analysis_attempts
+			SET status = 'failed', completed_at = $2
+			WHERE id = $1 AND status = 'started'
+		`, handle.AttemptID, now); err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
 }
 
-func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64, ai provider.Provider, out *schema.ScoredAnalysis) (Result, error) {
+func (s *Service) persistSuccess(ctx context.Context, handle RunHandle, assignmentID int64, ai provider.Provider, out *schema.ScoredAnalysis) (Result, error) {
+	runID := handle.RunID
 	if existing, err := loadRunResult(ctx, s.pool, runID); err != nil {
 		return Result{}, err
 	} else if existing != nil {
@@ -233,6 +313,14 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 		return Result{}, err
 	}
 	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `
+		DELETE FROM analysis_runs
+		WHERE assignment_snapshot_id = $1
+		  AND id <> $2
+	`, assignmentID, runID); err != nil {
+		return Result{}, err
+	}
 
 	now := time.Now().UTC()
 	if outputSaved {
@@ -338,6 +426,16 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 		}
 		feedbackItem.ID = id
 		feedback = append(feedback, feedbackItem)
+	}
+
+	if handle.AttemptID > 0 {
+		if _, err := tx.Exec(ctx, `
+			UPDATE analysis_attempts
+			SET status = 'completed', completed_at = $2
+			WHERE id = $1 AND status = 'started'
+		`, handle.AttemptID, now); err != nil {
+			return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {

@@ -107,33 +107,33 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 		return Result{}, err
 	}
 
-	runID, err := s.beginRun(ctx, userID, assignmentID, draftID, provider.Name(), provider.Model(), inputLog)
+	runHandle, err := s.beginRun(ctx, userID, assignmentID, draftID, provider.Name(), provider.Model(), inputLog)
 	if err != nil {
 		return Result{}, err
 	}
 
 	providerResp, err := provider.Analyze(ctx, req)
 	if err != nil {
-		_ = s.markRunFailed(ctx, runID, err)
+		_ = s.markRunFailed(ctx, runHandle, err)
 		return Result{}, err
 	}
 
 	scored, err := ApplyRubricScoring(providerResp, input.Rubric)
 	if err != nil {
-		_ = s.markRunFailed(ctx, runID, err)
+		_ = s.markRunFailed(ctx, runHandle, err)
 		return Result{}, fmt.Errorf("rubric scoring: %w", err)
 	}
 	if err := schema.ValidateScoredAnalysis(scored); err != nil {
-		_ = s.markRunFailed(ctx, runID, err)
+		_ = s.markRunFailed(ctx, runHandle, err)
 		return Result{}, fmt.Errorf("analysis output: %w", err)
 	}
 
-	if err := s.saveScoredAnalysis(ctx, runID, scored); err != nil {
-		_ = s.markRunFailed(ctx, runID, err)
+	if err := s.saveScoredAnalysis(ctx, runHandle.RunID, scored); err != nil {
+		_ = s.markRunFailed(ctx, runHandle, err)
 		return Result{}, err
 	}
 
-	result, err := s.persistSuccess(ctx, runID, assignmentID, provider, scored)
+	result, err := s.persistSuccess(ctx, runHandle, assignmentID, provider, scored)
 	if err != nil {
 		return result, err
 	}

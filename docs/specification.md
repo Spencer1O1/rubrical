@@ -763,6 +763,7 @@ Core tables:
 * rubric_criteria
 * submission_drafts
 * analysis_runs
+* analysis_attempts
 * feedback_items
 * extracted_sources
 
@@ -970,7 +971,7 @@ Possible `source_type` values:
 
 ### 9.5 analysis_runs
 
-Stores each analysis attempt.
+Stores the **current** completed analysis for an assignment. When a new analyze succeeds, previous runs for that assignment are deleted (feedback cascades).
 
 Fields:
 
@@ -986,6 +987,20 @@ Fields:
 * confidence
 * raw_model_input
 * raw_model_output
+* created_at
+* completed_at
+
+### 9.5a analysis_attempts
+
+Append-only log of every analyze request for rate limiting. Not deleted when a new analysis replaces the current one.
+
+Fields:
+
+* id
+* user_id
+* assignment_snapshot_id
+* analysis_run_id
+* status (`started`, `completed`, `failed`)
 * created_at
 * completed_at
 

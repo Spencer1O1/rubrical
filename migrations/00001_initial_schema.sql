@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS analysis_runs (
     completed_at TIMESTAMPTZ
 );
 
+CREATE TABLE IF NOT EXISTS analysis_attempts (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    assignment_snapshot_id BIGINT NOT NULL REFERENCES assignment_snapshots(id) ON DELETE CASCADE,
+    analysis_run_id BIGINT REFERENCES analysis_runs(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'started',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_analysis_attempts_user_created
+    ON analysis_attempts (user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_analysis_attempts_assignment_created
+    ON analysis_attempts (assignment_snapshot_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS feedback_items (
     id BIGSERIAL PRIMARY KEY,
     analysis_run_id BIGINT NOT NULL REFERENCES analysis_runs(id) ON DELETE CASCADE,
@@ -152,6 +168,7 @@ CREATE TABLE IF NOT EXISTS extracted_sources (
 -- +goose Down
 DROP TABLE IF EXISTS extracted_sources;
 DROP TABLE IF EXISTS feedback_items;
+DROP TABLE IF EXISTS analysis_attempts;
 DROP TABLE IF EXISTS analysis_runs;
 DROP TABLE IF EXISTS submission_draft_files;
 DROP TABLE IF EXISTS submission_drafts;
