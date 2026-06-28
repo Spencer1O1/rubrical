@@ -7,6 +7,7 @@ import (
 	"rubrical/internal/analysis/files"
 	"rubrical/internal/analysis/prompt"
 	"rubrical/internal/analysis/request"
+	"rubrical/internal/analysis/schema"
 )
 
 func BuildProviderRequest(input Input, fileResult files.ProcessResult, maxSubmissionTextChars int) request.Request {
@@ -27,7 +28,34 @@ func BuildProviderRequest(input Input, fileResult files.ProcessResult, maxSubmis
 		SystemPrompt: system,
 		UserPrompt:   user,
 		Attachments:  attachments,
+		Criteria:     rubricCriterionSpecs(input.Rubric),
 	}
+}
+
+func rubricCriterionSpecs(rubric RubricContext) []schema.CriterionSpec {
+	if len(rubric.Rows) == 0 {
+		return nil
+	}
+	specs := make([]schema.CriterionSpec, len(rubric.Rows))
+	for i, row := range rubric.Rows {
+		specs[i] = schema.CriterionSpec{
+			Name:         row.Criterion,
+			RatingTitles: ratingTitlesForSchema(row),
+		}
+	}
+	return specs
+}
+
+func ratingTitlesForSchema(row RubricRow) []string {
+	bands := parseRatingBands(row.Ratings)
+	if len(bands) == 0 {
+		return []string{""}
+	}
+	titles := make([]string, len(bands))
+	for i, band := range bands {
+		titles[i] = band.rating.Title
+	}
+	return titles
 }
 
 func ValidateProviderRequest(req request.Request) error {

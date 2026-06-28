@@ -42,9 +42,10 @@ func (p *Provider) Analyze(ctx context.Context, req request.Request) (*schema.Pr
 	}
 
 	raw, err := p.client.CompleteJSON(ctx, Request{
-		SystemPrompt: req.SystemPrompt,
-		UserPrompt:   req.UserPrompt,
-		Attachments:  attachments,
+		SystemPrompt:   req.SystemPrompt,
+		UserPrompt:     req.UserPrompt,
+		Attachments:    attachments,
+		Criteria: req.Criteria,
 	})
 	if err != nil {
 		return nil, err

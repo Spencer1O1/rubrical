@@ -17,13 +17,13 @@ Give a concise, comprehensive summary of the draft. Discuss how well it currentl
 "low" when the rubric, instructions, or draft are missing, vague, incomplete, or difficult to interpret.
 
 ## criteria
-Include one criteria[] entry per rubric criterion when rubric criteria are provided. Use criterion names from the rubric without appending point values to the name.
+Always use exactly one criteria[] entry for every rubric criterion when rubric criteria are provided; enforced.
 
 #### criterionName
-Use the rubric criterion name exactly. Do not append point values.
+Uses the exact rubric criterion name; enforced.
 
 #### selectedRating
-If rating bands exist, choose the exact rating title from the rubric that best matches how the draft meets this criterion; else, use an empty string. Choose the highest band the draft genuinely reaches, picking the best overall given all sources.
+If rating bands exist, choose the rating title from the rubric that best matches how the draft meets this criterion; else, use an empty string; enforced. Choose the highest band the draft genuinely reaches, picking the best overall given all sources.
 
 #### bandPosition
 A whole number from 0 to 100 showing the draft's position inside this criterion's chosen selectedRating band:

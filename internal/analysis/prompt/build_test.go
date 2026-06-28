@@ -10,6 +10,7 @@ func TestBuildSystem_scoringGuidance(t *testing.T) {
 		"unfulfilledRequirements",
 		"bandPosition",
 		"guidance",
+		"every rubric criterion",
 		"passion for helping students reach their full potential",
 	) {
 		t.Fatalf("system prompt missing scoring guidance: %q", got)

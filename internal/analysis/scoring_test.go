@@ -102,6 +102,22 @@ func TestApplyRubricScoring_pointOnlyRow(t *testing.T) {
 	}
 }
 
+func TestApplyRubricScoring_rejectsPartialCriteria(t *testing.T) {
+	resp := &schema.ProviderResponse{Criteria: []schema.CriterionAssessment{{
+		CriterionName:  "General Overview",
+		SelectedRating: "Excellent",
+		BandPosition:   85,
+	}}}
+	rubric := RubricContext{Rows: []RubricRow{
+		{Criterion: "General Overview", Ratings: threeBandRubric().Rows[0].Ratings},
+		{Criterion: "Event Details", Ratings: threeBandRubric().Rows[0].Ratings},
+	}}
+	_, err := ApplyRubricScoring(resp, rubric)
+	if err == nil {
+		t.Fatal("expected missing criterion error")
+	}
+}
+
 func TestApplyRubricScoring_rejectsUnknownBand(t *testing.T) {
 	resp := &schema.ProviderResponse{Criteria: []schema.CriterionAssessment{{
 		CriterionName:  "General Overview",

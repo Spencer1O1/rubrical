@@ -1,17 +1,34 @@
 package schema
 
-// JSONSchema returns the strict JSON Schema for ProviderResponse (AI structured output).
-// Keep aligned with ProviderResponse and ValidateProviderResponse().
+// JSONSchema returns the provider response schema with no rubric-specific bounds.
+// Prefer JSONSchemaForOpenAI or JSONSchemaForAnthropic when rubric criteria are available.
 func JSONSchema() map[string]any {
+	return JSONSchemaForOpenAI(nil)
+}
+
+// JSONSchemaForOpenAI builds strict JSON Schema for OpenAI structured outputs.
+// When criteria is non-empty, criteria[] must have exactly that many entries;
+// each entry's criterionName and selectedRating must match that rubric row.
+func JSONSchemaForOpenAI(criteria []CriterionSpec) map[string]any {
+	return providerResponseSchema(criteria, true)
+}
+
+// JSONSchemaForAnthropic builds JSON Schema for Anthropic structured outputs.
+// Anthropic only allows minItems of 0 or 1, so exact criteria count is not schema-enforced.
+func JSONSchemaForAnthropic(criteria []CriterionSpec) map[string]any {
+	return providerResponseSchema(criteria, false)
+}
+
+func providerResponseSchema(criteria []CriterionSpec, enforceCriteriaCount bool) map[string]any {
 	return map[string]any{
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"overallSummary":      map[string]any{"type": "string"},
-			"confidence":          map[string]any{"type": "string", "enum": []any{"low", "medium", "high"}},
-			"criteria":            map[string]any{"type": "array", "items": criterionJSONSchema()},
-			"strengths":           stringArraySchema(),
-			"guidance":            stringArraySchema(),
+			"overallSummary": map[string]any{"type": "string"},
+			"confidence":     map[string]any{"type": "string", "enum": []any{"low", "medium", "high"}},
+			"criteria":       criteriaArraySchema(criteria, enforceCriteriaCount),
+			"strengths":      stringArraySchema(),
+			"guidance":       stringArraySchema(),
 		},
 		"required": []any{
 			"overallSummary",
@@ -23,13 +40,44 @@ func JSONSchema() map[string]any {
 	}
 }
 
-func criterionJSONSchema() map[string]any {
+func criteriaArraySchema(criteria []CriterionSpec, enforceCount bool) map[string]any {
+	n := len(criteria)
+	if n == 0 {
+		return map[string]any{
+			"type":  "array",
+			"items": criterionJSONSchema("", nil),
+		}
+	}
+
+	anyOf := make([]any, n)
+	for i, spec := range criteria {
+		anyOf[i] = criterionJSONSchema(spec.Name, spec.RatingTitles)
+	}
+
+	schema := map[string]any{
+		"type": "array",
+		"items": map[string]any{
+			"anyOf": anyOf,
+		},
+	}
+	if enforceCount && n > 0 {
+		schema["minItems"] = n
+		schema["maxItems"] = n
+	}
+	return schema
+}
+
+func criterionJSONSchema(fixedName string, ratingTitles []string) map[string]any {
+	criterionName := map[string]any{"type": "string"}
+	if fixedName != "" {
+		criterionName["const"] = fixedName
+	}
 	return map[string]any{
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"criterionName":           map[string]any{"type": "string"},
-			"selectedRating":          map[string]any{"type": "string"},
+			"criterionName":           criterionName,
+			"selectedRating":          selectedRatingSchema(ratingTitles),
 			"bandPosition":            map[string]any{"type": "integer", "minimum": 0, "maximum": 100},
 			"scoreRationale":          map[string]any{"type": "string"},
 			"fulfilledRequirements":   fulfilledRequirementsSchema(),
@@ -43,6 +91,20 @@ func criterionJSONSchema() map[string]any {
 			"fulfilledRequirements",
 			"unfulfilledRequirements",
 		},
+	}
+}
+
+func selectedRatingSchema(ratingTitles []string) map[string]any {
+	if len(ratingTitles) == 0 {
+		return map[string]any{"type": "string"}
+	}
+	enum := make([]any, len(ratingTitles))
+	for i, title := range ratingTitles {
+		enum[i] = title
+	}
+	return map[string]any{
+		"type": "string",
+		"enum": enum,
 	}
 }
 

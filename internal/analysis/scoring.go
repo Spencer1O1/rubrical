@@ -28,19 +28,27 @@ func ApplyRubricScoring(resp *schema.ProviderResponse, rubric RubricContext) (*s
 	if resp == nil {
 		return nil, fmt.Errorf("provider response is nil")
 	}
+	if err := validateCriteriaCoverage(resp, rubric); err != nil {
+		return nil, err
+	}
+
+	criteria := resp.Criteria
+	if len(rubric.Rows) > 0 {
+		criteria = orderCriteriaByRubric(resp.Criteria, rubric)
+	}
 
 	scored := &schema.ScoredAnalysis{
 		OverallSummary:      resp.OverallSummary,
 		Confidence:          resp.Confidence,
 		Strengths:           resp.Strengths,
 		Guidance:            resp.Guidance,
-		Criteria:            make([]schema.ScoredCriterion, len(resp.Criteria)),
+		Criteria:            make([]schema.ScoredCriterion, len(criteria)),
 	}
 
 	var total, totalMax float64
 
-	for i := range resp.Criteria {
-		assessment := resp.Criteria[i]
+	for i := range criteria {
+		assessment := criteria[i]
 		row, ok := matchRubricRow(rubric, assessment.CriterionName)
 		if !ok {
 			return nil, fmt.Errorf("criteria[%d] criterionName %q not found in rubric", i, assessment.CriterionName)
@@ -94,6 +102,47 @@ func ApplyRubricScoring(resp *schema.ProviderResponse, rubric RubricContext) (*s
 	scored.PredictedScore = floatPtr(roundScore(total))
 	scored.PredictedScoreMax = floatPtr(roundScore(totalMax))
 	return scored, nil
+}
+
+func validateCriteriaCoverage(resp *schema.ProviderResponse, rubric RubricContext) error {
+	if len(rubric.Rows) == 0 {
+		return nil
+	}
+	if len(resp.Criteria) != len(rubric.Rows) {
+		return fmt.Errorf("expected %d criteria (one per rubric row), got %d", len(rubric.Rows), len(resp.Criteria))
+	}
+
+	seen := make(map[string]bool, len(resp.Criteria))
+	for i, assessment := range resp.Criteria {
+		if _, ok := matchRubricRow(rubric, assessment.CriterionName); !ok {
+			return fmt.Errorf("criteria[%d] criterionName %q not found in rubric", i, assessment.CriterionName)
+		}
+		key := normalizeCriterionLabel(assessment.CriterionName)
+		if seen[key] {
+			return fmt.Errorf("criteria[%d] duplicate criterion %q", i, assessment.CriterionName)
+		}
+		seen[key] = true
+	}
+
+	for _, row := range rubric.Rows {
+		key := normalizeCriterionLabel(row.Criterion)
+		if !seen[key] {
+			return fmt.Errorf("missing criterion %q", row.Criterion)
+		}
+	}
+	return nil
+}
+
+func orderCriteriaByRubric(assessments []schema.CriterionAssessment, rubric RubricContext) []schema.CriterionAssessment {
+	byName := make(map[string]schema.CriterionAssessment, len(assessments))
+	for _, assessment := range assessments {
+		byName[normalizeCriterionLabel(assessment.CriterionName)] = assessment
+	}
+	ordered := make([]schema.CriterionAssessment, 0, len(rubric.Rows))
+	for _, row := range rubric.Rows {
+		ordered = append(ordered, byName[normalizeCriterionLabel(row.Criterion)])
+	}
+	return ordered
 }
 
 // continuousScore maps band index + within-band score to [0,1] for the gradient arrow.

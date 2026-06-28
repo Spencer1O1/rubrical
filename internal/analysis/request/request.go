@@ -1,5 +1,7 @@
 package request
 
+import "rubrical/internal/analysis/schema"
+
 type DeliveryKind string
 
 const (
@@ -19,4 +21,5 @@ type Request struct {
 	SystemPrompt string
 	UserPrompt   string
 	Attachments  []Attachment
+	Criteria     []schema.CriterionSpec
 }

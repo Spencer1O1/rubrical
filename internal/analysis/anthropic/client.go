@@ -14,6 +14,8 @@ import (
 	"rubrical/internal/config"
 )
 
+type CriterionSpec = schema.CriterionSpec
+
 const defaultModel = config.DefaultAnthropicModel
 const defaultBaseURL = config.DefaultAnthropicBaseURL
 const anthropicVersion = "2023-06-01"
@@ -29,6 +31,7 @@ type Request struct {
 	SystemPrompt string
 	UserPrompt   string
 	Attachments  []Attachment
+	Criteria     []CriterionSpec
 }
 
 type Attachment struct {
@@ -77,7 +80,7 @@ func (c *Client) CompleteJSON(ctx context.Context, req Request) ([]byte, error) 
 		OutputConfig: outputConfig{
 			Format: outputFormat{
 				Type:   "json_schema",
-				Schema: schema.JSONSchema(),
+				Schema: schema.JSONSchemaForAnthropic(req.Criteria),
 			},
 		},
 	}

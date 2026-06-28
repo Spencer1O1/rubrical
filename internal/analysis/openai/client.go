@@ -14,6 +14,8 @@ import (
 	"rubrical/internal/config"
 )
 
+type CriterionSpec = schema.CriterionSpec
+
 const defaultModel = config.DefaultOpenAIModel
 const defaultBaseURL = config.DefaultOpenAIBaseURL
 
@@ -28,6 +30,7 @@ type Request struct {
 	SystemPrompt string
 	UserPrompt   string
 	Attachments  []Attachment
+	Criteria     []CriterionSpec
 }
 
 type Attachment struct {
@@ -79,7 +82,7 @@ func (c *Client) CompleteJSON(ctx context.Context, req Request) ([]byte, error) 
 				Type:   "json_schema",
 				Name:   "rubric_analysis",
 				Strict: true,
-				Schema: schema.JSONSchema(),
+				Schema: schema.JSONSchemaForOpenAI(req.Criteria),
 			},
 		},
 	}
