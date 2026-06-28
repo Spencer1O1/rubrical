@@ -6,7 +6,7 @@ import { scanAssignmentUploadedRows } from "./canvas-rows";
 
 describe("scanAssignmentUploadedRows", () => {
   it("returns uploaded table rows from the file-upload fixture", () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
     expect(scanAssignmentUploadedRows()).toEqual([
       {
         fileName: "resume.pdf",
@@ -16,7 +16,7 @@ describe("scanAssignmentUploadedRows", () => {
   });
 
   it("returns no rows when no files are uploaded", () => {
-    installFixture(loadFixtureHtml("1-text-submission-tab.html"));
+    installFixture(loadFixtureHtml("assignment-text-tab"));
     expect(scanAssignmentUploadedRows()).toEqual([]);
   });
 
@@ -42,7 +42,7 @@ describe("scanAssignmentUploadedRows", () => {
 
 describe("assignment upload indicators", () => {
   it("marks uploaded table rows inaccessible after Rubrical drops the server copy", () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
     const rows = mergeRowAccessibility(
       scanAssignmentUploadedRows().map((row) => ({
         ...row,
@@ -55,7 +55,7 @@ describe("assignment upload indicators", () => {
   });
 
   it("does not warn when the server manifest still has the uploaded file", () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
     const rows = mergeRowAccessibility(
       scanAssignmentUploadedRows().map((row) => ({
         ...row,
@@ -76,7 +76,7 @@ describe("assignment upload indicators", () => {
   });
 
   it("matches saved manifest rows by canvas file id when Canvas renamed the file", () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
     const rows = mergeRowAccessibility(
       scanAssignmentUploadedRows().map((row) => ({
         ...row,

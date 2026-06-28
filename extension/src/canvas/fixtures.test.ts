@@ -25,7 +25,7 @@ describe("canvas fixture contracts", () => {
 
   describe("declared test ids", () => {
     it("each declared id appears in at least one HTML fixture", () => {
-      const htmlFixtures = listFixtureCases().map(({ html }) => loadFixtureHtml(html));
+      const htmlFixtures = listFixtureCases().map(({ stem }) => loadFixtureHtml(stem));
       const missing = DECLARED_TEST_IDS.filter(
         ({ id }) => !htmlFixtures.some((html) => fixtureContainsTestId(html, id)),
       );
@@ -34,9 +34,9 @@ describe("canvas fixture contracts", () => {
     });
   });
 
-  describe.each(listFixtureCases())("$html", ({ html, expectations }) => {
+  describe.each(listFixtureCases())("$stem", ({ stem, expectations }) => {
     beforeEach(() => {
-      installFixture(loadFixtureHtml(html));
+      installFixture(loadFixtureHtml(stem));
     });
 
     it("matches anchor presence expectations", () => {
@@ -79,8 +79,8 @@ describe("fixture inventory", () => {
   it("has matching html + expectations for every assignment fixture", () => {
     const cases = listFixtureCases();
     expect(cases.length).toBeGreaterThanOrEqual(11);
-    for (const { html, expectations } of cases) {
-      expect(expectations.fixture).toBe(html);
+    for (const { stem, expectations } of cases) {
+      expect(expectations.fixture).toBe(stem);
     }
     expect(FIXTURES_ROOT.endsWith("/fixtures")).toBe(true);
   });

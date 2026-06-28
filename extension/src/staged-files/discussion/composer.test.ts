@@ -4,7 +4,7 @@ import { readDiscussionComposerAttachment } from "./composer";
 
 describe("discussion composer attachment", () => {
   it("reads attachment metadata from the composer fixture", () => {
-    installFixture(loadFixtureHtml("3-discussion-attachment.html"));
+    installFixture(loadFixtureHtml("discussion-attachment"));
     expect(readDiscussionComposerAttachment()).toEqual({
       fileName: "resume-1.pdf",
       downloadUrl: "https://canvas.instructure.com/files/99543507/download?download_frd=1",
@@ -13,7 +13,7 @@ describe("discussion composer attachment", () => {
   });
 
   it("returns null when no attachment is present", () => {
-    installFixture(loadFixtureHtml("3-discussion-reply-open.html"));
+    installFixture(loadFixtureHtml("discussion-reply-open"));
     expect(readDiscussionComposerAttachment()).toBeNull();
   });
 });

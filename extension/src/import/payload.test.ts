@@ -30,7 +30,7 @@ function cachedAssignment(metadata: CachedAssignmentContext["metadata"]): Cached
 
 describe("buildImportPayload", () => {
   it("reads submission types from the live DOM at click, not stale cache", () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
 
     const payload = buildImportPayload(
       cachedAssignment({
@@ -52,7 +52,7 @@ describe("buildImportPayload", () => {
   });
 
   it("includes file import warnings from live capture", () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
 
     const payload = buildImportPayload(
       cachedAssignment({

@@ -1,7 +1,8 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { Window } from "happy-dom";
 import type { CanvasPageEnv } from "./assignment-env";
+import { composeFixtureHtml, type FixtureCompose } from "./fixture-compose";
 import {
   discussion,
   discussionIds,
@@ -26,6 +27,7 @@ export const EXPECTATIONS_DIR = join(FIXTURES_ROOT, "expectations");
 
 export type FixtureExpectations = {
   fixture: string;
+  compose?: FixtureCompose;
   anchors: Record<string, boolean>;
   extraction: {
     dueAt?: string;
@@ -125,21 +127,35 @@ function readDiscussionEnvFromFixture(html: string): CanvasPageEnv | undefined {
 
 let dom: Window | null = null;
 
+function fixtureStem(name: string): string {
+  return name.replace(/\.html$/, "");
+}
+
 export function loadFixtureHtml(name: string): string {
-  return readFileSync(join(FIXTURES_ROOT, name), "utf8");
+  const stem = fixtureStem(name);
+  const expectations = loadExpectations(stem);
+  if (expectations.compose) {
+    return composeFixtureHtml(FIXTURES_ROOT, expectations.compose);
+  }
+  const path = join(FIXTURES_ROOT, `${stem}.html`);
+  if (!existsSync(path)) {
+    throw new Error(`fixture html not found: ${stem}.html`);
+  }
+  return readFileSync(path, "utf8");
 }
 
 export function loadExpectations(stem: string): FixtureExpectations {
   return JSON.parse(readFileSync(join(EXPECTATIONS_DIR, `${stem}.json`), "utf8")) as FixtureExpectations;
 }
 
-export function listFixtureCases(): Array<{ html: string; stem: string; expectations: FixtureExpectations }> {
-  return readdirSync(FIXTURES_ROOT)
-    .filter((name) => name.endsWith(".html"))
+export function listFixtureCases(): Array<{ stem: string; expectations: FixtureExpectations }> {
+  return readdirSync(EXPECTATIONS_DIR)
+    .filter((name) => name.endsWith(".json"))
     .sort()
-    .map((html) => {
-      const stem = html.replace(/\.html$/, "");
-      return { html, stem, expectations: loadExpectations(stem) };
+    .map((name) => {
+      const stem = name.replace(/\.json$/, "");
+      const expectations = loadExpectations(stem);
+      return { stem, expectations };
     });
 }
 

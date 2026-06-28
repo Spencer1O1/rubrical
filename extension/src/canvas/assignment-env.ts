@@ -19,7 +19,7 @@ export function readCanvasAssignmentEnv(): CanvasAssignmentEnv | null {
   return readCanvasPageEnv()?.ASSIGNMENT ?? null;
 }
 
-/** Course setting: Discussions → Attach files to discussions (fixtures/3-discussion*.html). */
+/** Course setting: Discussions → Attach files to discussions (fixtures/discussion-*.json). */
 export function readCanAttachDiscussionEntries(): boolean | undefined {
   const value = readCanvasPageEnv()?.can_attach_entries;
   if (typeof value === "boolean") {

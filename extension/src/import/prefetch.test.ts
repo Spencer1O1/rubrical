@@ -4,7 +4,7 @@ import { extractAssignmentContext } from "./assignment-context";
 
 describe("extractAssignmentContext", () => {
   it("does not prefetch submission types", async () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
 
     const context = await extractAssignmentContext("assignment");
 

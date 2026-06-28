@@ -4,7 +4,7 @@ import { readDiscussionComposerAttachment } from "./discussion/composer";
 
 describe("discussion composer session", () => {
   it("detects composer attachments even when the hidden file input is absent", () => {
-    installFixture(loadFixtureHtml("3-discussion-attachment.html"));
+    installFixture(loadFixtureHtml("discussion-attachment"));
     expect(readDiscussionComposerAttachment()).not.toBeNull();
   });
 });

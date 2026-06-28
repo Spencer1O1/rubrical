@@ -1,0 +1,44 @@
+{
+  "anchors": {
+    "dueDate": true,
+    "gradeDisplay": true,
+    "submitButton": true,
+    "discussionReply": false,
+    "uploadTable": false,
+    "uploadPane": false,
+    "fileInputDrop": false,
+    "urlInput": true,
+    "submissionTypeSelector": true,
+    "onlineUpload": false,
+    "onlineUrl": true,
+    "onlineTextEntry": true,
+    "textEditor": false,
+    "textEntryTextarea": false,
+    "textEntryEditorIframe": false,
+    "criterionRatings": true,
+    "rubricAssessment": true,
+    "studentView": true,
+    "assignmentDescription": true,
+    "discussionEditSubmit": false,
+    "discussionPrompt": false,
+    "discussionDraftTextarea": false,
+    "discussionDraftEditorIframe": false,
+    "discussionRubricModal": false,
+    "discussionPreviewRubric": false,
+    "discussionRubricTray": false,
+    "discussionGradedRubricInfo": false,
+    "discussionPostMenuTrigger": false,
+    "discussionShowRubricMenuItem": false
+  },
+  "extraction": {
+    "dueAt": "2026-08-08T05:59:59.000Z",
+    "dueDateText": "Due: Fri Aug 7, 2026 11:59pm",
+    "pointsPossibleText": "50 Points Possible",
+    "allowedSubmissionTypes": [
+      "online_text_entry",
+      "online_url"
+    ],
+    "submissionTypeText": "Online Text Entry, Website URL"
+  },
+  "fixture": "assignment-url-tab"
+}

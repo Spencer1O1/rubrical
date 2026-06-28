@@ -22,12 +22,12 @@ describe("resolveDiscussionAttachmentForImport", () => {
   });
 
   it("returns null when the composer has no attachment", async () => {
-    installFixture(loadFixtureHtml("3-discussion-reply-open.html"));
+    installFixture(loadFixtureHtml("discussion-reply-open"));
     await expect(resolveDiscussionAttachmentForImport()).resolves.toBeNull();
   });
 
   it("prefers staged session bytes", async () => {
-    installFixture(loadFixtureHtml("3-discussion-attachment.html"));
+    installFixture(loadFixtureHtml("discussion-attachment"));
     listStagedFiles.mockResolvedValue([
       {
         assignmentKey: "807136:discussion:3397799",
@@ -55,7 +55,7 @@ describe("resolveDiscussionAttachmentForImport", () => {
   });
 
   it("downloads from Canvas and stages bytes when IDB missed the pick", async () => {
-    installFixture(loadFixtureHtml("3-discussion-attachment.html"));
+    installFixture(loadFixtureHtml("discussion-attachment"));
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,

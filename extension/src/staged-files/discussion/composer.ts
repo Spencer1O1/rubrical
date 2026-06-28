@@ -78,7 +78,7 @@ export function extractDiscussionAttachmentFileName(): string | null {
   return readDiscussionComposerAttachment()?.fileName ?? null;
 }
 
-/** Reply composer attachment metadata (fixtures/3-discussion-attachment.html). */
+/** Reply composer attachment metadata (fixtures/discussion-attachment). */
 export function readDiscussionComposerAttachment(): DiscussionComposerAttachment | null {
   const editRoot = queryAnchor(discussion.editContainer);
   if (!editRoot) {

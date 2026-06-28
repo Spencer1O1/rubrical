@@ -25,7 +25,7 @@ describe("resolveAssignmentFilesForImport", () => {
   });
 
   it("returns skipped file names when canvas rows cannot be resolved", async () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
     const { resolveAssignmentFilesForImport } = await import("./import-resolve");
 
     const result = await resolveAssignmentFilesForImport();
@@ -37,7 +37,7 @@ describe("resolveAssignmentFilesForImport", () => {
   });
 
   it("returns staged uploads for rows with extension-stored bytes", async () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
     listStagedFiles.mockResolvedValue([
       {
         assignmentKey: "807136:assignment:123",

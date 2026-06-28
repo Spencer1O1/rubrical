@@ -21,7 +21,7 @@ export const submit = {
     a2: [testId(submitIds.discussionTopicReply), "#discussion-reply-btn"],
     classic: [],
   },
-  /** Reply submit control when the composer is open (fixtures/3-discussion-reply-open.html). */
+  /** Reply submit control when the composer is open (fixtures/discussion-reply-open). */
   discussionEditSubmit: {
     a2: [testId(submitIds.discussionEditSubmit)],
     classic: [],

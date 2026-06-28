@@ -21,7 +21,7 @@ describe("extractLiveImportCapture", () => {
   });
 
   it("warns when text submission is active but uploaded files remain on canvas", async () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
     const { extractLiveImportCapture } = await import("./live-capture");
 
     const capture = await extractLiveImportCapture();

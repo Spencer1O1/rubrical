@@ -27,7 +27,7 @@ function mergedRows(fixture: string) {
 
 describe("decorateUploadedFileIndicators", () => {
   it("does not warn on submitted read-only file rows before New Attempt", () => {
-    const rows = mergedRows("4-submitted.html");
+    const rows = mergedRows("assignment-submitted");
     expect(rows.some((row) => row.state === "inaccessible")).toBe(true);
 
     decorateUploadedFileIndicators(rows, { fileUploadEditable: false });
@@ -36,7 +36,7 @@ describe("decorateUploadedFileIndicators", () => {
   });
 
   it("warns on inaccessible rows when file upload is editable", () => {
-    const rows = mergedRows("1-file-uploaded.html");
+    const rows = mergedRows("assignment-file-uploaded");
     expect(rows[0]?.state).toBe("inaccessible");
 
     decorateUploadedFileIndicators(rows, { fileUploadEditable: true });

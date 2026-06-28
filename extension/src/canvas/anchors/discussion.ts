@@ -1,13 +1,13 @@
 /**
  * Canvas discussion page anchors (prompt, open reply composer).
  *
- * Verified in fixtures/3-discussion.html (prompt) and
- * fixtures/3-discussion-reply-open.html (composer + draft editor).
+ * Verified in fixtures/discussion-prompt (prompt) and
+ * fixtures/discussion-reply-open (composer + draft editor).
  *
- * Graded discussion rubrics: fixtures/3-discussion-three-dots-open.html (post menu),
- * fixtures/3-discussion-modal-open.html (details modal),
- * fixtures/3-discussion-rubric-open.html (assessment tray + traditional view),
- * fixtures/3-discussion-attachment.html (optional reply attachment in composer).
+ * Graded discussion rubrics: fixtures/discussion-menu-open (post menu),
+ * fixtures/discussion-rubric-modal (details modal),
+ * fixtures/discussion-rubric-tray (assessment tray + traditional view),
+ * fixtures/discussion-attachment (optional reply attachment in composer).
  */
 import { readCanAttachDiscussionEntries } from "../assignment-env";
 import type { CanvasAnchor } from "./types";
@@ -160,7 +160,7 @@ export const discussion = {
   },
 } as const satisfies Record<string, CanvasAnchor>;
 
-/** Hidden file picker in the reply composer (fixtures/3-discussion-reply-open.html). */
+/** Hidden file picker in the reply composer (fixtures/discussion-reply-open). */
 export function discussionAttachmentInputSelector(): string {
   return testId(discussionIds.attachmentInput);
 }

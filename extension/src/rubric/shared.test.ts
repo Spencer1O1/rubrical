@@ -13,11 +13,11 @@ function pointsCellFromFixture(name: string): Element {
 
 describe("extractA2PointsFromCell", () => {
   it("reads the max-points suffix span on assignment rubrics", () => {
-    expect(extractA2PointsFromCell(pointsCellFromFixture("1-modal-closed.html"))).toBe("/10 pts");
+    expect(extractA2PointsFromCell(pointsCellFromFixture("assignment-rubric"))).toBe("/10 pts");
   });
 
   it("reads the max-points suffix span on discussion assessment trays", () => {
-    expect(extractA2PointsFromCell(pointsCellFromFixture("3-discussion-rubric-open.html"))).toBe(
+    expect(extractA2PointsFromCell(pointsCellFromFixture("discussion-rubric-tray"))).toBe(
       "/1 pts",
     );
   });

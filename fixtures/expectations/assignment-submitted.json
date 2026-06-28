@@ -1,0 +1,41 @@
+{
+  "anchors": {
+    "dueDate": true,
+    "gradeDisplay": true,
+    "submitButton": false,
+    "discussionReply": false,
+    "uploadTable": true,
+    "uploadPane": false,
+    "fileInputDrop": false,
+    "urlInput": false,
+    "submissionTypeSelector": false,
+    "onlineUpload": false,
+    "onlineUrl": false,
+    "onlineTextEntry": false,
+    "textEditor": false,
+    "textEntryTextarea": false,
+    "textEntryEditorIframe": false,
+    "criterionRatings": true,
+    "rubricAssessment": true,
+    "studentView": true,
+    "assignmentDescription": true,
+    "discussionEditSubmit": false,
+    "discussionPrompt": false,
+    "discussionDraftTextarea": false,
+    "discussionDraftEditorIframe": false,
+    "discussionRubricModal": false,
+    "discussionPreviewRubric": false,
+    "discussionRubricTray": false,
+    "discussionGradedRubricInfo": false,
+    "discussionPostMenuTrigger": false,
+    "discussionShowRubricMenuItem": false
+  },
+  "extraction": {
+    "dueAt": "2026-06-20T05:59:00.000Z",
+    "dueDateText": "Due: Fri Jun 19, 2026 11:59pm",
+    "pointsPossibleText": "30 Points Possible",
+    "allowedSubmissionTypes": [],
+    "submissionTypeText": ""
+  },
+  "fixture": "assignment-submitted"
+}

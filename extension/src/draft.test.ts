@@ -13,17 +13,17 @@ describe("detectActiveSubmissionKind", () => {
   });
 
   it("detects file tab on upload-selected fixture", () => {
-    installFixture(loadFixtureHtml("2-text-submission.html"));
+    installFixture(loadFixtureHtml("assignment-file-upload"));
     expect(detectActiveSubmissionKind()).toBe("file");
   });
 
   it("detects text tab on text-selected fixture", () => {
-    installFixture(loadFixtureHtml("1-text-submission-tab.html"));
+    installFixture(loadFixtureHtml("assignment-text-tab"));
     expect(detectActiveSubmissionKind()).toBe("text");
   });
 
   it("detects open discussion composer as text draft", () => {
-    installFixture(loadFixtureHtml("3-discussion-reply-open.html"));
+    installFixture(loadFixtureHtml("discussion-reply-open"));
     expect(detectActiveSubmissionKind()).toBe("text");
   });
 
@@ -49,14 +49,14 @@ describe("discussion extraction", () => {
   });
 
   it("extracts the discussion prompt from the closed discussion fixture", () => {
-    installFixture(loadFixtureHtml("3-discussion.html"));
+    installFixture(loadFixtureHtml("discussion-prompt"));
     const prompt = extractInstructions();
     expect(prompt).toContain("Arts Discussion Forum #9");
     expect(prompt).toContain("Vulnerability");
   });
 
   it("uses the open composer submit anchor, not the closed Reply opener", () => {
-    installFixture(loadFixtureHtml("3-discussion-reply-open.html"));
+    installFixture(loadFixtureHtml("discussion-reply-open"));
     expect(queryAnchor(submit.discussionEditSubmit)).not.toBeNull();
     expect(queryAnchor(submit.discussionReply)).toBeNull();
     expect(submitAnchorOrder).not.toContain(submit.discussionReply);
@@ -69,7 +69,7 @@ describe("extractDraftText", () => {
   });
 
   it("reads TinyMCE content from text-editor on the text-tab fixture", () => {
-    installFixture(loadFixtureHtml("1-text-submission-tab.html"));
+    installFixture(loadFixtureHtml("assignment-text-tab"));
 
     (window as Window & { tinymce?: unknown }).tinymce = {
       triggerSave: () => {},
@@ -84,7 +84,7 @@ describe("extractDraftText", () => {
   });
 
   it("reads TinyMCE content from DiscussionEdit-container on the reply-open fixture", () => {
-    installFixture(loadFixtureHtml("3-discussion-reply-open.html"));
+    installFixture(loadFixtureHtml("discussion-reply-open"));
 
     (window as Window & { tinymce?: unknown }).tinymce = {
       triggerSave: () => {},

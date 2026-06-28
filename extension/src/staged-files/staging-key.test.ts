@@ -8,13 +8,13 @@ import {
 
 describe("stagingKeyFromPage", () => {
   it("uses course and assignment ids from the assignment URL", () => {
-    installFixture(loadFixtureHtml("1-file-uploaded.html"));
+    installFixture(loadFixtureHtml("assignment-file-uploaded"));
     expect(stagingKeyFromPage()).toBe("807136:assignment:5218393");
     expect(stagingKeyKind(stagingKeyFromPage()!)).toBe("assignment");
   });
 
   it("uses course and discussion topic ids from the discussion URL", () => {
-    installFixture(loadFixtureHtml("3-discussion-reply-open.html"));
+    installFixture(loadFixtureHtml("discussion-reply-open"));
     expect(stagingKeyFromPage()).toBe("807136:discussion:3397799");
     expect(stagingKeyKind(stagingKeyFromPage()!)).toBe("discussion");
   });

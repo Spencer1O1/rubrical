@@ -2,7 +2,7 @@
  * Canvas submission area anchors (draft text, type tabs, editor).
  *
  * `online_text_entry` is the type-tab control only. The mounted RCE lives under
- * `text-editor` (verified in fixtures/1-text-submission-tab.html).
+ * `text-editor` (verified in fixtures/assignment-text-tab).
  */
 import { testId } from "../query";
 import { uploadIds } from "./upload";

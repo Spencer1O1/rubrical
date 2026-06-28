@@ -1,0 +1,43 @@
+{
+  "anchors": {
+    "dueDate": false,
+    "gradeDisplay": false,
+    "submitButton": false,
+    "discussionReply": true,
+    "uploadTable": false,
+    "uploadPane": false,
+    "fileInputDrop": false,
+    "urlInput": false,
+    "submissionTypeSelector": false,
+    "onlineUpload": false,
+    "onlineUrl": false,
+    "onlineTextEntry": false,
+    "textEditor": false,
+    "textEntryTextarea": false,
+    "textEntryEditorIframe": false,
+    "criterionRatings": false,
+    "rubricAssessment": false,
+    "studentView": false,
+    "assignmentDescription": true,
+    "discussionEditSubmit": false,
+    "discussionPrompt": true,
+    "discussionDraftTextarea": false,
+    "discussionDraftEditorIframe": false,
+    "discussionRubricModal": false,
+    "discussionPreviewRubric": false,
+    "discussionRubricTray": false,
+    "discussionGradedRubricInfo": true,
+    "discussionPostMenuTrigger": true,
+    "discussionShowRubricMenuItem": false,
+    "discussionAttachButton": false,
+    "discussionAttachment": false
+  },
+  "extraction": {
+    "allowedSubmissionTypes": [
+      "online_text_entry",
+      "online_upload"
+    ],
+    "submissionTypeText": "Online Text Entry, Online Upload"
+  },
+  "fixture": "discussion-prompt"
+}

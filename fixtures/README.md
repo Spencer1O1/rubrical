@@ -2,6 +2,18 @@
 
 Saved HTML snapshots from live Canvas for extension DOM extraction tests.
 
+## Layout
+
+| Path | Role |
+|------|------|
+| `*.html` | Standalone fixture pages (cleaned via `pnpm clean:fixtures`) |
+| `expectations/<stem>.json` | Contract per case — anchors, metadata extraction, optional `compose` |
+| `fragments/*.html` | DOM snippets swapped onto a base page for variants |
+
+**Composed cases** (no standalone html — built at test time from base + fragment):
+
+- `assignment-file-uploaded` — `assignment-file-upload.html` + upload pane with a completed file row
+
 ## Verified selectors (in use today)
 
 Canvas DOM anchors live under [`extension/src/canvas/anchors/`](../extension/src/canvas/anchors/). Each module documents **a2** (verified `data-testid`), **classic**, and **extra** tiers. Lookups go through [`extension/src/canvas/query.ts`](../extension/src/canvas/query.ts) (`queryAnchor`, `firstMatch`, etc.).
@@ -20,7 +32,7 @@ Dynamic Canvas ids (e.g. `traditional-criterion-_9691-ratings-0`) use wildcard h
 
 Trash `button[id="<digits>"]` per upload row is defined in `upload.ts` (`fileRow.trashButton`).
 
-`online_text_entry` is the submission **type tab** control. The mounted rich-text editor lives under `text-editor` when that tab is active — see `1-text-submission-tab.html`.
+`online_text_entry` is the submission **type tab** control. The mounted rich-text editor lives under `text-editor` when that tab is active — see `assignment-text-tab.html`.
 
 Graded discussion rubrics open via **post menu (`discussion-post-menu-trigger`) → Show Rubric (`discussion-thread-menuitem-rubric`) → Preview Rubric** — not the points label.
 
@@ -28,43 +40,49 @@ Do **not** add new selectors without a fixture row here and an anchor module ent
 
 ## Fixture contract tests
 
-Extension tests load each `*.html` snapshot and compare against `expectations/<stem>.json`:
+Extension tests load each expectations case and compare against `expectations/<stem>.json`:
 
 - **`anchors`** — whether `queryAnchor` / `firstMatch` finds each keyed anchor on that page
 - **`extraction`** — metadata outputs (`dueAt`, `dueDateText`, `pointsPossibleText`, `submissionTypeText`, `allowedSubmissionTypes`)
+- **`compose`** (optional) — `{ base, replace: [{ selector, fragment }] }` to build variants without duplicating full pages
 
 Run from repo root:
 
 ```bash
+pnpm clean:fixtures
 pnpm test:fixtures
 ```
 
-A meta-test also asserts every id in `uploadIds`, `submissionIds`, `instructionsIds`, `metadataIds`, `rubricIds`, and `submitIds` appears in at least one HTML fixture.
+When cleaning live Canvas captures, pass your PII via flags, env vars, or prompts (never commit name/email to the repo):
 
-**Adding a fixture:** save `fixtures/my-case.html`, add `fixtures/expectations/my-case.json`, run tests, fix expectations until green.
+```bash
+pnpm clean:fixtures -- --name "Your Name" --email "you@school.edu" --inst-host "school.instructure.com"
+# or
+RUBRICAL_FIXTURE_DISPLAY_NAME="..." RUBRICAL_FIXTURE_EMAIL="..." pnpm clean:fixtures
+```
+
+**Adding a fixture:** save a live Canvas snapshot to `fixtures/my-case.html`, add `fixtures/expectations/my-case.json` (copy a similar case), run `pnpm clean:fixtures`, then `pnpm test:fixtures` and fix expectations until green. Without expectations yet, `clean:fixtures` keeps every `[data-testid]` subtree.
+
+For a variant of an existing page, add a fragment under `fragments/` and an expectations case with `compose` instead of copying the whole html.
 
 ## Fixtures
 
-| File | What it covers |
+| Case | What it covers |
 |------|----------------|
-| `1-modal-closed.html` | Text + URL submission types, rubric, due date, points |
-| `1-modal-open.html` | Same + rubric long-description modal open |
-| `1-file-uploaded.html` | File uploaded (`uploaded_files_table` row, numeric trash `button[id]`, `upload-box` / `upload-pane`) |
-| `1-text-submission-tab.html` | Text tab selected with mounted RCE (`text-editor`, `textarea#textentry_text`, `.tox-edit-area__iframe`) |
-| `2-text-submission.html` | File upload tab selected (`online_upload`), empty upload UI |
-| `2-url-submission.html` | Web URL tab selected, `url-input` visible |
-| `3-discussion.html` | Discussion topic prompt + closed Reply opener (`discussion-topic-reply`) |
-| `3-discussion-three-dots-open.html` | Post ⋮ menu open with **Show Rubric** (`discussion-thread-menuitem-rubric`) |
-| `3-discussion-reply-open.html` | Main topic reply composer open (`DiscussionEdit-container`, `DiscussionEdit-submit`, `message-body`) |
-| `3-discussion-modal-open.html` | Assignment Rubric Details modal (`assignment-rubric-modal`, `preview-assignment-rubric-button`) |
-| `3-discussion-rubric-open.html` | Rubric assessment tray open (`enhanced-rubric-assessment-tray`, traditional criterion ratings) |
-| `3-discussion-attachment.html` | Reply composer with one attached file (`removable-item`, download link under `DiscussionEdit-container`) |
-| `4-submitted.html` | Graded submission read-only view (no submit button until student clicks New Attempt) |
+| `assignment-rubric` | Text + URL submission types, rubric, due date, points |
+| `assignment-rubric-modal-open` | Same + rubric long-description modal open (InstUI scroll lock on `<html>`) |
+| `assignment-file-upload` | Upload tab selected, empty drop zone (no file row yet) |
+| `assignment-file-uploaded` | Upload tab with one completed file row (composed) |
+| `assignment-text-tab` | Text tab selected with mounted RCE (`text-editor`, `textarea#textentry_text`, `.tox-edit-area__iframe`) |
+| `assignment-url-tab` | Web URL tab selected, `url-input` visible |
+| `assignment-submitted` | Graded submission read-only view (no submit button until student clicks New Attempt) |
+| `discussion-prompt` | Discussion topic prompt + closed Reply opener (`discussion-topic-reply`) |
+| `discussion-menu-open` | Post ⋮ menu open with **Show Rubric** (`discussion-thread-menuitem-rubric`) |
+| `discussion-reply-open` | Main topic reply composer open (`DiscussionEdit-container`, `DiscussionEdit-submit`, `message-body`) |
+| `discussion-rubric-modal` | Assignment Rubric Details modal (`assignment-rubric-modal`, `preview-assignment-rubric-button`) |
+| `discussion-rubric-tray` | Rubric assessment tray open (`enhanced-rubric-assessment-tray`, traditional criterion ratings) |
+| `discussion-attachment` | Reply composer with one attached file (`removable-item`, download link under `DiscussionEdit-container`) |
 
 Discussion replies are **text + optional single attachment** — no submission-type tabs. The hidden file picker is `attachment-input`; Rubrical stages bytes on pick (same as assignment uploads) and sends them on import. Canvas download URLs are a fallback only after upload completes.
-
-## Gaps
-
-1. **`file-upload-in-progress.html`** — row visible while Canvas is still uploading (progress UI visible).
 
 After capture, document any **new** `data-testid` values in the anchor module and table above.
