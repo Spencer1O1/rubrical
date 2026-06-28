@@ -5,6 +5,7 @@ import { accessibilitySignature } from "./accessibility-signature";
 import { scanAssignmentUploadedRows } from "./canvas-rows";
 import {
   connectCanvasFileHooks,
+  isAssignmentFileUploadEditable,
   reconcileStagingFromTable,
   retryPendingStaging,
 } from "./hooks";
@@ -24,7 +25,6 @@ let hooksHandle: { disconnect: () => void } | null = null;
 let hooksStagingKey: string | null = null;
 let bootedStagingKey: string | null = null;
 let lastPaintedSignature = "";
-let assignmentFileHooksUnavailable = false;
 
 function canvasRowsForMerge() {
   return scanAssignmentUploadedRows().map((row) => ({
@@ -73,7 +73,9 @@ async function paintIndicators(): Promise<void> {
     return;
   }
 
-  decorateUploadedFileIndicators(merged, { fileHooksUnavailable: assignmentFileHooksUnavailable });
+  decorateUploadedFileIndicators(merged, {
+    fileUploadEditable: isAssignmentFileUploadEditable(),
+  });
 }
 
 function disconnectHooks(): void {
@@ -100,7 +102,6 @@ function ensureHooksConnected(stagingKey: string): void {
       void paintIndicators();
     },
   });
-  assignmentFileHooksUnavailable = hooksHandle === null;
   hooksStagingKey = stagingKey;
 }
 
@@ -108,7 +109,6 @@ export function disconnectAssignmentStaging(): void {
   disconnectHooks();
   bootedStagingKey = null;
   lastPaintedSignature = "";
-  assignmentFileHooksUnavailable = false;
 }
 
 export function clearAssignmentIndicators(): void {

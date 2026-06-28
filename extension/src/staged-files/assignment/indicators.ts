@@ -6,7 +6,6 @@ import indicatorCss from "./indicators.css";
 const STYLE_ID = "rubrical-staged-file-indicator-styles";
 const REUPLOAD_LABEL = "Re-upload for Rubrical";
 const STAGING_FAILED_LABEL = "Staging failed — re-select file";
-const SUBMITTED_VIEW_LABEL = "Start a New Attempt to re-upload for Rubrical";
 
 const fileNameSelectors = [
   ...upload.fileRow.fileName.a2,
@@ -14,7 +13,8 @@ const fileNameSelectors = [
 ] as const;
 
 export type IndicatorOptions = {
-  fileHooksUnavailable?: boolean;
+  /** When false (submitted/read-only view), skip re-upload warnings on prior submission files. */
+  fileUploadEditable?: boolean;
 };
 
 function ensureIndicatorStyles(): void {
@@ -105,7 +105,7 @@ function removeIndicatorFromRow(row: HTMLTableRowElement): void {
 
 function decorateIndicatorRow(
   row: HTMLTableRowElement,
-  state: "reupload" | "staging_failed" | "submitted_view",
+  state: "reupload" | "staging_failed",
   label: string,
 ): void {
   const cell = ensureIndicatorCell(row);
@@ -170,17 +170,16 @@ export function decorateUploadedFileIndicators(
       continue;
     }
 
+    if (options.fileUploadEditable === false) {
+      continue;
+    }
+
     const row = findRowElement(rowState.fileName, rowState.fileId);
     if (!row) {
       continue;
     }
     activeRows.add(row);
-
-    if (options.fileHooksUnavailable) {
-      decorateIndicatorRow(row, "submitted_view", SUBMITTED_VIEW_LABEL);
-    } else {
-      decorateIndicatorRow(row, "reupload", REUPLOAD_LABEL);
-    }
+    decorateIndicatorRow(row, "reupload", REUPLOAD_LABEL);
   }
 
   clearStaleIndicators(activeRows);

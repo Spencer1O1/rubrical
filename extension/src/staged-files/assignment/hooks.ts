@@ -53,6 +53,12 @@ function hookRoot(): Element {
   return queryAnchor(upload.attemptRoot) ?? document.body;
 }
 
+/** True when the student can select new files (not the graded/submitted read-only view). */
+export function isAssignmentFileUploadEditable(): boolean {
+  const root = hookRoot();
+  return Boolean(root.querySelector(uploadFileInputSelector()));
+}
+
 function canAttachFileHooks(): boolean {
   const root = hookRoot();
   return Boolean(

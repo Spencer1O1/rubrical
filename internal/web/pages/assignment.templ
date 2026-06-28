@@ -81,6 +81,7 @@ templ assignmentPageContent(view AssignmentView) {
 			@assignmentInstructionsScrollPanel(view)
 			@DraftPanel(view)
 		</div>
+		@assignmentAnalysisSection(view)
 		@assignmentRubricPanel(view)
 	</section>
 }
@@ -109,6 +110,13 @@ templ assignmentEmbedContent(view AssignmentView) {
 		@assignmentInstructionsDetails(view)
 		@assignmentRubricDetails(view)
 		@DraftPanel(view)
+		@assignmentAnalysisSection(view)
+	</section>
+}
+
+templ assignmentAnalysisSection(view AssignmentView) {
+	<section id="analysis-results">
+		@AnalysisSection(view.Analysis)
 	</section>
 }
 
@@ -290,9 +298,6 @@ templ DraftPanel(view AssignmentView) {
 	<aside class="space-y-4">
 		<h2 class="text-lg font-medium">Your draft</h2>
 		@DraftPanelBody(view)
-		<section id="analysis-results">
-			@AnalysisSection(view.Analysis)
-		</section>
 	</aside>
 }
 
