@@ -14,11 +14,12 @@ func (s *Service) PreviewFiles(ctx context.Context, userID int64, assignmentID i
 	providerName := "openai"
 	if s.settings != nil {
 		stored, err := s.settings.Get(ctx, userID)
-		if err == nil {
-			providerName = strings.ToLower(strings.TrimSpace(stored.Provider))
-			if providerName == "" {
-				providerName = "openai"
-			}
+		if err != nil {
+			return files.ProcessResult{}, err
+		}
+		providerName = strings.ToLower(strings.TrimSpace(stored.Provider))
+		if providerName == "" {
+			providerName = "openai"
 		}
 	}
 

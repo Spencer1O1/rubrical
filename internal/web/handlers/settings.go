@@ -3,6 +3,8 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 
 	"rubrical/internal/aisettings"
@@ -15,11 +17,13 @@ func (h *Handlers) SettingsPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to load ai settings", http.StatusInternalServerError)
 		return
 	}
+	saved := r.URL.Query().Get("saved") == "1"
 	if r.URL.Query().Get("embed") == "1" {
-		pages.SettingsEmbed(settings, "").Render(r.Context(), w)
+		id := assignmentIDFromRequest(r)
+		pages.SettingsEmbed(settings, "", assignmentEmbedBackURL(r), id, saved).Render(r.Context(), w)
 		return
 	}
-	pages.SettingsPage(settings, "").Render(r.Context(), w)
+	pages.SettingsPage(settings, "", saved).Render(r.Context(), w)
 }
 
 func (h *Handlers) GetAISettingsAPI(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +37,7 @@ func (h *Handlers) GetAISettingsAPI(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 	embed := r.FormValue("embed") == "1" || r.URL.Query().Get("embed") == "1"
+	assignmentID := assignmentIDFromRequest(r)
 
 	var incoming aisettings.Settings
 	if isJSONRequest(r) {
@@ -46,6 +51,7 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		embed = embed || r.FormValue("embed") == "1"
+		assignmentID = assignmentIDFromRequest(r)
 		incoming = aisettings.Settings{
 			Provider:        r.FormValue("provider"),
 			Model:           r.FormValue("model"),
@@ -65,9 +71,9 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 			current = incoming
 		}
 		if embed {
-			pages.SettingsEmbed(current, err.Error()).Render(r.Context(), w)
+			pages.SettingsEmbed(current, err.Error(), assignmentEmbedBackURL(r), assignmentID, false).Render(r.Context(), w)
 		} else {
-			pages.SettingsPage(current, err.Error()).Render(r.Context(), w)
+			pages.SettingsPage(current, err.Error(), false).Render(r.Context(), w)
 		}
 		return
 	}
@@ -83,10 +89,54 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if embed {
-		http.Redirect(w, r, pages.SettingsURL(true), http.StatusSeeOther)
+		http.Redirect(w, r, pages.SettingsSavedRedirectURL(true, assignmentID), http.StatusSeeOther)
 		return
 	}
-	http.Redirect(w, r, "/settings", http.StatusSeeOther)
+	http.Redirect(w, r, pages.SettingsSavedRedirectURL(false, 0), http.StatusSeeOther)
+}
+
+func assignmentIDFromRequest(r *http.Request) int64 {
+	if r == nil {
+		return 0
+	}
+	if raw := strings.TrimSpace(r.FormValue("assignment_id")); raw != "" {
+		if id, err := strconv.ParseInt(raw, 10, 64); err == nil && id > 0 {
+			return id
+		}
+	}
+	if raw := strings.TrimSpace(r.URL.Query().Get("assignment_id")); raw != "" {
+		if id, err := strconv.ParseInt(raw, 10, 64); err == nil && id > 0 {
+			return id
+		}
+	}
+	return assignmentIDFromReferer(r.Header.Get("Referer"))
+}
+
+func assignmentIDFromReferer(referer string) int64 {
+	referer = strings.TrimSpace(referer)
+	if referer == "" {
+		return 0
+	}
+	parsed, err := url.Parse(referer)
+	if err != nil {
+		return 0
+	}
+	parts := strings.Split(strings.Trim(parsed.Path, "/"), "/")
+	if len(parts) < 2 || parts[0] != "assignments" {
+		return 0
+	}
+	id, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil || id <= 0 {
+		return 0
+	}
+	return id
+}
+
+func assignmentEmbedBackURL(r *http.Request) string {
+	if id := assignmentIDFromRequest(r); id > 0 {
+		return pages.AssignmentEmbedURL(id)
+	}
+	return "/"
 }
 
 func isJSONRequest(r *http.Request) bool {

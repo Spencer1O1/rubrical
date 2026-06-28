@@ -67,6 +67,14 @@ func DraftModeTileClass(viewMode, tabMode string) string {
 	return base + " border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50"
 }
 
+func DraftModeTabID(assignmentID int64, mode string) string {
+	return fmt.Sprintf("draft-tab-%s-%d", draftmode.Normalize(mode), assignmentID)
+}
+
+func DraftModePanelID(assignmentID int64, mode string) string {
+	return fmt.Sprintf("draft-panel-%s-%d", draftmode.Normalize(mode), assignmentID)
+}
+
 func DraftModeURL(id int64) string {
 	return fmt.Sprintf("/assignments/%d/draft/mode", id)
 }

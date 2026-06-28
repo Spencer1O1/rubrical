@@ -3,6 +3,7 @@ package analysis
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -83,13 +84,25 @@ func loadRubricContext(ctx context.Context, pool *pgxpool.Pool, assignmentID int
 	return rubric, rows.Err()
 }
 
-func (s *Service) createRun(ctx context.Context, assignmentID, draftID int64, provider, model string, inputLog []byte) (int64, error) {
+func (s *Service) beginRun(ctx context.Context, userID, assignmentID, draftID int64, provider, model string, inputLog []byte) (int64, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback(ctx)
+
+	if s.enforceLimits && s.limiter != nil {
+		if err := s.limiter.checkInTx(ctx, tx, userID, assignmentID); err != nil {
+			return 0, err
+		}
+	}
+
 	var runID int64
 	var draftRef any
 	if draftID > 0 {
 		draftRef = draftID
 	}
-	err := s.pool.QueryRow(ctx, `
+	err = tx.QueryRow(ctx, `
 		INSERT INTO analysis_runs (
 			assignment_snapshot_id,
 			submission_draft_id,
@@ -97,27 +110,40 @@ func (s *Service) createRun(ctx context.Context, assignmentID, draftID int64, pr
 			model,
 			status,
 			raw_model_input
-		) VALUES ($1, $2, $3, $4, 'pending', $5::jsonb)
+		) VALUES ($1, $2, $3, $4, 'running', $5::jsonb)
 		RETURNING id
 	`, assignmentID, draftRef, provider, model, string(inputLog)).Scan(&runID)
-	return runID, err
+	if err != nil {
+		return 0, err
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, err
+	}
+	return runID, nil
 }
 
-func (s *Service) markRunStatus(ctx context.Context, runID int64, status string, output []byte, completedAt *time.Time) error {
-	if completedAt != nil {
-		_, err := s.pool.Exec(ctx, `
-			UPDATE analysis_runs
-			SET status = $2, raw_model_output = $3::jsonb, completed_at = $4
-			WHERE id = $1
-		`, runID, status, nullJSON(output), *completedAt)
+func (s *Service) saveModelOutput(ctx context.Context, runID int64, out *schema.ModelOutput) error {
+	outputJSON, err := json.Marshal(out)
+	if err != nil {
 		return err
 	}
-	_, err := s.pool.Exec(ctx, `
+	_, err = s.pool.Exec(ctx, `
 		UPDATE analysis_runs
-		SET status = $2
+		SET raw_model_output = $2::jsonb
 		WHERE id = $1
-	`, runID, status)
+	`, runID, string(outputJSON))
 	return err
+}
+
+func (s *Service) modelOutputSaved(ctx context.Context, runID int64) (bool, error) {
+	var saved bool
+	err := s.pool.QueryRow(ctx, `
+		SELECT raw_model_output IS NOT NULL
+		FROM analysis_runs
+		WHERE id = $1
+	`, runID).Scan(&saved)
+	return saved, err
 }
 
 func (s *Service) markRunFailed(ctx context.Context, runID int64, runErr error) error {
@@ -132,7 +158,18 @@ func (s *Service) markRunFailed(ctx context.Context, runID int64, runErr error) 
 }
 
 func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64, ai provider.Provider, out *schema.ModelOutput) (Result, error) {
+	if existing, err := loadRunResult(ctx, s.pool, runID); err != nil {
+		return Result{}, err
+	} else if existing != nil {
+		return *existing, nil
+	}
+
 	outputJSON, err := json.Marshal(out)
+	if err != nil {
+		return Result{}, err
+	}
+
+	outputSaved, err := s.modelOutputSaved(ctx, runID)
 	if err != nil {
 		return Result{}, err
 	}
@@ -149,26 +186,45 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 	defer tx.Rollback(ctx)
 
 	now := time.Now().UTC()
-	_, err = tx.Exec(ctx, `
-		UPDATE analysis_runs
-		SET status = 'completed',
-			overall_summary = $2,
-			estimated_score = $3,
-			estimated_score_max = $4,
-			confidence = $5,
-			raw_model_output = $6::jsonb,
-			completed_at = $7
-		WHERE id = $1
-	`, runID,
-		out.OverallSummary,
-		out.EstimatedScore,
-		out.EstimatedScoreMax,
-		out.Confidence,
-		string(outputJSON),
-		now,
-	)
+	if outputSaved {
+		_, err = tx.Exec(ctx, `
+			UPDATE analysis_runs
+			SET status = 'completed',
+				overall_summary = $2,
+				estimated_score = $3,
+				estimated_score_max = $4,
+				confidence = $5,
+				completed_at = $6
+			WHERE id = $1
+		`, runID,
+			out.OverallSummary,
+			out.EstimatedScore,
+			out.EstimatedScoreMax,
+			out.Confidence,
+			now,
+		)
+	} else {
+		_, err = tx.Exec(ctx, `
+			UPDATE analysis_runs
+			SET status = 'completed',
+				overall_summary = $2,
+				estimated_score = $3,
+				estimated_score_max = $4,
+				confidence = $5,
+				raw_model_output = $6::jsonb,
+				completed_at = $7
+			WHERE id = $1
+		`, runID,
+			out.OverallSummary,
+			out.EstimatedScore,
+			out.EstimatedScoreMax,
+			out.Confidence,
+			string(outputJSON),
+			now,
+		)
+	}
 	if err != nil {
-		return Result{}, err
+		return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
 	}
 
 	sortOrder := 0
@@ -189,7 +245,7 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 		criterionID := matchCriterionID(criterionIDs, criterion.CriterionName)
 		id, err := insertFeedbackItem(ctx, tx, runID, criterionID, item)
 		if err != nil {
-			return Result{}, err
+			return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
 		}
 		item.ID = id
 		feedback = append(feedback, item)
@@ -207,7 +263,7 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 		sortOrder++
 		id, err := insertFeedbackItem(ctx, tx, runID, nil, item)
 		if err != nil {
-			return Result{}, err
+			return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
 		}
 		item.ID = id
 		feedback = append(feedback, item)
@@ -224,7 +280,7 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 		sortOrder++
 		id, err := insertFeedbackItem(ctx, tx, runID, nil, item)
 		if err != nil {
-			return Result{}, err
+			return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
 		}
 		item.ID = id
 		feedback = append(feedback, item)
@@ -241,14 +297,14 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 		sortOrder++
 		id, err := insertFeedbackItem(ctx, tx, runID, nil, item)
 		if err != nil {
-			return Result{}, err
+			return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
 		}
 		item.ID = id
 		feedback = append(feedback, item)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return Result{}, err
+		return s.persistFeedbackFailure(outputSaved, runID, ai, out, now, err)
 	}
 
 	return Result{
@@ -264,17 +320,31 @@ func (s *Service) persistSuccess(ctx context.Context, runID, assignmentID int64,
 	}, nil
 }
 
-func loadLatestResult(ctx context.Context, pool *pgxpool.Pool, assignmentID int64) (*Result, error) {
+func (s *Service) persistFeedbackFailure(outputSaved bool, runID int64, ai provider.Provider, out *schema.ModelOutput, completedAt time.Time, err error) (Result, error) {
+	if !outputSaved {
+		return Result{}, err
+	}
+	return Result{
+		RunID:             runID,
+		Provider:          ai.Name(),
+		Model:             ai.Model(),
+		OverallSummary:    out.OverallSummary,
+		EstimatedScore:    out.EstimatedScore,
+		EstimatedScoreMax: out.EstimatedScoreMax,
+		Confidence:        out.Confidence,
+		CompletedAt:       completedAt,
+	}, fmt.Errorf("%w: %w", ErrFeedbackPersistFailed, err)
+}
+
+func loadRunResult(ctx context.Context, pool *pgxpool.Pool, runID int64) (*Result, error) {
 	var result Result
 	var completedAt *time.Time
 	err := pool.QueryRow(ctx, `
 		SELECT id, COALESCE(provider, ''), COALESCE(model, ''), COALESCE(overall_summary, ''),
 			estimated_score, estimated_score_max, COALESCE(confidence, ''), completed_at
 		FROM analysis_runs
-		WHERE assignment_snapshot_id = $1 AND status = 'completed'
-		ORDER BY completed_at DESC NULLS LAST, id DESC
-		LIMIT 1
-	`, assignmentID).Scan(
+		WHERE id = $1 AND status = 'completed'
+	`, runID).Scan(
 		&result.RunID,
 		&result.Provider,
 		&result.Model,
@@ -294,18 +364,46 @@ func loadLatestResult(ctx context.Context, pool *pgxpool.Pool, assignmentID int6
 		result.CompletedAt = *completedAt
 	}
 
+	feedback, err := loadFeedbackItems(ctx, pool, runID)
+	if err != nil {
+		return nil, err
+	}
+	result.Feedback = feedback
+	return &result, nil
+}
+
+func loadLatestResult(ctx context.Context, pool *pgxpool.Pool, assignmentID int64) (*Result, error) {
+	var runID int64
+	err := pool.QueryRow(ctx, `
+		SELECT id
+		FROM analysis_runs
+		WHERE assignment_snapshot_id = $1 AND status = 'completed'
+		ORDER BY completed_at DESC NULLS LAST, id DESC
+		LIMIT 1
+	`, assignmentID).Scan(&runID)
+	if errorsIsNoRows(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return loadRunResult(ctx, pool, runID)
+}
+
+func loadFeedbackItems(ctx context.Context, pool *pgxpool.Pool, runID int64) ([]FeedbackItem, error) {
 	rows, err := pool.Query(ctx, `
 		SELECT id, category, severity, title, COALESCE(explanation, ''), COALESCE(evidence, ''),
 			COALESCE(suggestion, ''), status, sort_order
 		FROM feedback_items
 		WHERE analysis_run_id = $1
 		ORDER BY sort_order ASC, id ASC
-	`, result.RunID)
+	`, runID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
+	var items []FeedbackItem
 	for rows.Next() {
 		var item FeedbackItem
 		if err := rows.Scan(
@@ -321,13 +419,9 @@ func loadLatestResult(ctx context.Context, pool *pgxpool.Pool, assignmentID int6
 		); err != nil {
 			return nil, err
 		}
-		result.Feedback = append(result.Feedback, item)
+		items = append(items, item)
 	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return &result, nil
+	return items, rows.Err()
 }
 
 func insertFeedbackItem(ctx context.Context, tx pgx.Tx, runID int64, criterionID *int64, item FeedbackItem) (int64, error) {
@@ -386,13 +480,6 @@ func matchCriterionID(refs []criterionRef, name string) *int64 {
 			return &id
 		}
 	}
-	for _, ref := range refs {
-		refName := strings.ToLower(strings.TrimSpace(ref.Name))
-		if strings.Contains(refName, normalized) || strings.Contains(normalized, refName) {
-			id := ref.ID
-			return &id
-		}
-	}
 	return nil
 }
 
@@ -409,14 +496,6 @@ func criterionStatusLabel(status string) string {
 	}
 }
 
-func nullJSON(data []byte) *string {
-	if len(data) == 0 {
-		return nil
-	}
-	s := string(data)
-	return &s
-}
-
 func errorsIsNoRows(err error) bool {
-	return err == pgx.ErrNoRows
+	return errors.Is(err, pgx.ErrNoRows)
 }

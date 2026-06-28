@@ -41,7 +41,23 @@ Everything falls into **three lifecycle stages**. Only the middle column is “a
 1. **`ANALYSIS_MAX_TOTAL_BYTES`** — sum of **binary file payloads** sent to the model (PDF/image attachments, etc.). Inline text sources also pass through the file pipeline first; this caps their raw bytes before extraction.
 2. **`ANALYSIS_MAX_SUBMISSION_TEXT_CHARS`** — one **shared pool** for **student submission text** in the prompt: typed draft + fetched URL text + inline extracted file text. First content wins; later content truncates when the pool runs out.
 
-**Not in the submission text pool:** instructions, rubric, assignment title/context, file tree manifests, attachment index lines, skipped-file notes. Instructions/rubric are already bounded at ingress (import field caps).
+**Not in the submission text pool:** instructions, rubric, assignment title/context, file tree manifests, attachment index lines, skipped-file notes. Instructions/rubric are already bounded at ingress (import field caps). Manifest trees and skipped-file notes share a separate hardcoded cap (`DefaultAnalysisMaxManifestChars`, 32 000 runes).
+
+### Provider file routing asymmetry
+
+OpenAI and Anthropic accept different native attachment types. Logic lives in `internal/analysis/files/`.
+
+| File kind | OpenAI | Anthropic |
+|-----------|--------|-----------|
+| PDF | Native PDF attachment | Native PDF attachment |
+| Images (png, jpg, …) | Native image attachment | Native image attachment |
+| docx, plain text, code, markdown, html, json, xml | Native provider file upload | Inline text in prompt (docx extracted) |
+| xlsx, pptx, other Office | Native provider file upload | Skipped — use docx/pdf or switch to OpenAI |
+| Legacy `.doc` | Skipped | Skipped |
+| zip | Expanded in pipeline (depth/size limits) | Expanded in pipeline (depth/size limits) |
+| exe, media, rar/7z | Skipped with note | Skipped with note |
+
+When a file is skipped, a note is included in the prompt so the model knows it was not analyzed.
 
 ## Server ENV (operator / deployment)
 
@@ -71,6 +87,7 @@ Change in `defaults.go` or product code — not runtime ENV.
 | Area | Examples |
 |------|----------|
 | Import field caps | 512KB instructions/draft text, rubric row limits, 8MB JSON body |
+| Analysis prompt caps | 32 000 runes for manifest trees + skipped-file notes |
 | Zip extraction safety | Max nesting depth (2), max total uncompressed bytes per archive (128 MiB) |
 | Provider API wiring | Base URLs, 120s provider timeout, OpenAI temperature 0.2 |
 

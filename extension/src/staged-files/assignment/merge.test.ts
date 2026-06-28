@@ -93,4 +93,64 @@ describe("mergeRowAccessibility", () => {
 
     expect(rows[0]?.state).toBe("staged");
   });
+
+  it("matches duplicate saved files when Canvas renames the second copy", () => {
+    const rows = mergeRowAccessibility(
+      [
+        { fileName: "essay.pdf", normalizedFileName: "essay.pdf", fileId: "10" },
+        { fileName: "essay-1.pdf", normalizedFileName: "essay-1.pdf", fileId: "11" },
+      ],
+      [],
+      [
+        {
+          serverFileId: 1,
+          fileName: "essay.pdf",
+          canvasFileId: "10",
+          byteSize: 100,
+          uploadedAt: "2026-06-26T12:00:00.000Z",
+        },
+        {
+          serverFileId: 2,
+          fileName: "essay.pdf",
+          canvasFileId: "11",
+          byteSize: 100,
+          uploadedAt: "2026-06-26T12:01:00.000Z",
+        },
+      ],
+    );
+
+    expect(rows[0]?.state).toBe("saved");
+    expect(rows[0]?.serverFileId).toBe(1);
+    expect(rows[1]?.state).toBe("saved");
+    expect(rows[1]?.serverFileId).toBe(2);
+  });
+
+  it("disambiguates duplicate manifest filenames by row order when canvas ids are missing", () => {
+    const rows = mergeRowAccessibility(
+      [
+        { fileName: "essay.pdf", normalizedFileName: "essay.pdf", fileId: null },
+        { fileName: "essay-1.pdf", normalizedFileName: "essay-1.pdf", fileId: null },
+      ],
+      [],
+      [
+        {
+          serverFileId: 1,
+          fileName: "essay.pdf",
+          byteSize: 100,
+          uploadedAt: "2026-06-26T12:00:00.000Z",
+        },
+        {
+          serverFileId: 2,
+          fileName: "essay.pdf",
+          byteSize: 100,
+          uploadedAt: "2026-06-26T12:01:00.000Z",
+        },
+      ],
+    );
+
+    expect(rows[0]?.state).toBe("saved");
+    expect(rows[0]?.serverFileId).toBe(1);
+    expect(rows[1]?.state).toBe("saved");
+    expect(rows[1]?.serverFileId).toBe(2);
+  });
 });

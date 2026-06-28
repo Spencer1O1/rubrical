@@ -40,6 +40,8 @@ type draftUpsertOptions struct {
 	URL        string
 	SourceType string
 	FromCanvas bool
+	ClearText  bool
+	ClearURL   bool
 }
 
 type draftRow struct {
@@ -366,6 +368,58 @@ func (h *Handlers) removeDraftFileByID(ctx context.Context, assignmentID, fileID
 	return h.touchDraftUpdatedAt(ctx, draft.ID)
 }
 
+func (h *Handlers) clearDraftTextBody(ctx context.Context, assignmentID int64) error {
+	draft, err := h.loadLatestDraftRow(ctx, assignmentID)
+	if err != nil {
+		return err
+	}
+	if draft == nil {
+		return nil
+	}
+	_, err = h.db.Pool.Exec(ctx, `
+		UPDATE submission_drafts
+		SET body = '', word_count = 0, updated_at = NOW()
+		WHERE id = $1 AND user_id = $2
+	`, draft.ID, h.userID)
+	return err
+}
+
+func (h *Handlers) clearDraftURL(ctx context.Context, assignmentID int64) error {
+	draft, err := h.loadLatestDraftRow(ctx, assignmentID)
+	if err != nil {
+		return err
+	}
+	if draft == nil {
+		return nil
+	}
+	_, err = h.db.Pool.Exec(ctx, `
+		UPDATE submission_drafts
+		SET submission_url = NULL, updated_at = NOW()
+		WHERE id = $1 AND user_id = $2
+	`, draft.ID, h.userID)
+	return err
+}
+
+func (h *Handlers) switchDraftModeOnly(ctx context.Context, assignmentID int64, mode string) error {
+	mode = draftmode.Normalize(mode)
+	draft, err := h.loadLatestDraftRow(ctx, assignmentID)
+	if err != nil {
+		return err
+	}
+	if draft == nil {
+		return h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
+			Mode:       mode,
+			SourceType: "manual_paste",
+		})
+	}
+	_, err = h.db.Pool.Exec(ctx, `
+		UPDATE submission_drafts
+		SET draft_mode = $3, updated_at = NOW()
+		WHERE id = $1 AND user_id = $2
+	`, draft.ID, h.userID, mode)
+	return err
+}
+
 func (h *Handlers) saveDraftURL(ctx context.Context, assignmentID int64, url string, sourceType string, fromCanvas bool) error {
 	return h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
 		Mode:       draftmode.URL,
@@ -376,11 +430,7 @@ func (h *Handlers) saveDraftURL(ctx context.Context, assignmentID int64, url str
 }
 
 func (h *Handlers) switchDraftMode(ctx context.Context, assignmentID int64, mode string) error {
-	mode = draftmode.Normalize(mode)
-	return h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
-		Mode:       mode,
-		SourceType: "manual_paste",
-	})
+	return h.switchDraftModeOnly(ctx, assignmentID, mode)
 }
 
 func (h *Handlers) loadLatestDraftRow(ctx context.Context, assignmentID int64) (*draftRow, error) {
@@ -476,35 +526,26 @@ func applyDraftUpsert(existing *draftRow, opts draftUpsertOptions) (draftRow, bo
 
 	next.Mode = draftmode.Normalize(opts.Mode)
 
-	switch next.Mode {
-	case draftmode.Text:
-		next.URL = nil
-		if opts.SourceType != "" {
-			next.Body = opts.Body
-			next.SourceType = opts.SourceType
-			next.FromCanvas = opts.FromCanvas
-		} else if opts.Mode == draftmode.Text {
-			next.Body = ""
-		}
-	case draftmode.File:
+	if opts.ClearText {
 		next.Body = ""
+	} else if next.Mode == draftmode.Text && (opts.SourceType != "" || opts.Body != "") {
+		next.Body = opts.Body
+	}
+
+	if opts.ClearURL {
 		next.URL = nil
-		if opts.SourceType != "" {
-			next.SourceType = opts.SourceType
-			next.FromCanvas = opts.FromCanvas
-		}
-	case draftmode.URL:
-		next.Body = ""
+	} else if next.Mode == draftmode.URL {
 		if opts.URL != "" {
 			url := strings.TrimSpace(opts.URL)
 			next.URL = &url
-		} else if opts.Mode == draftmode.URL {
+		} else if opts.SourceType != "" {
 			next.URL = nil
 		}
-		if opts.SourceType != "" {
-			next.SourceType = opts.SourceType
-			next.FromCanvas = opts.FromCanvas
-		}
+	}
+
+	if opts.SourceType != "" {
+		next.SourceType = opts.SourceType
+		next.FromCanvas = opts.FromCanvas
 	}
 
 	return next, true
@@ -519,12 +560,6 @@ func (h *Handlers) upsertLatestDraft(ctx context.Context, assignmentID int64, op
 	next, changed := applyDraftUpsert(existing, opts)
 	if !changed {
 		return nil
-	}
-
-	if existing != nil && next.Mode != draftmode.File && existing.Mode == draftmode.File {
-		if err := h.clearDraftFiles(ctx, existing.ID); err != nil {
-			return err
-		}
 	}
 
 	wordCount := len(strings.Fields(next.Body))

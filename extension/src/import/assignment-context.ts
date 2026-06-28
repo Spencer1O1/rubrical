@@ -1,7 +1,7 @@
 import { instructions, rubric } from "../canvas/anchors";
 import { anyAnchorPresent } from "../canvas/query";
 import { extractCourseName, extractInstructions, extractTitle } from "../extractor";
-import { extractAssignmentMetadata } from "../metadata";
+import { extractPrefetchAssignmentMetadata } from "../metadata";
 import { extractRubricTable, pageHasCriterionLongDescriptionButtons } from "../rubric";
 import { syncStrictExtractionFromServer } from "../server-config";
 import { normalizeSourceUrl } from "../staged-files/normalize-source-url";
@@ -30,7 +30,7 @@ export async function extractAssignmentContext(pageType: string): Promise<Cached
     title: extractTitle(),
     instructionsText: extractInstructions(),
     rubric: rubricTable,
-    metadata: extractAssignmentMetadata(extractCourseName()),
+    metadata: extractPrefetchAssignmentMetadata(extractCourseName()),
     cachedAt: new Date().toISOString(),
     longDescriptionsFetched: hadLongDescriptionButtons,
   };

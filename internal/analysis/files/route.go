@@ -43,6 +43,9 @@ func routeFile(provider string, raw RawFile) (inline *InlineSection, attachment 
 			}
 			return nil, att, ""
 		}
+		if reason, skip := anthropicOfficeSkipReason(kind); skip {
+			return nil, nil, fmt.Sprintf("%s: %s", raw.Path.String(), reason)
+		}
 		if !anthropicNeedsInline(kind) {
 			return nil, nil, fmt.Sprintf("%s: %s", raw.Path.String(), SkipReason(kind))
 		}

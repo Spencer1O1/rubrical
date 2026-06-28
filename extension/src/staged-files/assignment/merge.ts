@@ -6,8 +6,29 @@ export type CanvasRowForMerge = {
   fileId: string | null;
 };
 
+function normalizeManifestFileName(fileName: string): string {
+  return fileName.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function sameNameOccurrenceIndex(rows: CanvasRowForMerge[], rowIndex: number): number {
+  const name = rows[rowIndex]!.normalizedFileName;
+  let count = 0;
+  for (let i = 0; i < rowIndex; i++) {
+    if (rows[i]!.normalizedFileName === name) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function provisionalKey(entry: StagedFileRecord): string {
+  return `${entry.normalizedFileName}:${entry.stagedAt}`;
+}
+
 function matchManifestRow(
   row: CanvasRowForMerge,
+  rowIndex: number,
+  canvasRows: CanvasRowForMerge[],
   manifest: DraftManifestFile[],
   usedServerIds: Set<number>,
 ): DraftManifestFile | null {
@@ -21,17 +42,29 @@ function matchManifestRow(
     }
   }
 
-  const candidates = manifest.filter(
-    (file) =>
-      !usedServerIds.has(file.serverFileId) &&
-      file.fileName.trim().toLowerCase().replace(/\s+/g, " ") === row.normalizedFileName,
+  const sortedManifest = [...manifest].sort(
+    (left, right) =>
+      left.uploadedAt.localeCompare(right.uploadedAt) ||
+      left.serverFileId - right.serverFileId,
   );
 
-  if (candidates.length === 0) {
-    return null;
+  const unused = sortedManifest.filter((file) => !usedServerIds.has(file.serverFileId));
+
+  const nameCandidates = unused.filter(
+    (file) => normalizeManifestFileName(file.fileName) === row.normalizedFileName,
+  );
+
+  if (nameCandidates.length > 0) {
+    const occurrence = sameNameOccurrenceIndex(canvasRows, rowIndex);
+    const byName = nameCandidates[occurrence];
+    if (byName) {
+      return byName;
+    }
   }
-  if (candidates.length === 1) {
-    return candidates[0]!;
+
+  const byRowIndex = sortedManifest[rowIndex];
+  if (byRowIndex && !usedServerIds.has(byRowIndex.serverFileId)) {
+    return byRowIndex;
   }
 
   return null;
@@ -39,6 +72,8 @@ function matchManifestRow(
 
 function matchStagedRow(
   row: CanvasRowForMerge,
+  rowIndex: number,
+  canvasRows: CanvasRowForMerge[],
   staged: StagedFileRecord[],
   usedProvisional: Set<string>,
 ): StagedFileRecord | null {
@@ -49,26 +84,36 @@ function matchStagedRow(
     }
   }
 
-  const candidates = staged.filter((entry) => {
-    if (entry.normalizedFileName !== row.normalizedFileName) {
-      return false;
-    }
-    const key = `${entry.normalizedFileName}:${entry.stagedAt}`;
-    return !usedProvisional.has(key);
-  });
+  const sortedProvisional = staged
+    .filter((entry) => !entry.canvasFileId)
+    .sort(
+      (left, right) => new Date(left.stagedAt).getTime() - new Date(right.stagedAt).getTime(),
+    );
 
-  if (candidates.length === 0) {
+  const provisional = sortedProvisional.filter(
+    (entry) => !usedProvisional.has(provisionalKey(entry)),
+  );
+
+  const nameCandidates = provisional.filter(
+    (entry) => entry.normalizedFileName === row.normalizedFileName,
+  );
+
+  let chosen: StagedFileRecord | undefined;
+  if (nameCandidates.length > 0) {
+    chosen = nameCandidates[sameNameOccurrenceIndex(canvasRows, rowIndex)];
+  }
+  if (!chosen) {
+    const byRowIndex = sortedProvisional[rowIndex];
+    if (byRowIndex && !usedProvisional.has(provisionalKey(byRowIndex))) {
+      chosen = byRowIndex;
+    }
+  }
+
+  if (!chosen) {
     return null;
   }
 
-  const chosen =
-    candidates.length === 1
-      ? candidates[0]!
-      : candidates.sort(
-          (a, b) => new Date(a.stagedAt).getTime() - new Date(b.stagedAt).getTime(),
-        )[0]!;
-
-  usedProvisional.add(`${chosen.normalizedFileName}:${chosen.stagedAt}`);
+  usedProvisional.add(provisionalKey(chosen));
   return chosen;
 }
 
@@ -80,8 +125,8 @@ export function mergeRowAccessibility(
   const usedServerIds = new Set<number>();
   const usedProvisional = new Set<string>();
 
-  return canvasRows.map((row) => {
-    const stagedMatch = matchStagedRow(row, staged, usedProvisional);
+  return canvasRows.map((row, rowIndex) => {
+    const stagedMatch = matchStagedRow(row, rowIndex, canvasRows, staged, usedProvisional);
     if (stagedMatch) {
       return {
         fileName: row.fileName,
@@ -95,7 +140,7 @@ export function mergeRowAccessibility(
       };
     }
 
-    const manifestMatch = matchManifestRow(row, manifest, usedServerIds);
+    const manifestMatch = matchManifestRow(row, rowIndex, canvasRows, manifest, usedServerIds);
     if (manifestMatch) {
       usedServerIds.add(manifestMatch.serverFileId);
       return {

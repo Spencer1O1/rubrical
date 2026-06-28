@@ -60,6 +60,7 @@ export async function resolveAssignmentFilesForImport(): Promise<{
     if (payload) {
       draftFiles.push({
         ...payload,
+        fileName: row.fileName,
         canvasFileId: stagedMatch.canvasFileId ?? row.fileId ?? undefined,
         sortOrder: index,
       });

@@ -59,6 +59,7 @@ A meta-test also asserts every id in `uploadIds`, `submissionIds`, `instructions
 | `3-discussion-modal-open.html` | Assignment Rubric Details modal (`assignment-rubric-modal`, `preview-assignment-rubric-button`) |
 | `3-discussion-rubric-open.html` | Rubric assessment tray open (`enhanced-rubric-assessment-tray`, traditional criterion ratings) |
 | `3-discussion-attachment.html` | Reply composer with one attached file (`removable-item`, download link under `DiscussionEdit-container`) |
+| `4-submitted.html` | Graded submission read-only view (no submit button until student clicks New Attempt) |
 
 Discussion replies are **text + optional single attachment** — no submission-type tabs. The hidden file picker is `attachment-input`; Rubrical stages bytes on pick (same as assignment uploads) and sends them on import. Canvas download URLs are a fallback only after upload completes.
 

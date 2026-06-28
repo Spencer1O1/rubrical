@@ -7,6 +7,7 @@ import (
 
 func BuildSubmission(input Input, maxSubmissionTextChars int) string {
 	budget := newTextBudget(maxSubmissionTextChars)
+	manifestCap := newManifestBudget(0)
 	var b strings.Builder
 	b.WriteString("\n\n## Student submission\n")
 
@@ -19,7 +20,7 @@ func BuildSubmission(input Input, maxSubmissionTextChars int) string {
 		writeTextSubmission(&b, input, &budget)
 	}
 
-	writeFileContext(&b, input.Files, &budget)
+	writeFileContext(&b, input.Files, &budget, &manifestCap)
 
 	return b.String()
 }
@@ -57,9 +58,9 @@ func writeTextSubmission(b *strings.Builder, input Input, budget *textBudget) {
 	}
 }
 
-func writeFileContext(b *strings.Builder, files FileContext, budget *textBudget) {
+func writeFileContext(b *strings.Builder, files FileContext, budget *textBudget, manifestCap *manifestBudget) {
 	for _, manifest := range files.Manifests {
-		if tree := strings.TrimSpace(manifest.Tree); tree != "" {
+		if tree := manifestCap.take(manifest.Tree); tree != "" {
 			b.WriteByte('\n')
 			b.WriteString(tree)
 		}
@@ -92,8 +93,11 @@ func writeFileContext(b *strings.Builder, files FileContext, budget *textBudget)
 	if len(files.SkippedNotes) > 0 {
 		b.WriteString("\n## Skipped files\n")
 		for _, note := range files.SkippedNotes {
-			b.WriteString("- ")
-			b.WriteString(note)
+			line := manifestCap.take("- " + note)
+			if line == "" {
+				break
+			}
+			b.WriteString(line)
 			b.WriteByte('\n')
 		}
 	}

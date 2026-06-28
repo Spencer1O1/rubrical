@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
@@ -13,15 +11,16 @@ import (
 	"rubrical/internal/aisettings"
 	"rubrical/internal/analysis/files"
 	"rubrical/internal/analysis/provider"
-	"rubrical/internal/config"
 	"rubrical/internal/draftfiles"
 	"rubrical/internal/draftmode"
+	"rubrical/internal/urlfetch"
 )
 
 var (
 	ErrNotConfigured       = errors.New("ai analysis is not configured")
 	ErrNothingToAnalyze    = errors.New("add draft text, a file, or a submission url before analyzing")
 	ErrNoAnalyzableContent = files.ErrNoAnalyzableContent
+	ErrURLFetchFailed      = errors.New("could not fetch submission url content")
 )
 
 type Service struct {
@@ -29,7 +28,7 @@ type Service struct {
 	files         *draftfiles.Store
 	settings      *aisettings.Store
 	limiter       *Limiter
-	urlFetch      *URLFetcher
+	urlFetch      *urlfetch.SafeFetcher
 	enforceLimits bool
 	opts          Options
 }
@@ -40,6 +39,7 @@ func NewService(
 	settings *aisettings.Store,
 	limiter *Limiter,
 	enforceLimits bool,
+	allowLocalURLFetch bool,
 	opts Options,
 ) *Service {
 	return &Service{
@@ -47,7 +47,7 @@ func NewService(
 		files:         files,
 		settings:      settings,
 		limiter:       limiter,
-		urlFetch:      NewURLFetcher(),
+		urlFetch:      urlfetch.NewSafeFetcher(allowLocalURLFetch),
 		enforceLimits: enforceLimits,
 		opts:          opts.withDefaults(),
 	}
@@ -80,11 +80,6 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 	if err != nil {
 		return Result{}, err
 	}
-	if s.enforceLimits {
-		if err := s.limiter.Check(ctx, userID, assignmentID); err != nil {
-			return Result{}, err
-		}
-	}
 
 	input, draftID, err := s.loadInput(ctx, assignmentID, userID)
 	if err != nil {
@@ -103,17 +98,16 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 	}
 
 	req := BuildProviderRequest(input, fileResult, s.opts.MaxSubmissionTextChars)
+	if err := ValidateProviderRequest(req); err != nil {
+		return Result{}, err
+	}
 	inputLog, err := EncodePromptLog(req)
 	if err != nil {
 		return Result{}, err
 	}
 
-	runID, err := s.createRun(ctx, assignmentID, draftID, provider.Name(), provider.Model(), inputLog)
+	runID, err := s.beginRun(ctx, userID, assignmentID, draftID, provider.Name(), provider.Model(), inputLog)
 	if err != nil {
-		return Result{}, err
-	}
-
-	if err := s.markRunStatus(ctx, runID, "running", nil, nil); err != nil {
 		return Result{}, err
 	}
 
@@ -123,10 +117,14 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 		return Result{}, err
 	}
 
-	result, err := s.persistSuccess(ctx, runID, assignmentID, provider, modelOut)
-	if err != nil {
+	if err := s.saveModelOutput(ctx, runID, modelOut); err != nil {
 		_ = s.markRunFailed(ctx, runID, err)
 		return Result{}, err
+	}
+
+	result, err := s.persistSuccess(ctx, runID, assignmentID, provider, modelOut)
+	if err != nil {
+		return result, err
 	}
 	return result, nil
 }
@@ -238,9 +236,10 @@ func (s *Service) loadInput(ctx context.Context, assignmentID, userID int64) (In
 
 	if draftmode.Normalize(input.DraftMode) == draftmode.URL && input.DraftURL != "" {
 		fetched, err := s.urlFetch.Fetch(ctx, input.DraftURL)
-		if err == nil && strings.TrimSpace(fetched) != "" {
-			input.DraftText = fetched
+		if err != nil || strings.TrimSpace(fetched) == "" {
+			return Input{}, 0, ErrURLFetchFailed
 		}
+		input.DraftText = fetched
 	}
 
 	return input, draftID, nil
@@ -277,51 +276,3 @@ func (s *Service) loadDraftFiles(ctx context.Context, draftID int64) ([]Submissi
 	return files, rows.Err()
 }
 
-type URLFetcher struct {
-	client *http.Client
-}
-
-func NewURLFetcher() *URLFetcher {
-	return &URLFetcher{
-		client: &http.Client{Timeout: config.DefaultURLFetchTimeout},
-	}
-}
-
-func (f *URLFetcher) Fetch(ctx context.Context, rawURL string) (string, error) {
-	if f == nil || f.client == nil {
-		return "", fmt.Errorf("url fetcher unavailable")
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-	if err != nil {
-		return "", err
-	}
-	resp, err := f.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("url fetch status %d", resp.StatusCode)
-	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 512<<10))
-	if err != nil {
-		return "", err
-	}
-	return stripHTML(string(body)), nil
-}
-
-func stripHTML(html string) string {
-	var b strings.Builder
-	inTag := false
-	for _, r := range html {
-		switch {
-		case r == '<':
-			inTag = true
-		case r == '>':
-			inTag = false
-		case !inTag:
-			b.WriteRune(r)
-		}
-	}
-	return strings.Join(strings.Fields(b.String()), " ")
-}

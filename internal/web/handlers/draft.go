@@ -14,17 +14,6 @@ import (
 	"rubrical/internal/web/pages"
 )
 
-func renderHTMXDraftStatusError(w http.ResponseWriter, r *http.Request, assignmentID int64, message string) bool {
-	if r.Header.Get("HX-Request") != "true" {
-		return false
-	}
-
-	w.Header().Set("HX-Retarget", "#"+pages.DraftStatusID(assignmentID))
-	w.Header().Set("HX-Reswap", "innerHTML")
-	pages.DraftStatusError(message).Render(r.Context(), w)
-	return true
-}
-
 func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 	id, err := parseID(chi.URLParam(r, "id"))
 	if err != nil {
@@ -39,6 +28,10 @@ func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 
 	body := strings.TrimSpace(r.FormValue("draft"))
 	if body == "" {
+		if err := h.clearDraftTextBody(r.Context(), id); err != nil {
+			http.Error(w, "failed to clear draft", http.StatusInternalServerError)
+			return
+		}
 		if r.Header.Get("HX-Request") == "true" {
 			pages.DraftStatusText(pages.DraftStatusLabel(0, nil, "", draftmode.Text)).Render(r.Context(), w)
 			return
@@ -76,21 +69,21 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 	maxBytes := h.maxDraftUploadBytes()
 
 	if err := r.ParseMultipartForm(int64(maxBytes)); err != nil {
-		http.Error(w, "invalid upload", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "invalid upload")
 		return
 	}
 
 	headers := r.MultipartForm.File["draft_file"]
 	if len(headers) == 0 {
-		http.Error(w, "draft_file is required", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "draft_file is required")
 		return
 	}
 
 	if allowed, err := h.loadAllowedDraftModes(r.Context(), id); err != nil {
-		http.Error(w, "assignment not found", http.StatusNotFound)
+		h.renderHTMXDraftPanelError(w, r, id, "assignment not found")
 		return
 	} else if !submissiontypes.ModeAllowed(draftmode.File, allowed) {
-		http.Error(w, "file submission not allowed for this assignment", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "file submission not allowed for this assignment")
 		return
 	}
 
@@ -98,18 +91,18 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 	for _, header := range headers {
 		file, err := header.Open()
 		if err != nil {
-			http.Error(w, "failed to read upload", http.StatusInternalServerError)
+			h.renderHTMXDraftPanelError(w, r, id, "failed to read upload")
 			return
 		}
 
 		data, err := io.ReadAll(io.LimitReader(file, int64(maxBytes+1)))
 		file.Close()
 		if err != nil {
-			http.Error(w, "failed to read upload", http.StatusInternalServerError)
+			h.renderHTMXDraftPanelError(w, r, id, "failed to read upload")
 			return
 		}
 		if len(data) > maxBytes {
-			http.Error(w, "file too large", http.StatusBadRequest)
+			h.renderHTMXDraftPanelError(w, r, id, "file too large")
 			return
 		}
 		if len(data) == 0 {
@@ -124,12 +117,12 @@ func (h *Handlers) UploadDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(uploads) == 0 {
-		http.Error(w, "draft_file is required", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "draft_file is required")
 		return
 	}
 
 	if err := h.appendUploadedDraftFiles(r.Context(), id, uploads); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, err.Error())
 		return
 	}
 
@@ -149,50 +142,50 @@ func (h *Handlers) UploadDiscussionAttachment(w http.ResponseWriter, r *http.Req
 
 	pageType, err := h.loadAssignmentPageType(r.Context(), id)
 	if err != nil {
-		http.Error(w, "assignment not found", http.StatusNotFound)
+		h.renderHTMXDraftPanelError(w, r, id, "assignment not found")
 		return
 	}
 	if pageType != "discussion" {
-		http.Error(w, "discussion attachment upload requires a discussion import", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "discussion attachment upload requires a discussion import")
 		return
 	}
 
 	maxBytes := h.maxDraftUploadBytes()
 
 	if err := r.ParseMultipartForm(int64(maxBytes)); err != nil {
-		http.Error(w, "invalid upload", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "invalid upload")
 		return
 	}
 
 	headers := r.MultipartForm.File["draft_file"]
 	if len(headers) == 0 {
-		http.Error(w, "draft_file is required", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "draft_file is required")
 		return
 	}
 	if len(headers) > 1 {
-		http.Error(w, "discussion drafts support at most one attachment", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "discussion drafts support at most one attachment")
 		return
 	}
 
 	header := headers[0]
 	file, err := header.Open()
 	if err != nil {
-		http.Error(w, "failed to read upload", http.StatusInternalServerError)
+		h.renderHTMXDraftPanelError(w, r, id, "failed to read upload")
 		return
 	}
 
 	data, err := io.ReadAll(io.LimitReader(file, int64(maxBytes+1)))
 	file.Close()
 	if err != nil {
-		http.Error(w, "failed to read upload", http.StatusInternalServerError)
+		h.renderHTMXDraftPanelError(w, r, id, "failed to read upload")
 		return
 	}
 	if len(data) > maxBytes {
-		http.Error(w, "file too large", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "file too large")
 		return
 	}
 	if len(data) == 0 {
-		http.Error(w, "draft_file is required", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "draft_file is required")
 		return
 	}
 
@@ -204,7 +197,7 @@ func (h *Handlers) UploadDiscussionAttachment(w http.ResponseWriter, r *http.Req
 	}
 
 	if err := h.attachDiscussionDraftFile(r.Context(), id, upload); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, err.Error())
 		return
 	}
 
@@ -230,6 +223,10 @@ func (h *Handlers) SaveDraftURL(w http.ResponseWriter, r *http.Request) {
 
 	rawURL := strings.TrimSpace(r.FormValue("submission_url"))
 	if rawURL == "" {
+		if err := h.clearDraftURL(r.Context(), id); err != nil {
+			http.Error(w, "failed to clear url", http.StatusInternalServerError)
+			return
+		}
 		if r.Header.Get("HX-Request") == "true" {
 			pages.DraftStatusText(pages.DraftStatusLabel(0, nil, "", draftmode.URL)).Render(r.Context(), w)
 			return
@@ -284,16 +281,16 @@ func (h *Handlers) SetDraftMode(w http.ResponseWriter, r *http.Request) {
 	mode := draftmode.Normalize(r.FormValue("mode"))
 	allowed, err := h.loadAllowedDraftModes(r.Context(), id)
 	if err != nil {
-		http.Error(w, "assignment not found", http.StatusNotFound)
+		h.renderHTMXDraftPanelError(w, r, id, "assignment not found")
 		return
 	}
 	if !submissiontypes.ModeAllowed(mode, allowed) {
-		http.Error(w, "submission type not allowed for this assignment", http.StatusBadRequest)
+		h.renderHTMXDraftPanelError(w, r, id, "submission type not allowed for this assignment")
 		return
 	}
 
 	if err := h.switchDraftMode(r.Context(), id, mode); err != nil {
-		http.Error(w, "failed to switch draft mode", http.StatusInternalServerError)
+		h.renderHTMXDraftPanelError(w, r, id, "failed to switch draft mode")
 		return
 	}
 
@@ -314,7 +311,7 @@ func (h *Handlers) RemoveDraftFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.removeDraftFileByID(r.Context(), assignmentID, fileID); err != nil {
-		http.Error(w, "failed to remove draft file", http.StatusInternalServerError)
+		h.renderHTMXDraftPanelError(w, r, assignmentID, "failed to remove draft file")
 		return
 	}
 
@@ -333,40 +330,46 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body := strings.TrimSpace(r.FormValue("draft"))
-	if body != "" {
-		if err := h.upsertLatestDraft(r.Context(), id, draftUpsertOptions{
-			Mode:       draftmode.Text,
-			Body:       body,
-			SourceType: "manual_paste",
-		}); err != nil {
-			http.Error(w, "failed to save draft", http.StatusInternalServerError)
-			return
-		}
+	embed := requestEmbed(r)
+
+	draft, err := h.loadLatestDraftRow(r.Context(), id)
+	if err != nil {
+		http.Error(w, "failed to load draft", http.StatusInternalServerError)
+		return
 	}
 
-	rawURL := strings.TrimSpace(r.FormValue("submission_url"))
-	if rawURL != "" {
-		normalizedURL, err := drafturl.ParseSubmissionURL(rawURL)
+	mode := draftmode.Text
+	if draft != nil {
+		mode = draftmode.Normalize(draft.Mode)
+	} else {
+		allowed, err := h.loadAllowedDraftModes(r.Context(), id)
 		if err != nil {
-			if renderHTMXDraftStatusError(w, r, id, err.Error()) {
-				return
-			}
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		if allowed, err := h.loadAllowedDraftModes(r.Context(), id); err != nil {
 			http.Error(w, "assignment not found", http.StatusNotFound)
 			return
-		} else if !submissiontypes.ModeAllowed(draftmode.URL, allowed) {
-			http.Error(w, "website url submission not allowed for this assignment", http.StatusBadRequest)
-			return
 		}
+		mode = draftmode.Normalize(pages.DefaultDraftMode(allowed))
+	}
 
-		if err := h.saveDraftURL(r.Context(), id, normalizedURL, "manual_website_url", false); err != nil {
-			http.Error(w, "failed to save url", http.StatusInternalServerError)
-			return
+	switch mode {
+	case draftmode.Text:
+		if _, ok := r.PostForm["draft"]; ok && strings.TrimSpace(r.FormValue("draft")) == "" {
+			if err := h.clearDraftTextBody(r.Context(), id); err != nil {
+				http.Error(w, "failed to clear draft", http.StatusInternalServerError)
+				return
+			}
+		}
+	case draftmode.URL:
+		if _, ok := r.PostForm["submission_url"]; ok {
+			rawURL := strings.TrimSpace(r.FormValue("submission_url"))
+			if rawURL == "" {
+				if err := h.clearDraftURL(r.Context(), id); err != nil {
+					http.Error(w, "failed to clear url", http.StatusInternalServerError)
+					return
+				}
+			} else if _, err := drafturl.ParseSubmissionURL(rawURL); err != nil {
+				renderAnalysisValidationError(w, r.Context(), err.Error(), embed, id)
+				return
+			}
 		}
 	}
 
@@ -385,17 +388,24 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) renderAnalysisError(w http.ResponseWriter, r *http.Request, err error) {
-	embed := r.FormValue("embed") == "1"
+	embed := requestEmbed(r)
+	assignmentID, _ := parseID(chi.URLParam(r, "id"))
 	message := "Analysis failed. Try again in a moment."
 	settingsURL := ""
 	switch {
 	case h.analysis == nil || errors.Is(err, analysis.ErrNotConfigured):
 		message = "Configure AI before analyzing: choose a provider, model, and API key."
-		settingsURL = pages.SettingsURL(embed)
+		settingsURL = pages.SettingsURL(embed, assignmentID)
 	case errors.Is(err, analysis.ErrNothingToAnalyze):
 		message = "Add draft text, upload a file, or enter a submission URL before analyzing."
 	case errors.Is(err, analysis.ErrNoAnalyzableContent):
 		message = "No analyzable submission content. Upload supported files or add draft text."
+	case errors.Is(err, analysis.ErrURLFetchFailed):
+		message = "Could not fetch content from the submission URL. Check the link and try again."
+	case errors.Is(err, analysis.ErrAnalysisInFlight):
+		message = "An analysis is already running for this assignment. Wait for it to finish."
+	case errors.Is(err, analysis.ErrFeedbackPersistFailed):
+		message = "Analysis finished but feedback could not be saved. Try again in a moment."
 	default:
 		if errors.Is(err, analysis.ErrRateLimited) {
 			message = err.Error()
@@ -412,13 +422,13 @@ func (h *Handlers) renderAnalysisResults(w http.ResponseWriter, r *http.Request,
 
 func (h *Handlers) renderDraftPanel(w http.ResponseWriter, r *http.Request, id int64, statusFlash string) {
 	if r.Header.Get("HX-Request") == "true" {
-		assignment, err := h.getAssignment(r.Context(), id)
+		assignment, err := h.getAssignment(r.Context(), id, requestEmbed(r))
 		if err != nil {
 			http.Error(w, "assignment not found", http.StatusNotFound)
 			return
 		}
 		assignment.DraftStatusFlash = statusFlash
-		pages.DraftPanel(assignment).Render(r.Context(), w)
+		pages.DraftPanelBody(assignment).Render(r.Context(), w)
 		return
 	}
 
@@ -448,8 +458,4 @@ func (h *Handlers) AnalysisResults(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.renderAnalysisResults(w, r, pages.AnalysisResultsFromResult(result))
-}
-
-func (h *Handlers) ResolveFeedback(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNoContent)
 }

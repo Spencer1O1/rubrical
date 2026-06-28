@@ -80,5 +80,21 @@ func flattenSubmission(submissionFiles []SubmissionInput, limits Limits) (flatte
 		out.files = append(out.files, raw)
 	}
 
+	out.files, out.notes = dedupeByLogicalPath(out.files, out.notes)
 	return out, nil
+}
+
+func dedupeByLogicalPath(files []RawFile, notes []string) ([]RawFile, []string) {
+	seen := make(map[string]struct{}, len(files))
+	deduped := make([]RawFile, 0, len(files))
+	for _, file := range files {
+		key := file.Path.String()
+		if _, ok := seen[key]; ok {
+			notes = append(notes, fmt.Sprintf("%s: skipped (duplicate path)", key))
+			continue
+		}
+		seen[key] = struct{}{}
+		deduped = append(deduped, file)
+	}
+	return deduped, notes
 }

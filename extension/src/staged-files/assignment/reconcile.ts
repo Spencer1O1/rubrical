@@ -1,5 +1,9 @@
 import type { CanvasIdAssignment, ReconcilePromotion, StagedFileRecord } from "../types";
 
+function provisionalKey(entry: StagedFileRecord): string {
+  return `${entry.normalizedFileName}:${entry.stagedAt}`;
+}
+
 /** Match provisional staged entries to canvas rows that gained a file id. */
 export function findReconcilePromotions(
   assignments: CanvasIdAssignment[],
@@ -8,27 +12,33 @@ export function findReconcilePromotions(
   const promotions: ReconcilePromotion[] = [];
   const matchedProvisional = new Set<string>();
 
+  const provisional = staged
+    .filter((entry) => !entry.canvasFileId)
+    .sort(
+      (left, right) => new Date(left.stagedAt).getTime() - new Date(right.stagedAt).getTime(),
+    );
+
   for (const assignment of assignments) {
     if (staged.some((entry) => entry.canvasFileId === assignment.fileId)) {
       continue;
     }
 
-    const candidates = staged.filter(
+    const nameCandidates = provisional.filter(
       (entry) =>
-        !entry.canvasFileId &&
         entry.normalizedFileName === assignment.normalizedFileName &&
-        !matchedProvisional.has(`${entry.normalizedFileName}:${entry.stagedAt}`),
+        !matchedProvisional.has(provisionalKey(entry)),
     );
 
-    if (candidates.length === 0) {
+    const chosen =
+      nameCandidates.length === 1
+        ? nameCandidates[0]!
+        : provisional[assignment.rowIndex];
+
+    if (!chosen || chosen.canvasFileId || matchedProvisional.has(provisionalKey(chosen))) {
       continue;
     }
 
-    const chosen = candidates.sort(
-      (a, b) => new Date(a.stagedAt).getTime() - new Date(b.stagedAt).getTime(),
-    )[0]!;
-
-    matchedProvisional.add(`${chosen.normalizedFileName}:${chosen.stagedAt}`);
+    matchedProvisional.add(provisionalKey(chosen));
     promotions.push({
       normalizedFileName: chosen.normalizedFileName,
       stagedAt: chosen.stagedAt,

@@ -7,6 +7,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"rubrical/internal/drafturl"
 	"rubrical/internal/importurl"
 )
 
@@ -59,6 +60,13 @@ func ValidateAndNormalize(payload *Payload, limits Limits) error {
 		return err
 	}
 	payload.DraftURL = strings.TrimSpace(payload.DraftURL)
+	if payload.DraftURL != "" {
+		normalized, err := drafturl.ParseSubmissionURL(payload.DraftURL)
+		if err != nil {
+			return fmt.Errorf("draftUrl: %w", err)
+		}
+		payload.DraftURL = normalized
+	}
 	if err := limitRunes("draftUrl", payload.DraftURL, limits.MaxMetadataFieldRunes); err != nil {
 		return err
 	}

@@ -76,13 +76,27 @@ export function extractAllowedSubmissionTypes(): string[] {
   return readAllowedSubmissionTypesFromEnv();
 }
 
-export function extractAssignmentMetadata(courseName: string): AssignmentMetadata {
+/** Due date, points, course — safe to prefetch. Submission types are click-time only. */
+export function extractPrefetchAssignmentMetadata(courseName: string): AssignmentMetadata {
   return {
     dueDateText: extractDueDateText(),
     dueAt: extractDueAtISO(),
     pointsPossibleText: extractPointsPossibleText(),
-    submissionTypeText: extractSubmissionTypeText(),
-    allowedSubmissionTypes: extractAllowedSubmissionTypes(),
+    submissionTypeText: "",
+    allowedSubmissionTypes: [],
     courseName,
   };
+}
+
+/** Submission types depend on live DOM (hidden until New Attempt) — read only at import click. */
+export function mergeSubmissionTypesAtClick(metadata: AssignmentMetadata): AssignmentMetadata {
+  return {
+    ...metadata,
+    submissionTypeText: extractSubmissionTypeText(),
+    allowedSubmissionTypes: extractAllowedSubmissionTypes(),
+  };
+}
+
+export function extractAssignmentMetadata(courseName: string): AssignmentMetadata {
+  return mergeSubmissionTypesAtClick(extractPrefetchAssignmentMetadata(courseName));
 }

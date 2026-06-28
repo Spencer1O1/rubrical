@@ -183,7 +183,7 @@ func (h *Handlers) upsertAssignmentSnapshot(ctx context.Context, payload importp
 	return id, created, nil
 }
 
-func (h *Handlers) getAssignment(ctx context.Context, id int64) (pages.AssignmentView, error) {
+func (h *Handlers) getAssignment(ctx context.Context, id int64, embed bool) (pages.AssignmentView, error) {
 	var view pages.AssignmentView
 	var importedAt time.Time
 	var draftWordCount int
@@ -249,6 +249,7 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64) (pages.Assignmen
 	view.DraftTextSaveURL = pages.DraftTextSaveURL(view.ID)
 	view.DraftSaveURL = pages.DraftSaveURL(view.ID)
 	view.StrictExtraction = h.strictExtraction
+	view.Embed = embed
 	view.InstructionsHTML = pages.PrepareInstructionsHTML(view.Instructions)
 
 	rubric, err := h.loadRubricTable(ctx, id, h.strictExtraction)
@@ -303,6 +304,9 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64) (pages.Assignmen
 		fileNames[i] = file.FileName
 	}
 	view.HasDraftFiles = len(view.DraftFiles) > 0
+	view.HasInactiveDraftFiles = view.DraftMode != draftmode.File && view.HasDraftFiles
+	view.HasInactiveDraftText = view.DraftMode != draftmode.Text && strings.TrimSpace(view.DraftBody) != ""
+	view.HasInactiveDraftURL = view.DraftMode != draftmode.URL && strings.TrimSpace(view.DraftSubmissionURL) != ""
 	if view.PageType == "discussion" {
 		view.DraftStatusLabel = pages.DiscussionDraftStatusLabel(draftWordCount, fileNames)
 	} else {
@@ -316,7 +320,9 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64) (pages.Assignmen
 	}
 
 	if h.analysis != nil && view.HasDraftFiles {
-		if preview, err := h.analysis.PreviewFiles(ctx, h.userID, id); err == nil {
+		if preview, err := h.analysis.PreviewFiles(ctx, h.userID, id); err != nil {
+			view.FilePreviewError = err.Error()
+		} else {
 			provider := config.DefaultAIProvider
 			if h.aiSettings != nil {
 				if stored, err := h.aiSettings.Get(ctx, h.userID); err == nil && strings.TrimSpace(stored.Provider) != "" {

@@ -1,19 +1,10 @@
-import { extractAllowedSubmissionTypes, extractSubmissionTypeText } from "../metadata";
+import { mergeSubmissionTypesAtClick } from "../metadata";
 import type { CachedAssignmentContext, ImportPayload, LiveImportCapture } from "./types";
 
 export function buildImportPayload(
   assignment: CachedAssignmentContext,
   live: LiveImportCapture,
 ): ImportPayload {
-  const metadata =
-    assignment.pageType === "discussion"
-      ? {
-          ...assignment.metadata,
-          allowedSubmissionTypes: extractAllowedSubmissionTypes(),
-          submissionTypeText: extractSubmissionTypeText(),
-        }
-      : assignment.metadata;
-
   return {
     sourceUrl: assignment.sourceUrl,
     pageType: assignment.pageType,
@@ -26,7 +17,7 @@ export function buildImportPayload(
     draftFiles: live.draftFiles,
     draftFileRefs: live.draftFileRefs,
     rubric: assignment.rubric,
-    metadata,
+    metadata: mergeSubmissionTypesAtClick(assignment.metadata),
     capturedAt: live.capturedAt,
   };
 }

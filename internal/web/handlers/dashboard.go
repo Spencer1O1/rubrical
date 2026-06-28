@@ -21,14 +21,42 @@ func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
 func (h *Handlers) listAssignments(ctx context.Context) ([]pages.AssignmentListItem, error) {
 	rows, err := h.db.Pool.Query(ctx, `
 		SELECT
-			id,
-			COALESCE(assignment_title, 'Untitled assignment'),
-			COALESCE(course_name, ''),
-			imported_at,
-			COALESCE(submission_type, '')
-		FROM assignment_snapshots
-		WHERE user_id = $1
-		ORDER BY imported_at DESC
+			a.id,
+			COALESCE(a.assignment_title, 'Untitled assignment'),
+			COALESCE(a.course_name, ''),
+			a.imported_at,
+			COALESCE(a.submission_type, ''),
+			CASE
+				WHEN ar.status = 'completed' THEN 'analyzed'
+				WHEN sd.id IS NOT NULL AND (
+					COALESCE(sd.body, '') <> '' OR
+					COALESCE(sd.submission_url, '') <> '' OR
+					COALESCE(sd.word_count, 0) > 0 OR
+					EXISTS (
+						SELECT 1
+						FROM submission_draft_files sdf
+						WHERE sdf.submission_draft_id = sd.id
+					)
+				) THEN 'draft_added'
+				ELSE 'imported'
+			END AS status
+		FROM assignment_snapshots a
+		LEFT JOIN LATERAL (
+			SELECT id, body, submission_url, word_count
+			FROM submission_drafts
+			WHERE assignment_snapshot_id = a.id AND user_id = $1
+			ORDER BY updated_at DESC, id DESC
+			LIMIT 1
+		) sd ON true
+		LEFT JOIN LATERAL (
+			SELECT status
+			FROM analysis_runs
+			WHERE assignment_snapshot_id = a.id
+			ORDER BY completed_at DESC NULLS LAST, id DESC
+			LIMIT 1
+		) ar ON true
+		WHERE a.user_id = $1
+		ORDER BY a.imported_at DESC
 		LIMIT 50
 	`, h.userID)
 	if err != nil {
@@ -46,12 +74,12 @@ func (h *Handlers) listAssignments(ctx context.Context) ([]pages.AssignmentListI
 			&item.CourseName,
 			&importedAt,
 			&item.SubmissionType,
+			&item.Status,
 		); err != nil {
 			return nil, err
 		}
 		item.ImportedAtLabel = pages.ImportedAtLabel(importedAt)
 		item.URL = pages.AssignmentURL(item.ID)
-		item.Status = "imported"
 		items = append(items, item)
 	}
 

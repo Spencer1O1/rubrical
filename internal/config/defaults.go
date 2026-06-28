@@ -3,6 +3,7 @@ package config
 import "time"
 
 // Server defaults (ENV: RUBRICAL_ADDR, DATABASE_URL, RUBRICAL_DATA_DIR, POST_*_RETENTION_TIME).
+// Dev flags without constants here (ENV only, see config.Load): RUBRICAL_STRICT_EXTRACTION, RUBRICAL_ALLOW_LOCAL_URL_FETCH.
 const (
 	DefaultAddr                 = ":8787"
 	DefaultDatabaseURL          = "postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable"
@@ -24,6 +25,7 @@ const (
 // File bytes = binary payloads sent as native attachments (separate from text pool).
 const (
 	DefaultAnalysisMaxSubmissionTextChars = 120_000
+	DefaultAnalysisMaxManifestChars       = 32_000
 	DefaultAnalysisMaxTotalBytes          = 64 << 20
 )
 

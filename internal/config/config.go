@@ -21,6 +21,7 @@ type Config struct {
 	AIMinSecondsBetweenRuns int
 	AIEnforceRateLimits     bool
 	StrictExtraction        bool
+	AllowLocalURLFetch      bool
 	PostDueDateRetention    time.Duration
 	PostUploadRetention     time.Duration
 }
@@ -41,6 +42,7 @@ func Load() (Config, error) {
 		AIMinSecondsBetweenRuns: envInt("AI_MIN_SECONDS_BETWEEN_RUNS", DefaultAIMinSecondsBetweenRuns),
 		AIEnforceRateLimits:     envBool("AI_ENFORCE_RATE_LIMITS"),
 		StrictExtraction:        envBool("RUBRICAL_STRICT_EXTRACTION"),
+		AllowLocalURLFetch:      envBool("RUBRICAL_ALLOW_LOCAL_URL_FETCH"),
 	}
 
 	retention, err := envDuration("POST_DUE_DATE_RETENTION_TIME", DefaultPostDueDateRetention)

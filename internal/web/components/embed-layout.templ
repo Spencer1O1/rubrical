@@ -9,32 +9,41 @@ templ EmbedLayout(title string, content templ.Component) {
 			<title>{ title } · Rubrical</title>
 			<link rel="stylesheet" href="/static/css/app.css"/>
 			@MaterialSymbolsHead()
-			<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+			<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
 		</head>
 		<body class="min-h-full text-stone-900 antialiased">
 			<script>
+				function requestPath(event) {
+					return String(
+						event.detail?.pathInfo?.requestPath ??
+							event.detail?.pathInfo?.finalRequestPath ??
+							event.detail?.requestConfig?.path ??
+							"",
+					);
+				}
+				function showHTMXErrorBanner(message) {
+					const banner = document.getElementById("htmx-error-banner");
+					if (!banner) return;
+					banner.textContent = message;
+					banner.classList.remove("hidden");
+				}
+				function hideHTMXErrorBanner() {
+					const banner = document.getElementById("htmx-error-banner");
+					if (banner) banner.classList.add("hidden");
+				}
 				function notifyParentDraftFilesChanged(event) {
 					if (window.parent === window) return;
 					const detail = event.detail;
 					if (!detail || detail.failed || detail.isError) return;
-					const path = String(
-						detail.pathInfo?.requestPath ??
-							detail.pathInfo?.finalRequestPath ??
-							detail.requestConfig?.path ??
-							"",
-					);
+					const path = requestPath(event);
 					if (!path.includes("/draft/files") && !path.includes("/draft/upload") && !path.includes("/draft/discussion-attachment")) return;
 					window.parent.postMessage({ type: "rubrical:draft-files-changed" }, "*");
 				}
 				document.body.addEventListener("htmx:afterSwap", notifyParentDraftFilesChanged);
 				document.body.addEventListener("htmx:afterSettle", notifyParentDraftFilesChanged);
 				document.body.addEventListener("htmx:beforeRequest", function (event) {
-					const path = String(
-						event.detail?.pathInfo?.requestPath ??
-							event.detail?.pathInfo?.finalRequestPath ??
-							event.detail?.requestConfig?.path ??
-							"",
-					);
+					hideHTMXErrorBanner();
+					const path = requestPath(event);
 					if (!path.includes("/analyze")) return;
 					const form = event.detail?.elt;
 					const pendingId = form?.getAttribute?.("data-analyze-pending-id");
@@ -44,8 +53,27 @@ templ EmbedLayout(title string, content templ.Component) {
 						target.innerHTML = pending.innerHTML;
 					}
 				});
+				document.body.addEventListener("htmx:responseError", function (event) {
+					const path = requestPath(event);
+					if (path.includes("/analyze")) {
+						const target = document.getElementById("analysis-results");
+						if (!target) return;
+						const isTimeout =
+							event.detail?.error === "timeout" ||
+							String(event.detail?.xhr?.status ?? "") === "0";
+						target.innerHTML = isTimeout
+							? '<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><p class="font-medium">Analysis timed out</p><p class="mt-1">The request took longer than two minutes. Try again with a shorter draft or fewer files.</p></div>'
+							: '<div class="rounded-xl border border-dashed border-stone-300 bg-stone-50 p-5 text-sm text-stone-600">Run Analyze to get rubric-aware feedback on your draft.</div>';
+						return;
+					}
+					const message =
+						event.detail?.xhr?.responseText?.trim() ||
+						"Something went wrong. Try again.";
+					showHTMXErrorBanner(message);
+				});
 			</script>
 			<main class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+				<div id="htmx-error-banner" class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert"></div>
 				@content
 			</main>
 		</body>

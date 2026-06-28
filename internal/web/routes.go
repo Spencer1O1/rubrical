@@ -43,7 +43,6 @@ func NewRouter(database *db.DB, fileStore *draftfiles.Store, userID int64, cfg c
 	})
 
 	r.Post("/imports", h.ImportAssignment)
-	r.Post("/feedback/{id}/resolve", h.ResolveFeedback)
 
 	fileServer := http.FileServer(http.Dir("static"))
 	r.Handle("/static/*", http.StripPrefix("/static/", fileServer))

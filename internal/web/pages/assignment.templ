@@ -33,8 +33,12 @@ type AssignmentView struct {
 	DraftFiles                []DraftFileView
 	DraftSubmissionURL        string
 	HasDraftFiles             bool
+	HasInactiveDraftFiles     bool
+	HasInactiveDraftText      bool
+	HasInactiveDraftURL       bool
 	DraftStatusLabel          string
 	DraftStatusFlash          string
+	DraftPanelError           string
 	AnalyzeURL                string
 	DraftUploadURL            string
 	DraftDiscussionUploadURL  string
@@ -46,6 +50,7 @@ type AssignmentView struct {
 	Embed                 bool
 	Analysis              AnalysisResultsView
 	FilePreview           FilePreviewView
+	FilePreviewError      string
 }
 
 // Assignment is the full revisit view from the dashboard.
@@ -97,7 +102,7 @@ templ assignmentEmbedContent(view AssignmentView) {
 				You already have the assignment open in Canvas — expand below only if you need to double-check instructions or the rubric here.
 			</p>
 			<p class="mt-2 text-sm">
-				<a href={ SettingsURL(true) } class="font-medium text-indigo-700 hover:text-indigo-900">AI settings</a>
+				<a href={ SettingsURL(true, view.ID) } class="font-medium text-indigo-700 hover:text-indigo-900">AI settings</a>
 				<span class="text-stone-500"> — provider, model, and API keys</span>
 			</p>
 		</div>
@@ -269,11 +274,33 @@ templ rubricRatingsCell(ratings []RubricRatingView, columnCount int) {
 	}
 }
 
+templ embedHiddenInput(embed bool) {
+	if embed {
+		<input type="hidden" name="embed" value="1"/>
+	}
+}
+
+templ draftPanelError(view AssignmentView) {
+	if view.DraftPanelError != "" {
+		<p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{ view.DraftPanelError }</p>
+	}
+}
+
 templ DraftPanel(view AssignmentView) {
 	<aside class="space-y-4">
 		<h2 class="text-lg font-medium">Your draft</h2>
+		@DraftPanelBody(view)
+		<section id="analysis-results">
+			@AnalysisSection(view.Analysis)
+		</section>
+	</aside>
+}
+
+templ DraftPanelBody(view AssignmentView) {
+	<div id={ DraftPanelBodyID(view.ID) } class="space-y-4">
+		@draftPanelError(view)
 		if view.PageType == "discussion" {
-			@DiscussionDraftPanel(view)
+			@DiscussionDraftPanelContent(view)
 		} else {
 			<div class="space-y-5 rounded-xl border border-stone-200 bg-white p-5">
 				if len(view.AllowedDraftModes) > 1 {
@@ -285,6 +312,21 @@ templ DraftPanel(view AssignmentView) {
 							}
 						</div>
 					</div>
+				}
+				if view.HasInactiveDraftFiles {
+					<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+						You have saved files from file upload mode. Switch to file upload to include them in analysis.
+					</p>
+				}
+				if view.HasInactiveDraftText {
+					<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+						You have saved draft text from text mode. Switch to text to include it in analysis.
+					</p>
+				}
+				if view.HasInactiveDraftURL {
+					<p class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+						You have a saved website URL from URL mode. Switch to website URL to include it in analysis.
+					</p>
 				}
 				if DraftModeAllowed(view.DraftMode, view.AllowedDraftModes) && view.DraftMode == "text" {
 					@draftTextPanel(view)
@@ -300,13 +342,10 @@ templ DraftPanel(view AssignmentView) {
 			@draftFilePreview(view)
 			@draftAnalyzeBar(view)
 		}
-		<section id="analysis-results">
-			@AnalysisSection(view.Analysis)
-		</section>
-	</aside>
+	</div>
 }
 
-templ DiscussionDraftPanel(view AssignmentView) {
+templ DiscussionDraftPanelContent(view AssignmentView) {
 	<div class="space-y-5 rounded-xl border border-stone-200 bg-white p-5">
 		@draftTextPanel(view)
 		if view.DiscussionAttachmentsAllowed {
@@ -323,10 +362,12 @@ templ discussionDraftAttachmentPanel(view AssignmentView) {
 		hx-post={ view.DraftDiscussionUploadURL }
 		hx-encoding="multipart/form-data"
 		hx-trigger="change"
-		hx-target="closest aside"
+		hx-target={ fmt.Sprintf("#%s", DraftPanelBodyID(view.ID)) }
 		hx-swap="outerHTML"
+		hx-on::after-request="if(event.detail.successful){const input=this.querySelector('input[type=file]');if(input)input.value='';}"
 		class="space-y-3"
 	>
+		@embedHiddenInput(view.Embed)
 		<p class="text-sm font-medium text-stone-900">Attachment</p>
 		if len(view.DraftFiles) > 0 {
 			<div class="overflow-hidden rounded-lg border border-stone-200">
@@ -351,8 +392,11 @@ templ discussionDraftAttachmentPanel(view AssignmentView) {
 										type="button"
 										aria-label={ fmt.Sprintf("Remove %s", file.FileName) }
 										hx-post={ file.RemoveURL }
-										hx-target="closest aside"
+										hx-target={ fmt.Sprintf("#%s", DraftPanelBodyID(view.ID)) }
 										hx-swap="outerHTML"
+										if view.Embed {
+											hx-vals='{"embed":"1"}'
+										}
 										class="inline-flex items-center justify-center rounded-md p-1.5 text-stone-500 hover:bg-stone-100 hover:text-stone-800"
 									>
 										<span class="material-symbols-outlined text-xl leading-none">delete</span>
@@ -379,12 +423,18 @@ templ discussionDraftAttachmentPanel(view AssignmentView) {
 templ draftModeButton(view AssignmentView, mode string) {
 	<button
 		type="button"
+		id={ DraftModeTabID(view.ID, mode) }
 		role="tab"
 		aria-label={ DraftModeLabel(mode) }
 		aria-selected={ DraftModeAriaPressed(view.DraftMode, mode) }
+		aria-controls={ DraftModePanelID(view.ID, mode) }
 		hx-post={ view.DraftModeURL }
-		hx-vals={ fmt.Sprintf(`{"mode":"%s"}`, mode) }
-		hx-target="closest aside"
+		if view.Embed {
+			hx-vals={ fmt.Sprintf(`{"mode":"%s","embed":"1"}`, mode) }
+		} else {
+			hx-vals={ fmt.Sprintf(`{"mode":"%s"}`, mode) }
+		}
+		hx-target={ fmt.Sprintf("#%s", DraftPanelBodyID(view.ID)) }
 		hx-swap="outerHTML"
 		class={ DraftModeTileClass(view.DraftMode, mode) }
 	>
@@ -393,34 +443,41 @@ templ draftModeButton(view AssignmentView, mode string) {
 }
 
 templ draftTextPanel(view AssignmentView) {
-	<div class="space-y-3">
+	<div id={ DraftModePanelID(view.ID, "text") } role="tabpanel" aria-labelledby={ DraftModeTabID(view.ID, "text") } class="space-y-3">
 		<label class="block text-sm font-medium text-stone-900" for={ DraftTextareaID(view.ID) }>
 			Draft text
 		</label>
-		<textarea
-			id={ DraftTextareaID(view.ID) }
-			name="draft"
-			rows="8"
-			hx-post={ view.DraftTextSaveURL }
-			hx-trigger={ DraftAutoSaveTrigger() }
-			hx-target={ fmt.Sprintf("#%s", DraftStatusID(view.ID)) }
-			hx-swap="innerHTML"
-			class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm leading-relaxed focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-			placeholder="Paste or edit your draft text."
-		>{ view.DraftBody }</textarea>
+		<form class="contents">
+			@embedHiddenInput(view.Embed)
+			<textarea
+				id={ DraftTextareaID(view.ID) }
+				name="draft"
+				rows="8"
+				hx-post={ view.DraftTextSaveURL }
+				hx-trigger={ DraftAutoSaveTrigger() }
+				hx-target={ fmt.Sprintf("#%s", DraftStatusID(view.ID)) }
+				hx-swap="innerHTML"
+				hx-include="closest form"
+				class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm leading-relaxed focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+				placeholder="Paste or edit your draft text."
+			>{ view.DraftBody }</textarea>
+		</form>
 		<p class="text-xs text-stone-500">Saves automatically when you edit.</p>
 	</div>
 }
 
 templ draftFilePanel(view AssignmentView) {
+	<div id={ DraftModePanelID(view.ID, "file") } role="tabpanel" aria-labelledby={ DraftModeTabID(view.ID, "file") }>
 	<form
 		hx-post={ view.DraftUploadURL }
 		hx-encoding="multipart/form-data"
 		hx-trigger="change"
-		hx-target="closest aside"
+		hx-target={ fmt.Sprintf("#%s", DraftPanelBodyID(view.ID)) }
 		hx-swap="outerHTML"
+		hx-on::after-request="if(event.detail.successful){const input=this.querySelector('input[type=file]');if(input)input.value='';}"
 		class="space-y-3"
 	>
+		@embedHiddenInput(view.Embed)
 		if len(view.DraftFiles) > 0 {
 			<div class="overflow-hidden rounded-lg border border-stone-200">
 				<table class="min-w-full divide-y divide-stone-200 text-sm">
@@ -444,8 +501,11 @@ templ draftFilePanel(view AssignmentView) {
 										type="button"
 										aria-label={ fmt.Sprintf("Remove %s", file.FileName) }
 										hx-post={ file.RemoveURL }
-										hx-target="closest aside"
+										hx-target={ fmt.Sprintf("#%s", DraftPanelBodyID(view.ID)) }
 										hx-swap="outerHTML"
+										if view.Embed {
+											hx-vals='{"embed":"1"}'
+										}
 										class="inline-flex items-center justify-center rounded-md p-1.5 text-stone-500 hover:bg-stone-100 hover:text-stone-800"
 									>
 										<span class="material-symbols-outlined text-xl leading-none">delete</span>
@@ -468,27 +528,32 @@ templ draftFilePanel(view AssignmentView) {
 			class="block w-full text-sm text-stone-700 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
 		/>
 	</form>
+	</div>
 }
 
 templ draftURLPanel(view AssignmentView) {
-	<div class="space-y-3">
+	<div id={ DraftModePanelID(view.ID, "url") } role="tabpanel" aria-labelledby={ DraftModeTabID(view.ID, "url") } class="space-y-3">
 		<label class="block text-sm font-medium text-stone-900" for={ DraftURLInputID(view.ID) }>
 			Website URL
 		</label>
-		<input
-			id={ DraftURLInputID(view.ID) }
-			type="text"
-			name="submission_url"
-			value={ view.DraftSubmissionURL }
-			autocomplete="url"
-			spellcheck="false"
-			hx-post={ view.DraftSaveURL }
-			hx-trigger={ DraftAutoSaveTrigger() }
-			hx-target={ fmt.Sprintf("#%s", DraftStatusID(view.ID)) }
-			hx-swap="innerHTML"
-			placeholder="example.com or https://example.com/your-work"
-			class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-		/>
+		<form class="contents">
+			@embedHiddenInput(view.Embed)
+			<input
+				id={ DraftURLInputID(view.ID) }
+				type="text"
+				name="submission_url"
+				value={ view.DraftSubmissionURL }
+				autocomplete="url"
+				spellcheck="false"
+				hx-post={ view.DraftSaveURL }
+				hx-trigger={ DraftURLSaveTrigger() }
+				hx-target={ fmt.Sprintf("#%s", DraftStatusID(view.ID)) }
+				hx-swap="innerHTML"
+				hx-include="closest form"
+				placeholder="example.com or https://example.com/your-work"
+				class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+			/>
+		</form>
 		<p class="text-xs text-stone-500">Saves automatically when you edit.</p>
 	</div>
 }
@@ -504,7 +569,9 @@ templ draftStatusLine(view AssignmentView) {
 }
 
 templ draftFilePreview(view AssignmentView) {
-	if view.FilePreview.HasPreview {
+	if view.FilePreviewError != "" {
+		<p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{ view.FilePreviewError }</p>
+	} else if view.FilePreview.HasPreview {
 		<div class="rounded-lg border border-stone-200 bg-stone-50 p-4 text-sm text-stone-700">
 			<p class="font-medium text-stone-900">File processing preview ({ view.FilePreview.ProviderLabel })</p>
 			<p class="mt-1 text-xs text-stone-500">How your uploaded files will be sent when you analyze. Unsupported types are skipped with a note to the model.</p>
@@ -540,30 +607,34 @@ templ draftAnalyzeBar(view AssignmentView) {
 	<div id={ fmt.Sprintf("analyze-pending-%d", view.ID) } hidden>
 		@AnalysisPending()
 	</div>
-	<form
-		hx-post={ view.AnalyzeURL }
-		hx-target="#analysis-results"
-		hx-swap="innerHTML"
-		hx-disabled-elt="find button[type='submit']"
-		data-analyze-pending-id={ fmt.Sprintf("analyze-pending-%d", view.ID) }
-		if view.Embed {
-			hx-vals='{"embed":"1"}'
-		}
-		if DraftModeAllowed(view.DraftMode, view.AllowedDraftModes) && view.DraftMode == "text" {
-			hx-include={ fmt.Sprintf("#%s", DraftTextareaID(view.ID)) }
-		}
-		if DraftModeAllowed(view.DraftMode, view.AllowedDraftModes) && view.DraftMode == "url" {
-			hx-include={ fmt.Sprintf("#%s", DraftURLInputID(view.ID)) }
-		}
-		class="flex justify-end"
-	>
-		<button
-			type="submit"
-			class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+	<div class="flex items-center justify-end gap-3">
+		<a href={ SettingsURL(view.Embed, view.ID) } class="text-sm font-medium text-indigo-700 hover:text-indigo-900">AI settings</a>
+		<form
+			hx-post={ view.AnalyzeURL }
+			hx-target="#analysis-results"
+			hx-swap="innerHTML"
+			hx-timeout="120000"
+			hx-disabled-elt="find button[type='submit']"
+			data-analyze-pending-id={ fmt.Sprintf("analyze-pending-%d", view.ID) }
+			if view.Embed {
+				hx-vals='{"embed":"1"}'
+			}
+			if DraftModeAllowed(view.DraftMode, view.AllowedDraftModes) && view.DraftMode == "text" {
+				hx-include={ fmt.Sprintf("#%s", DraftTextareaID(view.ID)) }
+			}
+			if DraftModeAllowed(view.DraftMode, view.AllowedDraftModes) && view.DraftMode == "url" {
+				hx-include={ fmt.Sprintf("#%s", DraftURLInputID(view.ID)) }
+			}
 		>
-			Analyze
-		</button>
-	</form>
+			@embedHiddenInput(view.Embed)
+			<button
+				type="submit"
+				class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+			>
+				Analyze
+			</button>
+		</form>
+	</div>
 }
 
 templ DraftSaved(message string) {

@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var ErrRateLimited = errors.New("analysis rate limit exceeded")
+var (
+	ErrRateLimited       = errors.New("analysis rate limit exceeded")
+	ErrAnalysisInFlight  = errors.New("analysis already in progress for this assignment")
+	ErrFeedbackPersistFailed = errors.New("analysis completed but feedback could not be saved")
+)
 
 type RateLimits struct {
 	MaxPerHour              int
@@ -34,20 +39,36 @@ func NewLimiter(pool *pgxpool.Pool, limits RateLimits) *Limiter {
 	return &Limiter{pool: pool, limits: limits}
 }
 
-func (l *Limiter) Check(ctx context.Context, userID, assignmentID int64) error {
-	if l == nil || l.pool == nil {
+func (l *Limiter) checkInTx(ctx context.Context, tx pgx.Tx, userID, assignmentID int64) error {
+	if l == nil {
 		return nil
+	}
+
+	var inFlight bool
+	err := tx.QueryRow(ctx, `
+		SELECT EXISTS(
+			SELECT 1
+			FROM analysis_runs
+			WHERE assignment_snapshot_id = $1
+			  AND status IN ('pending', 'running')
+		)
+	`, assignmentID).Scan(&inFlight)
+	if err != nil {
+		return err
+	}
+	if inFlight {
+		return ErrAnalysisInFlight
 	}
 
 	if l.limits.MaxPerHour > 0 {
 		var count int
-		err := l.pool.QueryRow(ctx, `
+		err := tx.QueryRow(ctx, `
 			SELECT COUNT(*)
 			FROM analysis_runs ar
 			JOIN assignment_snapshots a ON a.id = ar.assignment_snapshot_id
 			WHERE a.user_id = $1
 			  AND ar.created_at > NOW() - INTERVAL '1 hour'
-			  AND ar.status IN ('completed', 'failed', 'pending', 'running')
+			  AND ar.status IN ('completed', 'pending', 'running')
 		`, userID).Scan(&count)
 		if err != nil {
 			return err
@@ -59,13 +80,13 @@ func (l *Limiter) Check(ctx context.Context, userID, assignmentID int64) error {
 
 	if l.limits.MaxPerDay > 0 {
 		var count int
-		err := l.pool.QueryRow(ctx, `
+		err := tx.QueryRow(ctx, `
 			SELECT COUNT(*)
 			FROM analysis_runs ar
 			JOIN assignment_snapshots a ON a.id = ar.assignment_snapshot_id
 			WHERE a.user_id = $1
 			  AND ar.created_at > NOW() - INTERVAL '1 day'
-			  AND ar.status IN ('completed', 'failed', 'pending', 'running')
+			  AND ar.status IN ('completed', 'pending', 'running')
 		`, userID).Scan(&count)
 		if err != nil {
 			return err
@@ -77,11 +98,11 @@ func (l *Limiter) Check(ctx context.Context, userID, assignmentID int64) error {
 
 	if l.limits.MinSecondsBetweenRuns > 0 {
 		var lastRun time.Time
-		err := l.pool.QueryRow(ctx, `
+		err := tx.QueryRow(ctx, `
 			SELECT COALESCE(MAX(ar.created_at), 'epoch'::timestamptz)
 			FROM analysis_runs ar
 			WHERE ar.assignment_snapshot_id = $1
-			  AND ar.status IN ('completed', 'failed', 'pending', 'running')
+			  AND ar.status IN ('completed', 'pending', 'running')
 		`, assignmentID).Scan(&lastRun)
 		if err != nil {
 			return err

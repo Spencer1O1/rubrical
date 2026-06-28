@@ -195,6 +195,62 @@ func TestSaveDraftFromImportStoresCanvasFileID(t *testing.T) {
 	}
 }
 
+func TestSaveDraftFromImportUpdatesStoredFileNameFromCanvasRef(t *testing.T) {
+	ctx := context.Background()
+	pool := testPool(t)
+	h := testHandler(t, pool)
+
+	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/canvas-rename-ref")
+
+	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
+		DraftKind: "file",
+		DraftFiles: []importpayload.DraftFile{{
+			FileName:      "essay.pdf",
+			MimeType:      "application/pdf",
+			ContentBase64: "JVBERi0xLjQK",
+			CanvasFileID:  "10",
+		}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var serverFileID int64
+	err := pool.QueryRow(ctx, `
+		SELECT f.id
+		FROM submission_draft_files f
+		JOIN submission_drafts d ON d.id = f.submission_draft_id
+		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
+	`, assignmentID, h.userID).Scan(&serverFileID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
+		DraftKind: "file",
+		DraftFileRefs: []importpayload.DraftFileRef{{
+			ServerFileID: serverFileID,
+			FileName:     "essay-1.pdf",
+			CanvasFileID: "10",
+		}},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var fileName string
+	err = pool.QueryRow(ctx, `
+		SELECT f.source_file_name
+		FROM submission_draft_files f
+		JOIN submission_drafts d ON d.id = f.submission_draft_id
+		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
+	`, assignmentID, h.userID).Scan(&fileName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fileName != "essay-1.pdf" {
+		t.Fatalf("fileName=%q, want essay-1.pdf", fileName)
+	}
+}
+
 func TestSaveDraftFromImportClearsEmptyCanvasDraft(t *testing.T) {
 	ctx := context.Background()
 	pool := testPool(t)
@@ -328,7 +384,7 @@ func TestSaveDraftFromImportStoresMultipleFiles(t *testing.T) {
 	}
 }
 
-func TestSwitchDraftModeClearsOtherFields(t *testing.T) {
+func TestSwitchDraftModePreservesOtherFields(t *testing.T) {
 	ctx := context.Background()
 	pool := testPool(t)
 	h := testHandler(t, pool)
@@ -355,8 +411,8 @@ func TestSwitchDraftModeClearsOtherFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if body != "" {
-		t.Fatalf("expected empty body after switch to file, got %q", body)
+	if body != "hello" {
+		t.Fatalf("expected body preserved after mode switch, got %q", body)
 	}
 	if mode != draftmode.File {
 		t.Fatalf("mode=%q", mode)

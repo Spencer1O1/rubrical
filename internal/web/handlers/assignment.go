@@ -15,16 +15,16 @@ func (h *Handlers) AssignmentDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	assignment, err := h.getAssignment(r.Context(), id)
+	embed := requestEmbed(r)
+	assignment, err := h.getAssignment(r.Context(), id, embed)
 	if err != nil {
 		http.Error(w, "assignment not found", http.StatusNotFound)
 		return
 	}
-	assignment.Embed = r.URL.Query().Get("embed") == "1"
 
 	w.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
 
-	if r.URL.Query().Get("embed") == "1" {
+	if embed {
 		pages.AssignmentEmbed(assignment).Render(r.Context(), w)
 		return
 	}

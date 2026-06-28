@@ -62,4 +62,34 @@ describe("findReconcilePromotions", () => {
       },
     ]);
   });
+
+  it("promotes provisional staged entry by row index when Canvas renamed the file", () => {
+    const promotions = findReconcilePromotions(
+      [{ rowIndex: 1, normalizedFileName: "essay-1.pdf", fileId: "11" }],
+      [
+        {
+          assignmentKey: "1:assignment:2",
+          fileName: "essay.pdf",
+          normalizedFileName: "essay.pdf",
+          stagedAt: "2026-06-26T12:00:00.000Z",
+          mimeType: "application/pdf",
+        },
+        {
+          assignmentKey: "1:assignment:2",
+          fileName: "essay.pdf",
+          normalizedFileName: "essay.pdf",
+          stagedAt: "2026-06-26T12:01:00.000Z",
+          mimeType: "application/pdf",
+        },
+      ],
+    );
+
+    expect(promotions).toEqual([
+      {
+        normalizedFileName: "essay.pdf",
+        stagedAt: "2026-06-26T12:01:00.000Z",
+        canvasFileId: "11",
+      },
+    ]);
+  });
 });

@@ -24,6 +24,10 @@ func Validate(out *ModelOutput) error {
 		return fmt.Errorf("at least one criterion feedback entry is required")
 	}
 
+	if out.EstimatedScore != nil && out.EstimatedScoreMax != nil && *out.EstimatedScore > *out.EstimatedScoreMax {
+		return fmt.Errorf("estimatedScore exceeds estimatedScoreMax")
+	}
+
 	for i := range out.Criteria {
 		c := &out.Criteria[i]
 		c.CriterionName = strings.TrimSpace(c.CriterionName)
@@ -33,6 +37,9 @@ func Validate(out *ModelOutput) error {
 		c.Status = normalizeCriterionStatus(c.Status)
 		if c.Status == "" {
 			return fmt.Errorf("criteria[%d].status is required", i)
+		}
+		if c.EstimatedPoints != nil && c.MaxPoints != nil && *c.EstimatedPoints > *c.MaxPoints {
+			return fmt.Errorf("criteria[%d].estimatedPoints exceeds maxPoints", i)
 		}
 		c.Evidence = strings.TrimSpace(c.Evidence)
 		c.Suggestion = strings.TrimSpace(c.Suggestion)

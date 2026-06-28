@@ -57,6 +57,7 @@ func main() {
 			cfg.AIMinSecondsBetweenRuns,
 		)),
 		cfg.AIEnforceRateLimits,
+		cfg.AllowLocalURLFetch,
 		analysis.OptionsFromConfig(cfg),
 	)
 	if cfg.AIEnforceRateLimits {

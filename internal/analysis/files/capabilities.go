@@ -37,3 +37,12 @@ func anthropicNeedsInline(kind FileKind) bool {
 		return true
 	}
 }
+
+func anthropicOfficeSkipReason(kind FileKind) (string, bool) {
+	switch kind {
+	case KindOffice, KindSpreadsheet:
+		return "office file not supported with Anthropic (use docx/pdf or switch to OpenAI)", true
+	default:
+		return "", false
+	}
+}

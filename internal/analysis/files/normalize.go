@@ -43,9 +43,6 @@ func (s *zipExpandState) expand(data []byte, archiveRoot string, depth int) ([]R
 		}
 		name := cleanZipEntryPath(entry.Name)
 		if name == "" {
-			continue
-		}
-		if strings.Contains(name, "..") {
 			notes = append(notes, fmt.Sprintf("%s/%s: skipped (invalid path)", archiveRoot, entry.Name))
 			continue
 		}
@@ -90,11 +87,15 @@ func (s *zipExpandState) expand(data []byte, archiveRoot string, depth int) ([]R
 			Data:     entryData,
 		}
 
-		if Classify(baseName, child.MimeType, entryData) == KindZip && depth < s.limits.zipMaxDepth() {
-			nestedArchive := archiveRoot + "/" + name
-			nested, nestedNotes, _ := s.expand(entryData, nestedArchive, depth+1)
-			leaves = append(leaves, nested...)
-			notes = append(notes, nestedNotes...)
+		if Classify(baseName, child.MimeType, entryData) == KindZip {
+			if depth < s.limits.zipMaxDepth() {
+				nestedArchive := archiveRoot + "/" + name
+				nested, nestedNotes, _ := s.expand(entryData, nestedArchive, depth+1)
+				leaves = append(leaves, nested...)
+				notes = append(notes, nestedNotes...)
+			} else {
+				notes = append(notes, fmt.Sprintf("%s/%s: skipped (nested zip at depth limit)", archiveRoot, name))
+			}
 			continue
 		}
 
@@ -106,9 +107,16 @@ func (s *zipExpandState) expand(data []byte, archiveRoot string, depth int) ([]R
 
 func cleanZipEntryPath(name string) string {
 	name = strings.TrimSpace(name)
-	name = strings.TrimPrefix(name, "./")
 	name = strings.ReplaceAll(name, "\\", "/")
-	return strings.Trim(name, "/")
+	name = strings.TrimPrefix(name, "./")
+	cleaned := path.Clean(name)
+	if cleaned == "." || cleaned == ".." {
+		return ""
+	}
+	if strings.HasPrefix(cleaned, "../") || strings.Contains(cleaned, "/../") {
+		return ""
+	}
+	return strings.Trim(cleaned, "/")
 }
 
 func rawFromSubmission(fileName, mimeType string, data []byte) RawFile {

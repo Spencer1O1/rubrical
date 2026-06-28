@@ -128,26 +128,57 @@ func DraftStatusID(id int64) string {
 	return fmt.Sprintf("draft-status-%d", id)
 }
 
+func DraftPanelBodyID(id int64) string {
+	return fmt.Sprintf("draft-panel-body-%d", id)
+}
+
 const DraftAutoSaveDelayMs = 750
 
 func DraftAutoSaveTrigger() string {
 	return fmt.Sprintf("blur, input changed delay:%dms", DraftAutoSaveDelayMs)
 }
 
+func DraftURLSaveTrigger() string {
+	return fmt.Sprintf("blur, input changed delay:%dms, keyup[keyEnter] delay:%dms", DraftAutoSaveDelayMs, DraftAutoSaveDelayMs)
+}
+
 func AnalyzeURL(id int64) string {
 	return fmt.Sprintf("/assignments/%d/analyze", id)
 }
 
-func SettingsURL(embed bool) string {
+func AssignmentEmbedURL(id int64) string {
+	return fmt.Sprintf("/assignments/%d?embed=1", id)
+}
+
+func SettingsURL(embed bool, assignmentID int64) string {
 	if embed {
-		return "/settings?embed=1"
+		url := "/settings?embed=1"
+		if assignmentID > 0 {
+			url += fmt.Sprintf("&assignment_id=%d", assignmentID)
+		}
+		return url
 	}
 	return "/settings"
 }
 
-func SettingsFormAction(embed bool) string {
+func SettingsSavedRedirectURL(embed bool, assignmentID int64) string {
 	if embed {
-		return "/settings/ai?embed=1"
+		url := "/settings?embed=1&saved=1"
+		if assignmentID > 0 {
+			url += fmt.Sprintf("&assignment_id=%d", assignmentID)
+		}
+		return url
+	}
+	return "/settings?saved=1"
+}
+
+func SettingsFormAction(embed bool, assignmentID int64) string {
+	if embed {
+		url := "/settings/ai?embed=1"
+		if assignmentID > 0 {
+			url += fmt.Sprintf("&assignment_id=%d", assignmentID)
+		}
+		return url
 	}
 	return "/settings/ai"
 }

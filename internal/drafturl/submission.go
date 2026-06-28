@@ -1,6 +1,7 @@
 package drafturl
 
 import (
+	"context"
 	"errors"
 	"net"
 	"net/url"
@@ -34,7 +35,7 @@ func ParseSubmissionURL(raw string) (string, error) {
 		return "", errors.New(invalidSubmissionURLMessage)
 	}
 
-	if !validSubmissionHost(parsed.Host) {
+	if !validDisplayHost(parsed.Host) {
 		return "", errors.New(invalidSubmissionURLMessage)
 	}
 
@@ -42,17 +43,41 @@ func ParseSubmissionURL(raw string) (string, error) {
 	return strings.TrimSuffix(normalized, "/"), nil
 }
 
-func validSubmissionHost(host string) bool {
+// ValidateFetchURL parses rawURL and ensures resolved addresses are safe for server-side fetch.
+func ValidateFetchURL(ctx context.Context, rawURL string, allowLocal bool) (string, error) {
+	normalized, err := ParseSubmissionURL(rawURL)
+	if err != nil {
+		return "", err
+	}
+
+	parsed, err := url.Parse(normalized)
+	if err != nil {
+		return "", errors.New(invalidSubmissionURLMessage)
+	}
+
+	if err := ValidateFetchHost(ctx, parsed.Hostname(), allowLocal); err != nil {
+		return "", err
+	}
+
+	return normalized, nil
+}
+
+// ValidateFetchHost resolves hostname and rejects private/link-local addresses unless allowLocal is true.
+func ValidateFetchHost(ctx context.Context, hostname string, allowLocal bool) error {
+	return checkFetchHost(ctx, hostname, allowLocal)
+}
+
+func validDisplayHost(host string) bool {
 	hostname := host
 	if h, _, err := net.SplitHostPort(host); err == nil {
 		hostname = h
 	}
 
 	hostname = strings.ToLower(strings.TrimSuffix(hostname, "."))
-	if hostname == "localhost" {
-		return true
+	if net.ParseIP(hostname) != nil {
+		return false
 	}
-	if ip := net.ParseIP(hostname); ip != nil {
+	if hostname == "localhost" {
 		return true
 	}
 	if !strings.Contains(hostname, ".") {
@@ -66,6 +91,43 @@ func validSubmissionHost(host string) bool {
 	}
 
 	return true
+}
+
+func checkFetchHost(ctx context.Context, hostname string, allowLocal bool) error {
+	hostname = strings.ToLower(strings.TrimSuffix(hostname, "."))
+	if hostname == "" {
+		return errors.New(invalidSubmissionURLMessage)
+	}
+
+	if ip := net.ParseIP(hostname); ip != nil {
+		return checkFetchIP(ip, allowLocal)
+	}
+
+	ips, err := net.DefaultResolver.LookupIP(ctx, "ip", hostname)
+	if err != nil {
+		return errors.New("submission url host could not be resolved")
+	}
+	if len(ips) == 0 {
+		return errors.New("submission url host could not be resolved")
+	}
+
+	for _, ip := range ips {
+		if err := checkFetchIP(ip, allowLocal); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func checkFetchIP(ip net.IP, allowLocal bool) error {
+	if allowLocal {
+		return nil
+	}
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsUnspecified() || ip.IsMulticast() {
+		return errors.New("submission url host is not allowed")
+	}
+	return nil
 }
 
 func validHostnameLabel(label string) bool {

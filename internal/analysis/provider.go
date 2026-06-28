@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"rubrical/internal/analysis/files"
 	"rubrical/internal/analysis/prompt"
@@ -27,6 +28,17 @@ func BuildProviderRequest(input Input, fileResult files.ProcessResult, maxSubmis
 		UserPrompt:   user,
 		Attachments:  attachments,
 	}
+}
+
+func ValidateProviderRequest(req request.Request) error {
+	for _, file := range req.Attachments {
+		switch file.Delivery {
+		case request.DeliveryPDF, request.DeliveryImage, request.DeliveryProviderFile:
+		default:
+			return fmt.Errorf("unsupported attachment delivery %q for %s", file.Delivery, file.Path)
+		}
+	}
+	return nil
 }
 
 func promptFileContextFrom(result files.ProcessResult) prompt.FileContext {
