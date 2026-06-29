@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": ".cursor/hooks/after_file_edit.py",
+        "timeout": 120
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": ".cursor/hooks/pre_tool_use.py"
+      }
+    ],
+    "stop": [
+      {
+        "command": ".cursor/hooks/verify_stop.py",
+        "timeout": 120,
+        "loop_limit": 5
+      }
+    ]
+  }
+}

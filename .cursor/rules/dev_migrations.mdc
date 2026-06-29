@@ -6,47 +6,26 @@ alwaysApply: false
 
 # Dev migrations (goose)
 
-Solo dev, wipeable DB. **Git must contain exactly one goose migration:** `migrations/00001_initial_schema.sql`. No `00002`, `00003`, … in the repo.
+Solo dev, wipeable DB. **Git must contain exactly one goose migration:** `migrations/00001_initial_schema.sql`. Incremental files are scratch space while iterating; squash before finishing.
 
-## Checklist — before finishing any schema task
-
-Every schema change is **not done** until all of these are true:
-
-- [ ] `migrations/00001_initial_schema.sql` contains the full schema (squashed)
-- [ ] `sql/schema/schema.sql` matches `00001` exactly (same tables, columns, indexes)
-- [ ] No incremental migration files remain (`00002_*.sql`, … deleted)
-- [ ] `make migrate-up` succeeds on a fresh DB (`make db-up && make migrate-up`)
-- [ ] If you applied a deleted incremental migration locally: `make db-reset`
-
-**Squashing is mandatory, not optional.** Incremental files are scratch space while iterating; they must not ship.
-
-## While changing schema (during the task)
+## While changing schema
 
 1. Add a **temporary** goose file: `migrations/0000N_short_name.sql` (`-- +goose Up` / `-- +goose Down`).
 2. **At the same time**, mirror the same shape in `sql/schema/schema.sql` (sqlc reads this). Never update only one file.
-3. Run from repo root:
-   ```bash
-   make migrate-up
-   ```
+3. `make migrate-up` from repo root.
 4. Update queries / Go as needed; run tests.
 
 ## Before finishing — squash (required)
 
 1. Fold **all** schema changes into `migrations/00001_initial_schema.sql`.
-2. Update `sql/schema/schema.sql` to match `00001` exactly.
-3. **Delete** every incremental migration file (`00002_*.sql`, …).
-4. Do **not** add runtime `ALTER TABLE` patches in Go (no `ensureSchema`, no startup drift shims). Goose is the only path.
-5. Run `make db-reset` (or fresh `make db-up && make migrate-up`) to verify.
+2. Update `sql/schema/schema.sql` to match `00001` (same tables, columns, indexes).
+3. **Delete** every incremental migration file.
+4. No runtime `ALTER TABLE` patches in Go — goose is the only path.
+5. `make db-reset` (or fresh `make db-up && make migrate-up`) to verify.
 
-## Fresh database
+## Stale local goose version
 
-After squash, a new DB only needs:
-
-```bash
-make db-up && make migrate-up
-```
-
-If you already ran deleted incremental migrations (`00002`, …), goose may still record version `2` while only `00001` exists — `make migrate-down` fails with `no current version found`. Wipe and re-apply:
+If you ran deleted incremental migrations, goose may record version `2` while only `00001` exists:
 
 ```bash
 make db-reset
@@ -54,8 +33,7 @@ make db-reset
 
 ## Do not
 
-- Ship or commit incremental migrations “for history”
+- Ship incremental migrations “for history”
 - Update `00001` without updating `sql/schema/schema.sql` (or vice versa)
 - Leave dual paths (goose migration + Go patch) for the same column
-- Add `@deprecated` migration shims or “legacy column” handlers for pre-squash shapes
-- Mark a schema task complete while `00002+` files still exist in git
+- Add legacy column handlers for pre-squash shapes

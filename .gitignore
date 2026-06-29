@@ -30,6 +30,9 @@ package-lock.json
 # Local draft file storage
 /data/
 
+# Cursor hook state
+.cursor/hooks/state/
+
 # IDE
 .idea/
 .vscode/
