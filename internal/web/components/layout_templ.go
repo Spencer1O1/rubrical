@@ -8,7 +8,12 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-func Layout(title string, content templ.Component) templ.Component {
+type LayoutUser struct {
+	Email    string
+	SignedIn bool
+}
+
+func Layout(title string, user LayoutUser, content templ.Component) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -36,7 +41,7 @@ func Layout(title string, content templ.Component) templ.Component {
 		var templ_7745c5c3_Var2 string
 		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/layout.templ`, Line: 9, Col: 17}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/layout.templ`, Line: 14, Col: 17}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
 		if templ_7745c5c3_Err != nil {
@@ -50,7 +55,30 @@ func Layout(title string, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<script src=\"https://unpkg.com/htmx.org@2.0.4\" integrity=\"sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+\" crossorigin=\"anonymous\"></script></head><body class=\"min-h-full text-stone-900 antialiased\"><script>\n\t\t\t\tfunction requestPath(event) {\n\t\t\t\t\treturn String(\n\t\t\t\t\t\tevent.detail?.pathInfo?.requestPath ??\n\t\t\t\t\t\t\tevent.detail?.pathInfo?.finalRequestPath ??\n\t\t\t\t\t\t\tevent.detail?.requestConfig?.path ??\n\t\t\t\t\t\t\t\"\",\n\t\t\t\t\t);\n\t\t\t\t}\n\t\t\t\tfunction showHTMXErrorBanner(message) {\n\t\t\t\t\tconst banner = document.getElementById(\"htmx-error-banner\");\n\t\t\t\t\tif (!banner) return;\n\t\t\t\t\tbanner.textContent = message;\n\t\t\t\t\tbanner.classList.remove(\"hidden\");\n\t\t\t\t}\n\t\t\t\tfunction hideHTMXErrorBanner() {\n\t\t\t\t\tconst banner = document.getElementById(\"htmx-error-banner\");\n\t\t\t\t\tif (banner) banner.classList.add(\"hidden\");\n\t\t\t\t}\n\t\t\t\tdocument.body.addEventListener(\"htmx:beforeRequest\", function (event) {\n\t\t\t\t\thideHTMXErrorBanner();\n\t\t\t\t\tconst path = requestPath(event);\n\t\t\t\t\tif (!path.includes(\"/analyze\")) return;\n\t\t\t\t\tconst form = event.detail?.elt;\n\t\t\t\t\tconst pendingId = form?.getAttribute?.(\"data-analyze-pending-id\");\n\t\t\t\t\tconst pending = pendingId ? document.getElementById(pendingId) : null;\n\t\t\t\t\tconst target = document.getElementById(\"analysis-results\");\n\t\t\t\t\tif (target && pending) {\n\t\t\t\t\t\ttarget.innerHTML = pending.innerHTML;\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t\tdocument.body.addEventListener(\"htmx:responseError\", function (event) {\n\t\t\t\t\tconst path = requestPath(event);\n\t\t\t\t\tif (path.includes(\"/analyze\")) {\n\t\t\t\t\t\tconst target = document.getElementById(\"analysis-results\");\n\t\t\t\t\t\tif (!target) return;\n\t\t\t\t\t\tconst isTimeout =\n\t\t\t\t\t\t\tevent.detail?.error === \"timeout\" ||\n\t\t\t\t\t\t\tString(event.detail?.xhr?.status ?? \"\") === \"0\";\n\t\t\t\t\t\ttarget.innerHTML = isTimeout\n\t\t\t\t\t\t\t? '<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis timed out</p><p class=\"mt-1\">The request took longer than two minutes. Try again with a shorter draft or fewer files.</p></div>'\n\t\t\t\t\t\t\t: (function () {\n\t\t\t\t\t\t\t\tconst body = event.detail?.xhr?.responseText?.trim() ?? \"\";\n\t\t\t\t\t\t\t\tif (body && body.includes(\"analysis-error\")) {\n\t\t\t\t\t\t\t\t\treturn body;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\tconst message = body || \"Analysis failed. Try again in a moment.\";\n\t\t\t\t\t\t\t\treturn '<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis failed</p><p class=\"mt-1\">' + message.replace(/</g, \"&lt;\") + '</p></div>';\n\t\t\t\t\t\t\t})();\n\t\t\t\t\t\treturn;\n\t\t\t\t\t}\n\t\t\t\t\tconst message =\n\t\t\t\t\t\tevent.detail?.xhr?.responseText?.trim() ||\n\t\t\t\t\t\t\"Something went wrong. Try again.\";\n\t\t\t\t\tshowHTMXErrorBanner(message);\n\t\t\t\t});\n\t\t\t</script><header class=\"border-b border-stone-200 bg-white\"><div class=\"mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6\"><a href=\"/\" class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><div><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p><p class=\"text-xs text-stone-500\">Check the rubric before the rubric checks you.</p></div></a> <a href=\"/settings\" class=\"text-sm font-medium text-indigo-700 hover:text-indigo-900\">Settings</a></div></header><main class=\"mx-auto max-w-5xl px-4 py-8 sm:px-6\"><div id=\"htmx-error-banner\" class=\"mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800\" role=\"alert\"></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<script src=\"https://unpkg.com/htmx.org@2.0.4\" integrity=\"sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+\" crossorigin=\"anonymous\"></script></head><body class=\"min-h-full text-stone-900 antialiased\"><script>\n\t\t\t\tfunction requestPath(event) {\n\t\t\t\t\treturn String(\n\t\t\t\t\t\tevent.detail?.pathInfo?.requestPath ??\n\t\t\t\t\t\t\tevent.detail?.pathInfo?.finalRequestPath ??\n\t\t\t\t\t\t\tevent.detail?.requestConfig?.path ??\n\t\t\t\t\t\t\t\"\",\n\t\t\t\t\t);\n\t\t\t\t}\n\t\t\t\tfunction showHTMXErrorBanner(message) {\n\t\t\t\t\tconst banner = document.getElementById(\"htmx-error-banner\");\n\t\t\t\t\tif (!banner) return;\n\t\t\t\t\tbanner.textContent = message;\n\t\t\t\t\tbanner.classList.remove(\"hidden\");\n\t\t\t\t}\n\t\t\t\tfunction hideHTMXErrorBanner() {\n\t\t\t\t\tconst banner = document.getElementById(\"htmx-error-banner\");\n\t\t\t\t\tif (banner) banner.classList.add(\"hidden\");\n\t\t\t\t}\n\t\t\t\tdocument.body.addEventListener(\"htmx:beforeRequest\", function (event) {\n\t\t\t\t\thideHTMXErrorBanner();\n\t\t\t\t\tconst path = requestPath(event);\n\t\t\t\t\tif (!path.includes(\"/analyze\")) return;\n\t\t\t\t\tconst form = event.detail?.elt;\n\t\t\t\t\tconst pendingId = form?.getAttribute?.(\"data-analyze-pending-id\");\n\t\t\t\t\tconst pending = pendingId ? document.getElementById(pendingId) : null;\n\t\t\t\t\tconst target = document.getElementById(\"analysis-results\");\n\t\t\t\t\tif (target && pending) {\n\t\t\t\t\t\ttarget.innerHTML = pending.innerHTML;\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t\tdocument.body.addEventListener(\"htmx:responseError\", function (event) {\n\t\t\t\t\tconst path = requestPath(event);\n\t\t\t\t\tif (path.includes(\"/analyze\")) {\n\t\t\t\t\t\tconst target = document.getElementById(\"analysis-results\");\n\t\t\t\t\t\tif (!target) return;\n\t\t\t\t\t\tconst isTimeout =\n\t\t\t\t\t\t\tevent.detail?.error === \"timeout\" ||\n\t\t\t\t\t\t\tString(event.detail?.xhr?.status ?? \"\") === \"0\";\n\t\t\t\t\t\ttarget.innerHTML = isTimeout\n\t\t\t\t\t\t\t? '<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis timed out</p><p class=\"mt-1\">The request took longer than two minutes. Try again with a shorter draft or fewer files.</p></div>'\n\t\t\t\t\t\t\t: (function () {\n\t\t\t\t\t\t\t\tconst body = event.detail?.xhr?.responseText?.trim() ?? \"\";\n\t\t\t\t\t\t\t\tif (body && body.includes(\"analysis-error\")) {\n\t\t\t\t\t\t\t\t\treturn body;\n\t\t\t\t\t\t\t\t}\n\t\t\t\t\t\t\t\tconst message = body || \"Analysis failed. Try again in a moment.\";\n\t\t\t\t\t\t\t\treturn '<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis failed</p><p class=\"mt-1\">' + message.replace(/</g, \"&lt;\") + '</p></div>';\n\t\t\t\t\t\t\t})();\n\t\t\t\t\t\treturn;\n\t\t\t\t\t}\n\t\t\t\t\tconst message =\n\t\t\t\t\t\tevent.detail?.xhr?.responseText?.trim() ||\n\t\t\t\t\t\t\"Something went wrong. Try again.\";\n\t\t\t\t\tshowHTMXErrorBanner(message);\n\t\t\t\t});\n\t\t\t</script><header class=\"border-b border-stone-200 bg-white\"><div class=\"mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6\"><a href=\"/\" class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><div><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p><p class=\"text-xs text-stone-500\">Check the rubric before the rubric checks you.</p></div></a><div class=\"flex items-center gap-4\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if user.SignedIn {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<span class=\"hidden text-sm text-stone-600 sm:inline\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 string
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/layout.templ`, Line: 88, Col: 73}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</span><form method=\"POST\" action=\"/logout\"><button type=\"submit\" class=\"text-sm font-medium text-stone-600 hover:text-stone-900\">Sign out</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<a href=\"/settings\" class=\"text-sm font-medium text-indigo-700 hover:text-indigo-900\">Settings</a></div></div></header><main class=\"mx-auto max-w-5xl px-4 py-8 sm:px-6\"><div id=\"htmx-error-banner\" class=\"mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800\" role=\"alert\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -58,7 +86,57 @@ func Layout(title string, content templ.Component) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</main></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</main></body></html>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		return nil
+	})
+}
+
+func AuthLayout(title string, content templ.Component) templ.Component {
+	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
+		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
+			return templ_7745c5c3_CtxErr
+		}
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templruntime.GetBuffer(templ_7745c5c3_W)
+		if !templ_7745c5c3_IsBuffer {
+			defer func() {
+				templ_7745c5c3_BufErr := templruntime.ReleaseBuffer(templ_7745c5c3_Buffer)
+				if templ_7745c5c3_Err == nil {
+					templ_7745c5c3_Err = templ_7745c5c3_BufErr
+				}
+			}()
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<!doctype html><html lang=\"en\" class=\"h-full bg-stone-50\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var5 string
+		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(title)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/layout.templ`, Line: 111, Col: 17}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, " · Rubrical</title><link rel=\"stylesheet\" href=\"/static/css/app.css\"></head><body class=\"flex min-h-full flex-col text-stone-900 antialiased\"><header class=\"border-b border-stone-200 bg-white\"><div class=\"mx-auto flex max-w-5xl items-center px-4 py-4 sm:px-6\"><a href=\"/\" class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p></a></div></header><main class=\"flex flex-1 items-center justify-center px-4 py-10 sm:px-6\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = content.Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 10, "</main></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -82,34 +160,34 @@ func StatusBadge(status string) templ.Component {
 			}()
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var3 == nil {
-			templ_7745c5c3_Var3 = templ.NopComponent
+		templ_7745c5c3_Var6 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var6 == nil {
+			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		switch status {
 		case "analyzed":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<span class=\"inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20\">Analyzed</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "<span class=\"inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20\">Analyzed</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "analyzing":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<span class=\"inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20\">Analyzing</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<span class=\"inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-inset ring-amber-600/20\">Analyzing</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "analysis_failed", "analysis failed":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "<span class=\"inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20\">Analysis failed</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 13, "<span class=\"inline-flex items-center rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700 ring-1 ring-inset ring-red-600/20\">Analysis failed</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		case "draft added", "draft_added":
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<span class=\"inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20\">Draft added</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 14, "<span class=\"inline-flex items-center rounded-full bg-sky-50 px-2.5 py-0.5 text-xs font-medium text-sky-700 ring-1 ring-inset ring-sky-600/20\">Draft added</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		default:
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "<span class=\"inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-700 ring-1 ring-inset ring-stone-500/20\">Imported</span>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 15, "<span class=\"inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-700 ring-1 ring-inset ring-stone-500/20\">Imported</span>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

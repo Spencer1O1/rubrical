@@ -68,6 +68,11 @@ func (h *Handlers) ImportAssignment(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) upsertAssignmentSnapshot(ctx context.Context, payload importpayload.Payload) (int64, bool, error) {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return 0, false, err
+	}
+
 	tx, err := h.db.Pool.Begin(ctx)
 	if err != nil {
 		return 0, false, err
@@ -126,7 +131,7 @@ func (h *Handlers) upsertAssignmentSnapshot(ctx context.Context, payload importp
 			updated_at = NOW()
 		RETURNING id, (xmax = 0) AS created
 	`,
-		h.userID,
+		userID,
 		payload.SourceURL,
 		"canvas",
 		nullIfEmpty(payload.PageType),
@@ -199,6 +204,11 @@ func (h *Handlers) upsertAssignmentSnapshot(ctx context.Context, payload importp
 }
 
 func (h *Handlers) getAssignment(ctx context.Context, id int64, embed bool) (pages.AssignmentView, error) {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return pages.AssignmentView{}, err
+	}
+
 	var view pages.AssignmentView
 	var importedAt time.Time
 	var draftWordCount int
@@ -209,7 +219,7 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64, embed bool) (pag
 	var pointsPossible *float64
 	var pageType *string
 	var allowedSubmissionTypesJSON []byte
-	err := h.db.Pool.QueryRow(ctx, `
+	err = h.db.Pool.QueryRow(ctx, `
 		SELECT
 			id,
 			COALESCE(page_type, ''),
@@ -224,7 +234,7 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64, embed bool) (pag
 			points_possible
 		FROM assignment_snapshots
 		WHERE id = $1 AND user_id = $2
-	`, id, h.userID).Scan(
+	`, id, userID).Scan(
 		&view.ID,
 		&pageType,
 		&view.Title,
@@ -280,7 +290,7 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64, embed bool) (pag
 		WHERE assignment_snapshot_id = $1 AND user_id = $2
 		ORDER BY updated_at DESC, id DESC
 		LIMIT 1
-	`, id, h.userID).Scan(&draftID, &view.DraftBody, &draftWordCount, &draftMode, &draftSubmissionURL)
+	`, id, userID).Scan(&draftID, &view.DraftBody, &draftWordCount, &draftMode, &draftSubmissionURL)
 	if errors.Is(err, pgx.ErrNoRows) {
 		view.DraftBody = ""
 		draftWordCount = 0
@@ -336,12 +346,12 @@ func (h *Handlers) getAssignment(ctx context.Context, id int64, embed bool) (pag
 	}
 
 	if h.analysis != nil && view.DraftMode == draftmode.File && view.HasDraftFiles {
-		if preview, err := h.analysis.PreviewFiles(ctx, h.userID, id); err != nil {
+		if preview, err := h.analysis.PreviewFiles(ctx, userID, id); err != nil {
 			view.FilePreviewError = err.Error()
 		} else {
 			provider := config.DefaultAIProvider
 			if h.aiSettings != nil {
-				if stored, err := h.aiSettings.Get(ctx, h.userID); err == nil && strings.TrimSpace(stored.Provider) != "" {
+				if stored, err := h.aiSettings.Get(ctx, userID); err == nil && strings.TrimSpace(stored.Provider) != "" {
 					provider = stored.Provider
 				}
 			}
@@ -364,12 +374,17 @@ func decodeAllowedSubmissionTypes(raw []byte) []string {
 }
 
 func (h *Handlers) loadAllowedDraftModes(ctx context.Context, assignmentID int64) ([]string, error) {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var allowedJSON []byte
-	err := h.db.Pool.QueryRow(ctx, `
+	err = h.db.Pool.QueryRow(ctx, `
 		SELECT allowed_submission_types
 		FROM assignment_snapshots
 		WHERE id = $1 AND user_id = $2
-	`, assignmentID, h.userID).Scan(&allowedJSON)
+	`, assignmentID, userID).Scan(&allowedJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -377,12 +392,17 @@ func (h *Handlers) loadAllowedDraftModes(ctx context.Context, assignmentID int64
 }
 
 func (h *Handlers) loadAssignmentPageType(ctx context.Context, assignmentID int64) (string, error) {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return "", err
+	}
+
 	var pageType *string
-	err := h.db.Pool.QueryRow(ctx, `
+	err = h.db.Pool.QueryRow(ctx, `
 		SELECT page_type
 		FROM assignment_snapshots
 		WHERE id = $1 AND user_id = $2
-	`, assignmentID, h.userID).Scan(&pageType)
+	`, assignmentID, userID).Scan(&pageType)
 	if err != nil {
 		return "", err
 	}

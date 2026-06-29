@@ -14,6 +14,8 @@ export type RubricalFetchSuccess = {
 export type RubricalFetchFailure = {
   ok: false;
   error: string;
+  authRequired?: boolean;
+  base?: string;
 };
 
 export type RubricalFetchResult = RubricalFetchSuccess | RubricalFetchFailure;

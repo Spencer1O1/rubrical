@@ -15,6 +15,7 @@ import (
 	"rubrical/internal/config"
 	"rubrical/internal/db"
 	"rubrical/internal/draftfiles"
+	"rubrical/internal/email"
 	"rubrical/internal/purge"
 	"rubrical/internal/secrets"
 	"rubrical/internal/web"
@@ -33,11 +34,11 @@ func main() {
 	}
 	defer database.Close()
 
-	userID, err := auth.EnsureLocalUser(bootstrap, database.Pool)
-	if err != nil {
-		log.Fatalf("local user: %v", err)
+	authSvc := auth.NewService(database.Pool, cfg.SessionTTL)
+	if err := authSvc.PurgeExpiredSessions(bootstrap); err != nil {
+		log.Printf("session cleanup: %v", err)
 	}
-	log.Printf("using local dev user id=%d (%s)", userID, auth.LocalDevEmail)
+
 	if err := analysis.FailAllStaleRuns(bootstrap, database.Pool, analysis.DefaultStaleRunTTL); err != nil {
 		log.Printf("stale analysis run cleanup: %v", err)
 	}
@@ -79,6 +80,16 @@ func main() {
 		log.Printf("ai analysis: per-user keys from database; rate limits disabled (BYOK beta)")
 	}
 
+	mailer := email.NewSender(email.Config{
+		From:         cfg.EmailFrom,
+		ResendAPIKey: cfg.ResendAPIKey,
+		SMTPHost:     cfg.SMTPHost,
+		SMTPPort:     cfg.SMTPPort,
+		SMTPUsername: cfg.SMTPUsername,
+		SMTPPassword: cfg.SMTPPassword,
+		DevLog:       cfg.EmailDevLog,
+	})
+
 	purgeCtx, stopPurge := context.WithCancel(context.Background())
 	defer stopPurge()
 	policy := purge.Policy{
@@ -94,7 +105,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:         cfg.Addr,
-		Handler:      web.NewRouter(database, fileStore, userID, cfg, analysisSvc, aiSettingsStore),
+		Handler:      web.NewRouter(database, fileStore, cfg, analysisSvc, aiSettingsStore, authSvc, mailer),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 180 * time.Second,
 		IdleTimeout:  60 * time.Second,

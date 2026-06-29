@@ -5,6 +5,9 @@ import {
   normalizeAISettings,
   type AIProviderId,
 } from "./ai-settings";
+import { fetchSession, RubricalAuthRequiredError } from "./auth-api";
+
+export { RubricalAuthRequiredError, fetchSession } from "./auth-api";
 
 export async function fetchAISettingsFromServer(): Promise<AISettings> {
   const result = await executeRubricalFetch({
@@ -15,6 +18,9 @@ export async function fetchAISettingsFromServer(): Promise<AISettings> {
     },
   });
   if (!result.ok) {
+    if (result.authRequired) {
+      throw new RubricalAuthRequiredError(result.base);
+    }
     return DEFAULT_AI_SETTINGS;
   }
   return normalizeAISettings(result.data as Partial<AISettings>);
@@ -32,6 +38,9 @@ export async function saveAISettingsToServer(settings: AISettings): Promise<AISe
     body: JSON.stringify(payload),
   });
   if (!result.ok) {
+    if (result.authRequired) {
+      throw new RubricalAuthRequiredError(result.base);
+    }
     throw new Error(result.error || "Failed to save AI settings");
   }
   return normalizeAISettings(result.data as Partial<AISettings>);

@@ -27,11 +27,13 @@ make templ-watch  # terminal 2
 make server       # terminal 3
 ```
 
-Open http://localhost:8787
-
 `make setup` runs `pnpm setup:secrets-key`, which creates `.env.local` (from `.env.example` if needed) and writes `RUBRICAL_SECRETS_ENCRYPTION_KEY`. The server requires this key to encrypt BYOK API keys at rest. Re-run `pnpm setup:secrets-key` only on a fresh machine — changing the key invalidates saved API keys.
 
-On startup the server creates a **local dev user** (`local@rubrical.dev`) and assigns all imports to that user. The dashboard shows only that user's assignments. Existing rows with no `user_id` are backfilled on startup.
+Open http://localhost:8787 and **sign up** for an account (email/password, or Google OAuth when configured). Each user sees only their own imported assignments.
+
+For Google sign-in, set `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `RUBRICAL_PUBLIC_URL` in `.env.local`. Password reset emails use `EMAIL_DEV_LOG=1` in dev (logged to the server console) or Resend/SMTP in production.
+
+The browser extension sends session cookies with API requests — sign in via the web app (same origin as `RUBRICAL_PUBLIC_URL` or localhost) before importing from Canvas.
 
 Build the browser extension:
 
@@ -44,7 +46,7 @@ After changing extension code, rebuild and click **Reload** on the Rubrical card
 
 ### WSL + browser on Windows
 
-The Go server runs in WSL, but Edge/Chrome usually runs on Windows. The extension POSTs to `http://127.0.0.1:8787` and `http://localhost:8787`.
+The Go server runs in WSL, but Edge/Chrome usually runs on Windows. Local dev builds of the extension talk to `http://localhost:8787` (see `make extension-build`).
 
 From **Windows** PowerShell, verify the server is reachable:
 
@@ -52,7 +54,9 @@ From **Windows** PowerShell, verify the server is reachable:
 curl http://localhost:8787/health -UseBasicParsing
 ```
 
-You should get `{"status":"ok"}`. On WSL2, **`localhost` usually works from Windows but `127.0.0.1` often does not** — the extension tries `localhost` first.
+You should get `{"status":"ok"}`. On WSL2, **`localhost` usually works from Windows but `127.0.0.1` often does not** — the dev extension uses `localhost`.
+
+For a production build (`make extension-build-prod`), the extension talks to `https://rubrical.spencerls.dev` only.
 
 If both fail while `make server` is running in WSL, restart WSL (`wsl --shutdown` in PowerShell, then reopen) or check Docker Desktop WSL integration.
 
@@ -149,7 +153,8 @@ make server
 | `make purge` | One-shot purge of draft files past retention |
 | `make css-watch` | Watch Tailwind CSS |
 | `make templ-watch` | Watch templ templates |
-| `make extension-build` | Build Chrome extension bundle |
+| `make extension-build` | Build extension for local dev (`http://localhost:8787`) |
+| `make extension-build-prod` | Build extension for production (`https://rubrical.spencerls.dev`) |
 | `make test` | Run Go tests |
 
 ## templ IDE errors

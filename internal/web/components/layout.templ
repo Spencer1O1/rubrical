@@ -1,6 +1,11 @@
 package components
 
-templ Layout(title string, content templ.Component) {
+type LayoutUser struct {
+	Email    string
+	SignedIn bool
+}
+
+templ Layout(title string, user LayoutUser, content templ.Component) {
 	<!DOCTYPE html>
 	<html lang="en" class="h-full bg-stone-50">
 		<head>
@@ -78,11 +83,44 @@ templ Layout(title string, content templ.Component) {
 							<p class="text-xs text-stone-500">Check the rubric before the rubric checks you.</p>
 						</div>
 					</a>
-					<a href="/settings" class="text-sm font-medium text-indigo-700 hover:text-indigo-900">Settings</a>
+					<div class="flex items-center gap-4">
+						if user.SignedIn {
+							<span class="hidden text-sm text-stone-600 sm:inline">{ user.Email }</span>
+							<form method="POST" action="/logout">
+								<button type="submit" class="text-sm font-medium text-stone-600 hover:text-stone-900">Sign out</button>
+							</form>
+						}
+						<a href="/settings" class="text-sm font-medium text-indigo-700 hover:text-indigo-900">Settings</a>
+					</div>
 				</div>
 			</header>
 			<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
 				<div id="htmx-error-banner" class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert"></div>
+				@content
+			</main>
+		</body>
+	</html>
+}
+
+templ AuthLayout(title string, content templ.Component) {
+	<!DOCTYPE html>
+	<html lang="en" class="h-full bg-stone-50">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } · Rubrical</title>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+		</head>
+		<body class="flex min-h-full flex-col text-stone-900 antialiased">
+			<header class="border-b border-stone-200 bg-white">
+				<div class="mx-auto flex max-w-5xl items-center px-4 py-4 sm:px-6">
+					<a href="/" class="flex items-center gap-2">
+						<span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">R</span>
+						<p class="text-lg font-semibold tracking-tight">Rubrical</p>
+					</a>
+				</div>
+			</header>
+			<main class="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
 				@content
 			</main>
 		</body>

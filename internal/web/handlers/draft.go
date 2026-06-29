@@ -368,6 +368,12 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, err := userIDFrom(r.Context())
+	if err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
@@ -407,7 +413,7 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := h.analysis.Run(r.Context(), id, h.userID)
+	result, err := h.analysis.Run(r.Context(), id, userID)
 	if err != nil {
 		h.renderAnalysisError(w, r, err)
 		return
@@ -515,6 +521,16 @@ func (h *Handlers) AnalysisResults(w http.ResponseWriter, r *http.Request) {
 	id, err := parseID(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, "invalid assignment id", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := userIDFrom(r.Context()); err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+
+	if _, err := h.getAssignment(r.Context(), id, false); err != nil {
+		http.Error(w, "assignment not found", http.StatusNotFound)
 		return
 	}
 

@@ -1,0 +1,33 @@
+package handlers
+
+import (
+	"context"
+	"net/http"
+
+	"rubrical/internal/auth"
+)
+
+func userIDFrom(ctx context.Context) (int64, error) {
+	return auth.UserID(ctx)
+}
+
+func writeAuthSession(w http.ResponseWriter, r *http.Request, authSvc *auth.Service, secure bool, user auth.User) error {
+	session, err := authSvc.CreateSession(r.Context(), user.ID)
+	if err != nil {
+		return err
+	}
+	auth.SetSessionCookie(w, session.Token, session.ExpiresAt, secure)
+	return nil
+}
+
+func redirectAfterLogin(w http.ResponseWriter, r *http.Request) {
+	next := auth.SanitizeNextPath(r.FormValue("next"))
+	if next == "" {
+		next = auth.SanitizeNextPath(r.URL.Query().Get("next"))
+	}
+	if next == "" {
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+		return
+	}
+	http.Redirect(w, r, next, http.StatusSeeOther)
+}

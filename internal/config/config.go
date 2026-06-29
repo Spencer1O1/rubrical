@@ -9,11 +9,23 @@ import (
 )
 
 type Config struct {
-	Addr                    string
-	DatabaseURL             string
-	DataDir                 string
-	SecretsEncryptionKey    string
-	DraftMaxUploadBytes     int
+	Addr                         string
+	DatabaseURL                  string
+	DataDir                      string
+	SecretsEncryptionKey         string
+	PublicURL                    string
+	SessionTTL                   time.Duration
+	GoogleOAuthClientID          string
+	GoogleOAuthClientSecret      string
+	ExtensionOrigins             []string
+	EmailFrom                    string
+	ResendAPIKey                 string
+	SMTPHost                     string
+	SMTPPort                     string
+	SMTPUsername                 string
+	SMTPPassword                 string
+	EmailDevLog                  bool
+	DraftMaxUploadBytes          int
 	DraftMaxUploadSlots     int
 	AnalysisMaxSubmissionTextChars int
 	AnalysisMaxTotalBytes          int
@@ -35,6 +47,17 @@ func Load() (Config, error) {
 		DatabaseURL:             envOrDefault("DATABASE_URL", DefaultDatabaseURL),
 		DataDir:                 envOrDefault("RUBRICAL_DATA_DIR", DefaultDataDir),
 		SecretsEncryptionKey:    strings.TrimSpace(os.Getenv("RUBRICAL_SECRETS_ENCRYPTION_KEY")),
+		PublicURL:               strings.TrimRight(strings.TrimSpace(envOrDefault("RUBRICAL_PUBLIC_URL", DefaultPublicURL)), "/"),
+		GoogleOAuthClientID:     strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_ID")),
+		GoogleOAuthClientSecret: strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET")),
+		ExtensionOrigins:        splitCSV(os.Getenv("RUBRICAL_EXTENSION_ORIGINS")),
+		EmailFrom:               envOrDefault("EMAIL_FROM", DefaultEmailFrom),
+		ResendAPIKey:            strings.TrimSpace(os.Getenv("RESEND_API_KEY")),
+		SMTPHost:                strings.TrimSpace(os.Getenv("SMTP_HOST")),
+		SMTPPort:                envOrDefault("SMTP_PORT", DefaultSMTPPort),
+		SMTPUsername:            strings.TrimSpace(os.Getenv("SMTP_USERNAME")),
+		SMTPPassword:            strings.TrimSpace(os.Getenv("SMTP_PASSWORD")),
+		EmailDevLog:             envBool("EMAIL_DEV_LOG"),
 		DraftMaxUploadBytes:     envInt("DRAFT_MAX_UPLOAD_BYTES", DefaultDraftMaxUploadBytes),
 		DraftMaxUploadSlots:     envInt("DRAFT_MAX_UPLOAD_SLOTS", DefaultDraftMaxUploadSlots),
 		AnalysisMaxSubmissionTextChars: envInt("ANALYSIS_MAX_SUBMISSION_TEXT_CHARS", DefaultAnalysisMaxSubmissionTextChars),
@@ -58,6 +81,12 @@ func Load() (Config, error) {
 		return Config{}, fmt.Errorf("POST_UPLOAD_RETENTION_TIME: %w", err)
 	}
 	cfg.PostUploadRetention = uploadRetention
+
+	sessionTTL, err := envDuration("SESSION_TTL", DefaultSessionTTL)
+	if err != nil {
+		return Config{}, fmt.Errorf("SESSION_TTL: %w", err)
+	}
+	cfg.SessionTTL = sessionTTL
 
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
@@ -117,4 +146,50 @@ func envDuration(key string, fallback time.Duration) (time.Duration, error) {
 		return 0, fmt.Errorf("must be >= 0")
 	}
 	return d, nil
+}
+
+func splitCSV(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
+func (c Config) CookieSecure() bool {
+	return strings.HasPrefix(strings.ToLower(c.PublicURL), "https://")
+}
+
+func (c Config) GoogleOAuthRedirectURL() string {
+	return strings.TrimRight(c.PublicURL, "/") + "/auth/google/callback"
+}
+
+func (c Config) AllowedOrigins() []string {
+	origins := append([]string{}, c.ExtensionOrigins...)
+	if c.PublicURL != "" {
+		origins = append(origins, c.PublicURL)
+	}
+	origins = append(origins, "http://localhost:8787", "http://127.0.0.1:8787")
+	seen := make(map[string]struct{}, len(origins))
+	out := make([]string, 0, len(origins))
+	for _, origin := range origins {
+		origin = strings.TrimRight(strings.TrimSpace(origin), "/")
+		if origin == "" {
+			continue
+		}
+		if _, ok := seen[origin]; ok {
+			continue
+		}
+		seen[origin] = struct{}{}
+		out = append(out, origin)
+	}
+	return out
 }

@@ -31,12 +31,17 @@ func (h *Handlers) DraftManifest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
 
 	var assignmentID int64
 	err = h.db.Pool.QueryRow(ctx, `
 		SELECT id FROM assignment_snapshots
 		WHERE user_id = $1 AND source_url = $2
-	`, h.userID, sourceURL).Scan(&assignmentID)
+	`, userID, sourceURL).Scan(&assignmentID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeDraftManifest(w, draftManifestResponse{Files: []draftManifestFile{}})
 		return

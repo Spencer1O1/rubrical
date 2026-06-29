@@ -12,7 +12,12 @@ import (
 )
 
 func (h *Handlers) SettingsPage(w http.ResponseWriter, r *http.Request) {
-	settings, err := h.aiSettings.Get(r.Context(), h.userID)
+	userID, err := userIDFrom(r.Context())
+	if err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+	settings, err := h.aiSettings.Get(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "failed to load ai settings", http.StatusInternalServerError)
 		return
@@ -23,11 +28,16 @@ func (h *Handlers) SettingsPage(w http.ResponseWriter, r *http.Request) {
 		pages.SettingsEmbed(settings, "", assignmentEmbedBackURL(r), id, saved).Render(r.Context(), w)
 		return
 	}
-	pages.SettingsPage(settings, "", saved).Render(r.Context(), w)
+	pages.SettingsPage(settings, h.layoutUser(r), "", saved).Render(r.Context(), w)
 }
 
 func (h *Handlers) GetAISettingsAPI(w http.ResponseWriter, r *http.Request) {
-	settings, err := h.aiSettings.Get(r.Context(), h.userID)
+	userID, err := userIDFrom(r.Context())
+	if err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+	settings, err := h.aiSettings.Get(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "failed to load ai settings", http.StatusInternalServerError)
 		return
@@ -36,6 +46,11 @@ func (h *Handlers) GetAISettingsAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
+	userID, err := userIDFrom(r.Context())
+	if err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
 	embed := r.FormValue("embed") == "1" || r.URL.Query().Get("embed") == "1"
 	assignmentID := assignmentIDFromRequest(r)
 
@@ -60,7 +75,7 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	saved, err := h.aiSettings.Save(r.Context(), h.userID, incoming)
+	saved, err := h.aiSettings.Save(r.Context(), userID, incoming)
 	if err != nil {
 		if isJSONRequest(r) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -70,14 +85,14 @@ func (h *Handlers) SaveAISettings(w http.ResponseWriter, r *http.Request) {
 			pages.SettingsStatusError(err.Error()).Render(r.Context(), w)
 			return
 		}
-		current, loadErr := h.aiSettings.Get(r.Context(), h.userID)
+		current, loadErr := h.aiSettings.Get(r.Context(), userID)
 		if loadErr != nil {
 			current = incoming
 		}
 		if embed {
 			pages.SettingsEmbed(current, err.Error(), assignmentEmbedBackURL(r), assignmentID, false).Render(r.Context(), w)
 		} else {
-			pages.SettingsPage(current, err.Error(), false).Render(r.Context(), w)
+			pages.SettingsPage(current, h.layoutUser(r), err.Error(), false).Render(r.Context(), w)
 		}
 		return
 	}

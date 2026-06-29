@@ -29,7 +29,7 @@ func (h *Handlers) AssignmentDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pages.Assignment(assignment).Render(r.Context(), w)
+	pages.Assignment(assignment, h.layoutUser(r)).Render(r.Context(), w)
 }
 
 func parseID(raw string) (int64, error) {

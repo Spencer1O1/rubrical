@@ -16,7 +16,7 @@ Last reviewed: 2026-06-26
 | Phase 9 (polish) | 🟡 Partial |
 | File / external-tool submissions | 🟡 Canvas file read + manual upload; LTI still manual-only |
 | Discussions | 🔴 Page detected; prompt + topic reply not verified (§5.6 MVP) |
-| Real user auth | 🔴 Local dev user only |
+| Real user auth | ✅ Email/password + Google OAuth + sessions |
 
 ---
 
@@ -29,8 +29,8 @@ Last reviewed: 2026-06-26
 - [x] goose migrations
 - [x] sqlc type-safe queries
 - [x] Health route (`/health`)
-- [x] CORS for extension
-- [x] Local dev user (`local@rubrical.dev`)
+- [x] CORS for extension (credentials + origin allowlist)
+- [x] Multi-user auth (email/password, Google OAuth, sessions)
 
 ---
 
@@ -201,7 +201,7 @@ Spec §5.5 and §5.4 require: when Canvas has no readable draft (file upload, ex
 ## Auth & multi-user
 
 - [x] `users` table
-- [x] Local dev user bootstrap
+- [x] Multi-user auth (signup, login, sessions, password reset)
 - [ ] 🔴 Real login / session
 - [ ] 🔴 Per-user assignment isolation in production
 - [ ] OAuth / institution SSO (out of v1 scope)

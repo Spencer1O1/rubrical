@@ -10,6 +10,10 @@ const (
 	DefaultDataDir              = "./data"
 	DefaultPostDueDateRetention = 168 * time.Hour
 	DefaultPostUploadRetention  = 720 * time.Hour
+	DefaultPublicURL            = "http://localhost:8787"
+	DefaultSessionTTL           = 30 * 24 * time.Hour
+	DefaultEmailFrom            = "Rubrical <noreply@rubrical.spencerls.dev>"
+	DefaultSMTPPort             = "587"
 )
 
 // Draft upload limits (ENV: DRAFT_MAX_UPLOAD_BYTES, DRAFT_MAX_UPLOAD_SLOTS).

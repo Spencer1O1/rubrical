@@ -20,7 +20,7 @@ type AssignmentListItem struct {
 	URL             string
 }
 
-func Dashboard(assignments []AssignmentListItem) templ.Component {
+func Dashboard(assignments []AssignmentListItem, user components.LayoutUser) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -41,7 +41,7 @@ func Dashboard(assignments []AssignmentListItem) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.Layout("Dashboard", dashboardContent(assignments)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Layout("Dashboard", user, dashboardContent(assignments)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

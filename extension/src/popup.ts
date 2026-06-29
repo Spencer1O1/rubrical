@@ -2,6 +2,8 @@ import {
   fetchAISettingsFromServer,
   saveAISettingsToServer,
 } from "./ai-settings-api";
+import { fetchSession, type RubricalSession } from "./auth-api";
+import { mountAuthCard } from "./auth-ui";
 import {
   defaultModelForProvider,
   isAISettingsConfigured,
@@ -53,8 +55,8 @@ function setStatus(message: string, kind: "info" | "success" | "error" = "info")
 }
 
 function updateKeyConfiguredHints(settings: AISettings): void {
-  byId<HTMLSpanElement>("openai-key-status").hidden = !settings.openaiApiKeyConfigured;
-  byId<HTMLSpanElement>("anthropic-key-status").hidden = !settings.anthropicApiKeyConfigured;
+  byId<HTMLSpanElement>("openai-key-status").classList.toggle("hidden", !settings.openaiApiKeyConfigured);
+  byId<HTMLSpanElement>("anthropic-key-status").classList.toggle("hidden", !settings.anthropicApiKeyConfigured);
 }
 
 function applySettingsToForm(settings: AISettings): void {
@@ -66,7 +68,20 @@ function applySettingsToForm(settings: AISettings): void {
   updateKeyConfiguredHints(settings);
 }
 
-async function initPopup(): Promise<void> {
+function showAuthView(): void {
+  byId<HTMLDivElement>("auth-view").classList.remove("hidden");
+  byId<HTMLDivElement>("settings-view").classList.add("hidden");
+}
+
+function showSettingsView(session: RubricalSession): void {
+  byId<HTMLSpanElement>("signed-in-email").textContent = session.email;
+  byId<HTMLDivElement>("auth-view").classList.add("hidden");
+  byId<HTMLDivElement>("settings-view").classList.remove("hidden");
+}
+
+async function initSettings(session: RubricalSession): Promise<void> {
+  showSettingsView(session);
+
   let settings: AISettings;
   try {
     settings = await fetchAISettingsFromServer();
@@ -79,7 +94,7 @@ async function initPopup(): Promise<void> {
   applySettingsToForm(settings);
 
   if (isAISettingsConfigured(settings)) {
-    setStatus(`Saved: ${settings.provider} · ${settings.model}`, "success");
+    setStatus(`${settings.provider} · ${settings.model}`, "success");
   } else {
     setStatus("Add an API key for your chosen provider, then save.", "info");
   }
@@ -99,6 +114,21 @@ async function initPopup(): Promise<void> {
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Failed to save settings", "error");
     }
+  });
+}
+
+async function initPopup(): Promise<void> {
+  const session = await fetchSession();
+  if (session) {
+    await initSettings(session);
+    return;
+  }
+
+  showAuthView();
+  await mountAuthCard(byId<HTMLDivElement>("auth-root"), {
+    onSignedIn: (signedIn) => {
+      void initSettings(signedIn);
+    },
   });
 }
 

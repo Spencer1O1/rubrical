@@ -6,7 +6,9 @@ import {
   needsPlacement,
   setRubricalButtonEnabled,
 } from "./injector";
-import { RUBRICAL_API_BASES } from "./api";
+import { RUBRICAL_API_BASE } from "./api";
+import { fetchSession } from "./auth-api";
+import { showAuthModal } from "./auth-modal";
 import {
   isAssignmentContextReady,
   prefetchAssignmentContext,
@@ -43,6 +45,16 @@ async function handleRubricalClick(pageType: string): Promise<void> {
 
   importInFlight = true;
   try {
+    const session = await fetchSession();
+    if (!session) {
+      showAuthModal({
+        onSignedIn: () => {
+          void handleRubricalClick(pageType);
+        },
+      });
+      return;
+    }
+
     const { redirect, title, base, draftWarning } = await runImportOnClick(pageType);
     if (draftWarning) {
       alert(`Rubrical imported your work, but:\n\n${draftWarning}`);
@@ -57,7 +69,7 @@ async function handleRubricalClick(pageType: string): Promise<void> {
         : "Unknown error";
     const serverHint = detail.toLowerCase().includes("canvas attachment")
       ? ""
-      : `\n\nIf this is a connection problem, the extension tried:\n${RUBRICAL_API_BASES.join("\n")}\n\nFrom WSL run: make server\nFrom Windows test: curl http://localhost:8787/health -UseBasicParsing`;
+      : `\n\nIf this is a connection problem, check Rubrical at:\n${RUBRICAL_API_BASE}\n\nFrom WSL run: make server\nFrom Windows test: curl http://localhost:8787/health -UseBasicParsing`;
     alert(`Rubrical import failed.\n\n${detail}${serverHint}`);
   } finally {
     importInFlight = false;

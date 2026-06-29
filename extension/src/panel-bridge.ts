@@ -1,4 +1,4 @@
-import { RUBRICAL_API_BASES } from "./api";
+import { RUBRICAL_API_BASE } from "./api";
 
 export const RUBRICAL_DRAFT_FILES_CHANGED = "rubrical:draft-files-changed";
 
@@ -8,7 +8,7 @@ export function isRubricalDraftFilesChangedMessage(event: MessageEvent): boolean
   }
 
   try {
-    return RUBRICAL_API_BASES.some((base) => new URL(base).origin === event.origin);
+    return new URL(RUBRICAL_API_BASE).origin === event.origin;
   } catch {
     return false;
   }

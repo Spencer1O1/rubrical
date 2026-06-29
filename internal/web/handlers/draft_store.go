@@ -166,7 +166,7 @@ func (h *Handlers) saveDiscussionDraftFromImport(ctx context.Context, assignment
 		return h.replaceDraftFilesOnDraft(ctx, draft.ID, stored)
 	}
 
-	stored, err := h.storeDraftFileBytes(assignmentID, importFiles)
+	stored, err := h.storeDraftFileBytes(ctx, assignmentID, importFiles)
 	if err != nil {
 		return err
 	}
@@ -185,7 +185,7 @@ func (h *Handlers) attachDiscussionDraftFile(ctx context.Context, assignmentID i
 		return fmt.Errorf("discussion attachment requires text draft mode")
 	}
 
-	stored, err := h.storeDraftFileBytes(assignmentID, []decodedDraftFile{upload})
+	stored, err := h.storeDraftFileBytes(ctx, assignmentID, []decodedDraftFile{upload})
 	if err != nil {
 		return err
 	}
@@ -256,7 +256,7 @@ func (h *Handlers) appendUploadedDraftFiles(ctx context.Context, assignmentID in
 		return fmt.Errorf("no files to upload")
 	}
 
-	stored, err := h.storeDraftFileBytes(assignmentID, uploads)
+	stored, err := h.storeDraftFileBytes(ctx, assignmentID, uploads)
 	if err != nil {
 		return err
 	}
@@ -289,10 +289,15 @@ func (h *Handlers) appendUploadedDraftFiles(ctx context.Context, assignmentID in
 	return h.touchDraftUpdatedAt(ctx, draft.ID)
 }
 
-func (h *Handlers) storeDraftFileBytes(assignmentID int64, uploads []decodedDraftFile) ([]draftStoredFile, error) {
+func (h *Handlers) storeDraftFileBytes(ctx context.Context, assignmentID int64, uploads []decodedDraftFile) ([]draftStoredFile, error) {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var stored []draftStoredFile
 	for _, upload := range uploads {
-		storageKey, err := h.files.Save(h.userID, assignmentID, upload.FileName, upload.Data)
+		storageKey, err := h.files.Save(userID, assignmentID, upload.FileName, upload.Data)
 		if err != nil {
 			for _, saved := range stored {
 				_ = h.files.Delete(saved.StorageKey)
@@ -370,6 +375,11 @@ func (h *Handlers) removeDraftFileByID(ctx context.Context, assignmentID, fileID
 }
 
 func (h *Handlers) clearDraftTextBody(ctx context.Context, assignmentID int64) error {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
 	draft, err := h.loadLatestDraftRow(ctx, assignmentID)
 	if err != nil {
 		return err
@@ -381,11 +391,16 @@ func (h *Handlers) clearDraftTextBody(ctx context.Context, assignmentID int64) e
 		UPDATE submission_drafts
 		SET body = '', word_count = 0, updated_at = NOW()
 		WHERE id = $1 AND user_id = $2
-	`, draft.ID, h.userID)
+	`, draft.ID, userID)
 	return err
 }
 
 func (h *Handlers) clearDraftURL(ctx context.Context, assignmentID int64) error {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
 	draft, err := h.loadLatestDraftRow(ctx, assignmentID)
 	if err != nil {
 		return err
@@ -397,11 +412,16 @@ func (h *Handlers) clearDraftURL(ctx context.Context, assignmentID int64) error 
 		UPDATE submission_drafts
 		SET submission_url = NULL, updated_at = NOW()
 		WHERE id = $1 AND user_id = $2
-	`, draft.ID, h.userID)
+	`, draft.ID, userID)
 	return err
 }
 
 func (h *Handlers) switchDraftModeOnly(ctx context.Context, assignmentID int64, mode string) error {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
 	mode = draftmode.Normalize(mode)
 	draft, err := h.loadLatestDraftRow(ctx, assignmentID)
 	if err != nil {
@@ -417,7 +437,7 @@ func (h *Handlers) switchDraftModeOnly(ctx context.Context, assignmentID int64, 
 		UPDATE submission_drafts
 		SET draft_mode = $3, updated_at = NOW()
 		WHERE id = $1 AND user_id = $2
-	`, draft.ID, h.userID, mode)
+	`, draft.ID, userID, mode)
 	return err
 }
 
@@ -435,8 +455,13 @@ func (h *Handlers) switchDraftMode(ctx context.Context, assignmentID int64, mode
 }
 
 func (h *Handlers) loadLatestDraftRow(ctx context.Context, assignmentID int64) (*draftRow, error) {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var row draftRow
-	err := h.db.Pool.QueryRow(ctx, `
+	err = h.db.Pool.QueryRow(ctx, `
 		SELECT
 			id,
 			COALESCE(draft_mode, 'text'),
@@ -448,7 +473,7 @@ func (h *Handlers) loadLatestDraftRow(ctx context.Context, assignmentID int64) (
 		WHERE assignment_snapshot_id = $1 AND user_id = $2
 		ORDER BY updated_at DESC, id DESC
 		LIMIT 1
-	`, assignmentID, h.userID).Scan(
+	`, assignmentID, userID).Scan(
 		&row.ID,
 		&row.Mode,
 		&row.Body,
@@ -564,6 +589,11 @@ func applyDraftUpsert(existing *draftRow, opts draftUpsertOptions) (draftRow, bo
 }
 
 func (h *Handlers) upsertLatestDraft(ctx context.Context, assignmentID int64, opts draftUpsertOptions) error {
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
 	existing, err := h.loadLatestDraftRow(ctx, assignmentID)
 	if err != nil {
 		return err
@@ -589,7 +619,7 @@ func (h *Handlers) upsertLatestDraft(ctx context.Context, assignmentID int64, op
 				captured_from_canvas
 			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			RETURNING id
-		`, assignmentID, h.userID, next.Mode, next.Body, wordCount, next.URL, next.SourceType, next.FromCanvas).Scan(&next.ID)
+		`, assignmentID, userID, next.Mode, next.Body, wordCount, next.URL, next.SourceType, next.FromCanvas).Scan(&next.ID)
 		return err
 	}
 
@@ -603,7 +633,7 @@ func (h *Handlers) upsertLatestDraft(ctx context.Context, assignmentID int64, op
 			captured_from_canvas = $8,
 			updated_at = NOW()
 		WHERE id = $1 AND user_id = $2
-	`, existing.ID, h.userID, next.Mode, next.Body, wordCount, next.URL, next.SourceType, next.FromCanvas)
+	`, existing.ID, userID, next.Mode, next.Body, wordCount, next.URL, next.SourceType, next.FromCanvas)
 	return err
 }
 
@@ -647,9 +677,14 @@ func (h *Handlers) clearDraftFiles(ctx context.Context, draftID int64) error {
 }
 
 func (h *Handlers) touchDraftUpdatedAt(ctx context.Context, draftID int64) error {
-	_, err := h.db.Pool.Exec(ctx, `
+	userID, err := userIDFrom(ctx)
+	if err != nil {
+		return err
+	}
+
+	_, err = h.db.Pool.Exec(ctx, `
 		UPDATE submission_drafts SET updated_at = NOW() WHERE id = $1 AND user_id = $2
-	`, draftID, h.userID)
+	`, draftID, userID)
 	return err
 }
 
@@ -720,7 +755,7 @@ func (h *Handlers) mergeImportDraftFiles(
 		})
 	}
 
-	stored, err := h.storeDraftFileBytes(assignmentID, importFiles)
+	stored, err := h.storeDraftFileBytes(ctx, assignmentID, importFiles)
 	if err != nil {
 		return nil, err
 	}

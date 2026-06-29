@@ -8,18 +8,13 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"rubrical/internal/auth"
-	"rubrical/internal/db"
 	"rubrical/internal/draftfiles"
 )
 
 func TestPurgeDraftFiles_removesFilesPastDuePlusRetention(t *testing.T) {
 	ctx := context.Background()
 	pool := testPool(t)
-	userID, err := auth.EnsureLocalUser(ctx, pool)
-	if err != nil {
-		t.Fatal(err)
-	}
+	userID := testUserID(t, pool)
 
 	files, err := draftfiles.NewStore(t.TempDir())
 	if err != nil {
@@ -56,10 +51,7 @@ func TestPurgeDraftFiles_removesFilesPastDuePlusRetention(t *testing.T) {
 func TestPurgeDraftFiles_removesFilesWithoutDueAtAfterUploadRetention(t *testing.T) {
 	ctx := context.Background()
 	pool := testPool(t)
-	userID, err := auth.EnsureLocalUser(ctx, pool)
-	if err != nil {
-		t.Fatal(err)
-	}
+	userID := testUserID(t, pool)
 
 	files, err := draftfiles.NewStore(t.TempDir())
 	if err != nil {
@@ -96,10 +88,7 @@ func TestPurgeDraftFiles_removesFilesWithoutDueAtAfterUploadRetention(t *testing
 func TestPurgeDraftFiles_keepsRecentUploadWhenNoDueAt(t *testing.T) {
 	ctx := context.Background()
 	pool := testPool(t)
-	userID, err := auth.EnsureLocalUser(ctx, pool)
-	if err != nil {
-		t.Fatal(err)
-	}
+	userID := testUserID(t, pool)
 
 	files, err := draftfiles.NewStore(t.TempDir())
 	if err != nil {
@@ -204,12 +193,3 @@ func assertDraftFileCount(t *testing.T, ctx context.Context, pool *pgxpool.Pool,
 	}
 }
 
-func testPool(t *testing.T) *pgxpool.Pool {
-	t.Helper()
-	database, err := db.Connect(context.Background(), "postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable")
-	if err != nil {
-		t.Skipf("database unavailable: %v", err)
-	}
-	t.Cleanup(database.Close)
-	return database.Pool
-}

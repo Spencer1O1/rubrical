@@ -1,7 +1,7 @@
 import type { MultipartFetchResult, RubricalMultipartMessage } from "./api-multipart-types";
-import { executeRubricalMultipartDirect } from "./api-direct";
+import { executeRubricalMultipartDirect, fetchWithTimeout } from "./api-direct";
+import { RUBRICAL_API_BASE } from "./api-bases";
 import { arrayBufferToBase64 } from "./staged-files/file-bytes";
-import { RUBRICAL_API_BASES } from "./api-bases";
 
 export type { MultipartFetchResult } from "./api-multipart-types";
 
@@ -71,33 +71,37 @@ export async function postRubricalMultipartBlob(
   fileName: string,
   canvasFileId?: string,
 ): Promise<MultipartFetchResult> {
-  let lastError = "Failed to fetch";
+  const base = RUBRICAL_API_BASE;
 
-  for (const base of RUBRICAL_API_BASES) {
-    try {
-      const formData = new FormData();
-      formData.append("draft_file", blob, fileName);
-      if (canvasFileId?.trim()) {
-        formData.append("canvas_file_id", canvasFileId.trim());
-      }
-
-      const response = await fetch(`${base}${path}`, {
-        method: "POST",
-        body: formData,
-        cache: "no-store",
-      });
-
-      if (!response.ok) {
-        const detail = await response.text();
-        lastError = `HTTP ${response.status}: ${detail.slice(0, 200)}`;
-        continue;
-      }
-
-      return { ok: true, base };
-    } catch (err) {
-      lastError = err instanceof Error ? err.message : "Failed to fetch";
+  try {
+    const formData = new FormData();
+    formData.append("draft_file", blob, fileName);
+    if (canvasFileId?.trim()) {
+      formData.append("canvas_file_id", canvasFileId.trim());
     }
-  }
 
-  return { ok: false, error: lastError };
+    const response = await fetchWithTimeout(`${base}${path}`, {
+      method: "POST",
+      body: formData,
+      cache: "no-store",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      const error = `HTTP ${response.status}: ${detail.slice(0, 200)}`;
+      if (response.status === 401 || response.status === 403) {
+        return { ok: false, error, authRequired: true, base };
+      }
+      return { ok: false, error, base };
+    }
+
+    return { ok: true, base };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Failed to fetch",
+      base,
+    };
+  }
 }

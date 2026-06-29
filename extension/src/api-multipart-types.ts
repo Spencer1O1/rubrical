@@ -1,6 +1,6 @@
 export type MultipartFetchResult =
   | { ok: true; base: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; authRequired?: boolean; base?: string };
 
 export type RubricalMultipartMessage = {
   type: "rubrical-api:multipart";

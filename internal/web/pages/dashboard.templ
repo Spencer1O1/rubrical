@@ -12,8 +12,8 @@ type AssignmentListItem struct {
 	URL              string
 }
 
-templ Dashboard(assignments []AssignmentListItem) {
-	@components.Layout("Dashboard", dashboardContent(assignments))
+templ Dashboard(assignments []AssignmentListItem, user components.LayoutUser) {
+	@components.Layout("Dashboard", user, dashboardContent(assignments))
 }
 
 templ dashboardContent(assignments []AssignmentListItem) {

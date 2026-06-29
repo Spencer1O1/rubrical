@@ -9,16 +9,21 @@ import (
 )
 
 func (h *Handlers) Dashboard(w http.ResponseWriter, r *http.Request) {
-	assignments, err := h.listAssignments(r.Context())
+	userID, err := userIDFrom(r.Context())
+	if err != nil {
+		http.Error(w, "authentication required", http.StatusUnauthorized)
+		return
+	}
+	assignments, err := h.listAssignments(r.Context(), userID)
 	if err != nil {
 		http.Error(w, "failed to load assignments", http.StatusInternalServerError)
 		return
 	}
 
-	pages.Dashboard(assignments).Render(r.Context(), w)
+	pages.Dashboard(assignments, h.layoutUser(r)).Render(r.Context(), w)
 }
 
-func (h *Handlers) listAssignments(ctx context.Context) ([]pages.AssignmentListItem, error) {
+func (h *Handlers) listAssignments(ctx context.Context, userID int64) ([]pages.AssignmentListItem, error) {
 	rows, err := h.db.Pool.Query(ctx, `
 		SELECT
 			a.id,
@@ -60,7 +65,7 @@ func (h *Handlers) listAssignments(ctx context.Context) ([]pages.AssignmentListI
 		WHERE a.user_id = $1
 		ORDER BY a.imported_at DESC
 		LIMIT 50
-	`, h.userID)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}

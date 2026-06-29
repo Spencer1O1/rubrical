@@ -11,7 +11,7 @@
         font-family: system-ui, sans-serif;
         margin: 0;
         padding: 16px;
-        width: 320px;
+        width: 340px;
         color: #292524;
         background: #fafaf9;
       }
@@ -99,54 +99,64 @@
         gap: 8px;
         padding-top: 4px;
       }
+      .hidden {
+        display: none;
+      }
     </style>
   </head>
   <body>
     <h1>Rubrical</h1>
-    <p class="lede">
-      Configure AI for rubric feedback. Settings are saved to your Rubrical account on the local server.
-    </p>
 
-    <form id="settings-form">
-      <label>
-        Provider
-        <select id="provider" name="provider">
-          <option value="openai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
-        </select>
-      </label>
+    <div id="auth-view">
+      <div id="auth-root"></div>
+    </div>
 
-      <label>
-        Model
-        <select id="model" name="model"></select>
-      </label>
+    <div id="settings-view" class="hidden">
+      <p class="lede">
+        Signed in as <strong id="signed-in-email"></strong>. Configure AI for rubric feedback.
+      </p>
 
-      <div class="section">
+      <form id="settings-form">
         <label>
-          <span class="key-label">
-            OpenAI API key
-            <span id="openai-key-status" class="configured" hidden>Configured</span>
-          </span>
-          <input id="openai-key" name="openaiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" />
+          Provider
+          <select id="provider" name="provider">
+            <option value="openai">OpenAI</option>
+            <option value="anthropic">Anthropic</option>
+          </select>
         </label>
+
         <label>
-          <span class="key-label">
-            Anthropic API key
-            <span id="anthropic-key-status" class="configured" hidden>Configured</span>
-          </span>
-          <input id="anthropic-key" name="anthropicApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" />
+          Model
+          <select id="model" name="model"></select>
         </label>
-        <p class="hint">Leave a key blank to keep the saved value. Keys are encrypted on the server and never sent back to the browser.</p>
-      </div>
 
-      <button type="submit">Save settings</button>
-    </form>
+        <div class="section">
+          <label>
+            <span class="key-label">
+              OpenAI API key
+              <span id="openai-key-status" class="configured hidden">Configured</span>
+            </span>
+            <input id="openai-key" name="openaiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" />
+          </label>
+          <label>
+            <span class="key-label">
+              Anthropic API key
+              <span id="anthropic-key-status" class="configured hidden">Configured</span>
+            </span>
+            <input id="anthropic-key" name="anthropicApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" />
+          </label>
+          <p class="hint">Leave a key blank to keep the saved value. Keys are encrypted on the server and never sent back to the browser.</p>
+        </div>
 
-    <p id="status" aria-live="polite"></p>
+        <button type="submit">Save settings</button>
+      </form>
 
-    <p class="lede" style="margin-top: 16px; margin-bottom: 0">
-      On Canvas, use <strong>Check with Rubrical</strong> near the submit button.
-    </p>
+      <p id="status" aria-live="polite"></p>
+
+      <p class="lede" style="margin-top: 16px; margin-bottom: 0">
+        On Canvas, use <strong>Check with Rubrical</strong> near the submit button.
+      </p>
+    </div>
 
     <script type="module" src="popup.js"></script>
   </body>

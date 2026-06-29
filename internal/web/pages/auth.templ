@@ -1,0 +1,158 @@
+package pages
+
+import "rubrical/internal/web/components"
+
+templ AuthPage(view AuthFormView) {
+	@components.AuthLayout(AuthPageTitle(view.Mode), authCard(view))
+}
+
+templ authCard(view AuthFormView) {
+	<section class="mx-auto w-full max-w-md">
+		<div class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+			if view.Mode == AuthModeReset {
+				@authCardHeader("Choose a new password", "Enter a new password for your account.")
+			} else if view.Mode == AuthModeSignup {
+				@authCardHeader("Create your account", "One account for Canvas imports and AI settings.")
+			} else if view.Mode == AuthModeForgot {
+				@authCardHeader("Reset your password", "Enter your email and we will send a reset link.")
+			} else {
+				@authCardHeader("Sign in", "Import assignments and save AI settings.")
+			}
+			<div class="mt-5 space-y-4">
+				@authAlert(view.ErrorMessage, view.SuccessMessage)
+				switch view.Mode {
+					case AuthModeSignup:
+						@signupForm(view)
+					case AuthModeForgot:
+						@forgotForm(view)
+					case AuthModeReset:
+						@resetForm(view)
+					default:
+						@loginForm(view)
+				}
+			</div>
+		</div>
+	</section>
+}
+
+templ authCardHeader(title, subtitle string) {
+	<div>
+		<p class="text-sm font-semibold text-indigo-900">Rubrical</p>
+		<h1 class="mt-3 text-xl font-semibold tracking-tight text-stone-900">{ title }</h1>
+		<p class="mt-1 text-sm text-stone-600">{ subtitle }</p>
+	</div>
+}
+
+templ loginForm(view AuthFormView) {
+	<form method="POST" action="/login" class="space-y-4">
+		if view.Next != "" {
+			<input type="hidden" name="next" value={ view.Next }/>
+		}
+		@emailField("email", "Email", "email")
+		@passwordFieldWithForgot("password", "Password", "current-password")
+		<button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Sign in</button>
+	</form>
+	if view.GoogleEnabled {
+		@authOrDivider()
+		<a href={ templ.SafeURL(googleAuthURL(view.Next)) } class="flex w-full items-center justify-center rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50">
+			Continue with Google
+		</a>
+	}
+	<p class="text-center text-sm text-stone-600">
+		Don't have an account?
+		<a href={ templ.SafeURL(AuthModeURL(AuthModeSignup, view.Next)) } class="font-medium text-indigo-700 hover:text-indigo-900">Sign up</a>
+	</p>
+}
+
+templ signupForm(view AuthFormView) {
+	<form method="POST" action="/signup" class="space-y-4">
+		if view.Next != "" {
+			<input type="hidden" name="next" value={ view.Next }/>
+		}
+		<div>
+			<label for="displayName" class="block text-sm font-medium text-stone-700">Display name</label>
+			<input id="displayName" name="displayName" type="text" autocomplete="name" class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
+		</div>
+		@emailField("email", "Email", "email")
+		@passwordField("password", "Password", "new-password", true)
+		<button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Create account</button>
+	</form>
+	if view.GoogleEnabled {
+		@authOrDivider()
+		<a href={ templ.SafeURL(googleAuthURL(view.Next)) } class="flex w-full items-center justify-center rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50">
+			Continue with Google
+		</a>
+	}
+	<p class="text-center text-sm text-stone-600">
+		Already have an account?
+		<a href={ templ.SafeURL(AuthModeURL(AuthModeLogin, view.Next)) } class="font-medium text-indigo-700 hover:text-indigo-900">Sign in</a>
+	</p>
+}
+
+templ forgotForm(view AuthFormView) {
+	if view.SuccessMessage == "" {
+		<form method="POST" action="/forgot-password" class="space-y-4">
+			@emailField("email", "Email", "email")
+			<button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Send reset link</button>
+		</form>
+	}
+	<p class="text-center text-sm">
+		<a href={ templ.SafeURL(AuthModeURL(AuthModeLogin, view.Next)) } class="text-indigo-700 hover:text-indigo-900">Back to sign in</a>
+	</p>
+}
+
+templ resetForm(view AuthFormView) {
+	<form method="POST" action="/reset-password" class="space-y-4">
+		<input type="hidden" name="token" value={ view.ResetToken }/>
+		@passwordField("password", "New password", "new-password", true)
+		<button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Update password</button>
+	</form>
+	<p class="text-center text-sm">
+		<a href="/login" class="text-indigo-700 hover:text-indigo-900">Back to sign in</a>
+	</p>
+}
+
+templ authOrDivider() {
+	<div class="relative py-1">
+		<div class="absolute inset-0 flex items-center"><div class="w-full border-t border-stone-200"></div></div>
+		<div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-2 text-stone-500">or</span></div>
+	</div>
+}
+
+templ emailField(id, label, autocomplete string) {
+	<div>
+		<label for={ id } class="block text-sm font-medium text-stone-700">{ label }</label>
+		<input id={ id } name="email" type="email" required autocomplete={ autocomplete } class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
+	</div>
+}
+
+templ passwordFieldWithForgot(id, label, autocomplete string) {
+	<div>
+		<div class="flex items-baseline justify-between gap-2">
+			<label for={ id } class="block text-sm font-medium text-stone-700">{ label }</label>
+			<a href={ templ.SafeURL(AuthModeURL(AuthModeForgot, "")) } class="text-sm font-medium text-indigo-700 hover:text-indigo-900">Forgot password?</a>
+		</div>
+		<input id={ id } name="password" type="password" required autocomplete={ autocomplete } class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
+	</div>
+}
+
+templ passwordField(id, label, autocomplete string, signup bool) {
+	<div>
+		<label for={ id } class="block text-sm font-medium text-stone-700">{ label }</label>
+		if signup {
+			<input id={ id } name="password" type="password" required minlength="8" autocomplete={ autocomplete } class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
+			<p class="mt-1 text-xs text-stone-500">At least 8 characters.</p>
+		} else {
+			<input id={ id } name="password" type="password" required autocomplete={ autocomplete } class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
+		}
+	</div>
+}
+
+templ authAlert(errorMessage, successMessage string) {
+	if successMessage != "" {
+		<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{ successMessage }</div>
+	}
+	if errorMessage != "" {
+		<div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{ errorMessage }</div>
+	}
+}

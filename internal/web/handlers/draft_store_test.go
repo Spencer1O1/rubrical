@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"rubrical/internal/auth"
@@ -15,11 +17,11 @@ import (
 )
 
 func TestSaveDiscussionDraftFromImportStoresTextAndOneFile(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/discussion_topics/discussion-test")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/discussion_topics/discussion-test")
 
 	payload := importpayload.Payload{
 		PageType:  "discussion",
@@ -40,7 +42,7 @@ func TestSaveDiscussionDraftFromImportStoresTextAndOneFile(t *testing.T) {
 		SELECT body, draft_mode FROM submission_drafts
 		WHERE assignment_snapshot_id = $1 AND user_id = $2
 		ORDER BY updated_at DESC LIMIT 1
-	`, assignmentID, h.userID).Scan(&body, &mode)
+	`, assignmentID, userID).Scan(&body, &mode)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +59,7 @@ func TestSaveDiscussionDraftFromImportStoresTextAndOneFile(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&fileName)
+	`, assignmentID, userID).Scan(&fileName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,11 +69,11 @@ func TestSaveDiscussionDraftFromImportStoresTextAndOneFile(t *testing.T) {
 }
 
 func TestSaveDiscussionDraftFromImportClearsAttachmentWhenEmpty(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/discussion_topics/clear-attachment")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/discussion_topics/clear-attachment")
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		PageType:  "discussion",
@@ -98,7 +100,7 @@ func TestSaveDiscussionDraftFromImportClearsAttachmentWhenEmpty(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&count)
+	`, assignmentID, userID).Scan(&count)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,11 +110,11 @@ func TestSaveDiscussionDraftFromImportClearsAttachmentWhenEmpty(t *testing.T) {
 }
 
 func TestSaveDiscussionDraftFromImportReusesServerFileRef(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/discussion_topics/ref-reuse")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/discussion_topics/ref-reuse")
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		PageType:  "discussion",
@@ -132,7 +134,7 @@ func TestSaveDiscussionDraftFromImportReusesServerFileRef(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&serverFileID)
+	`, assignmentID, userID).Scan(&serverFileID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +156,7 @@ func TestSaveDiscussionDraftFromImportReusesServerFileRef(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&count)
+	`, assignmentID, userID).Scan(&count)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -164,11 +166,11 @@ func TestSaveDiscussionDraftFromImportReusesServerFileRef(t *testing.T) {
 }
 
 func TestSaveDraftFromImportStoresCanvasFileID(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/canvas-id-store")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/canvas-id-store")
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		DraftKind: "file",
@@ -188,7 +190,7 @@ func TestSaveDraftFromImportStoresCanvasFileID(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&canvasFileID)
+	`, assignmentID, userID).Scan(&canvasFileID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,11 +200,11 @@ func TestSaveDraftFromImportStoresCanvasFileID(t *testing.T) {
 }
 
 func TestSaveDraftFromImportUpdatesStoredFileNameFromCanvasRef(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/canvas-rename-ref")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/canvas-rename-ref")
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		DraftKind: "file",
@@ -222,7 +224,7 @@ func TestSaveDraftFromImportUpdatesStoredFileNameFromCanvasRef(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&serverFileID)
+	`, assignmentID, userID).Scan(&serverFileID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +246,7 @@ func TestSaveDraftFromImportUpdatesStoredFileNameFromCanvasRef(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&fileName)
+	`, assignmentID, userID).Scan(&fileName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -254,11 +256,11 @@ func TestSaveDraftFromImportUpdatesStoredFileNameFromCanvasRef(t *testing.T) {
 }
 
 func TestSaveDraftFromImportClearsEmptyCanvasDraft(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/clear-test")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/clear-test")
 
 	if err := h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
 		Mode:       draftmode.Text,
@@ -279,7 +281,7 @@ func TestSaveDraftFromImportClearsEmptyCanvasDraft(t *testing.T) {
 		SELECT body, word_count FROM submission_drafts
 		WHERE assignment_snapshot_id = $1 AND user_id = $2
 		ORDER BY updated_at DESC LIMIT 1
-	`, assignmentID, h.userID).Scan(&body, &wordCount)
+	`, assignmentID, userID).Scan(&body, &wordCount)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -289,11 +291,11 @@ func TestSaveDraftFromImportClearsEmptyCanvasDraft(t *testing.T) {
 }
 
 func TestSaveDraftFromImportClearsStoredFilesWhenCanvasCaptureEmpty(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/preserve-file-test")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/preserve-file-test")
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		DraftFiles: []importpayload.DraftFile{{
@@ -317,7 +319,7 @@ func TestSaveDraftFromImportClearsStoredFilesWhenCanvasCaptureEmpty(t *testing.T
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&count)
+	`, assignmentID, userID).Scan(&count)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,11 +329,11 @@ func TestSaveDraftFromImportClearsStoredFilesWhenCanvasCaptureEmpty(t *testing.T
 }
 
 func TestAnalyzeDraftPersistsFormText(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/analyze-form-text")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/analyze-form-text")
 
 	if err := h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
 		Mode:       draftmode.Text,
@@ -359,7 +361,7 @@ func TestAnalyzeDraftPersistsFormText(t *testing.T) {
 		SELECT body FROM submission_drafts
 		WHERE assignment_snapshot_id = $1 AND user_id = $2
 		ORDER BY updated_at DESC LIMIT 1
-	`, assignmentID, h.userID).Scan(&body)
+	`, assignmentID, userID).Scan(&body)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -369,11 +371,11 @@ func TestAnalyzeDraftPersistsFormText(t *testing.T) {
 }
 
 func TestSaveDraftFromImportStoresMultipleFiles(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/file-test")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/file-test")
 
 	payload := importpayload.Payload{
 		DraftFiles: []importpayload.DraftFile{
@@ -399,7 +401,7 @@ func TestSaveDraftFromImportStoresMultipleFiles(t *testing.T) {
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
 		ORDER BY f.sort_order ASC
-	`, assignmentID, h.userID)
+	`, assignmentID, userID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -429,11 +431,11 @@ func TestSaveDraftFromImportStoresMultipleFiles(t *testing.T) {
 }
 
 func TestSwitchDraftModePreservesOtherFields(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/mode-test")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/mode-test")
 
 	if err := h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
 		Mode:       draftmode.Text,
@@ -451,7 +453,7 @@ func TestSwitchDraftModePreservesOtherFields(t *testing.T) {
 	err := pool.QueryRow(ctx, `
 		SELECT body, draft_mode FROM submission_drafts
 		WHERE assignment_snapshot_id = $1 AND user_id = $2
-	`, assignmentID, h.userID).Scan(&body, &mode)
+	`, assignmentID, userID).Scan(&body, &mode)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -464,11 +466,11 @@ func TestSwitchDraftModePreservesOtherFields(t *testing.T) {
 }
 
 func TestSaveDraftFromImportRefsOnlyPreservesBytes(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/refs-only")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/refs-only")
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		DraftFiles: []importpayload.DraftFile{{
@@ -486,7 +488,7 @@ func TestSaveDraftFromImportRefsOnlyPreservesBytes(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&serverFileID)
+	`, assignmentID, userID).Scan(&serverFileID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -507,7 +509,7 @@ func TestSaveDraftFromImportRefsOnlyPreservesBytes(t *testing.T) {
 		FROM submission_draft_files f
 		JOIN submission_drafts d ON d.id = f.submission_draft_id
 		WHERE d.assignment_snapshot_id = $1 AND d.user_id = $2
-	`, assignmentID, h.userID).Scan(&count)
+	`, assignmentID, userID).Scan(&count)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -517,11 +519,11 @@ func TestSaveDraftFromImportRefsOnlyPreservesBytes(t *testing.T) {
 }
 
 func TestSaveDraftFromImportPrunesOrphanedServerFile(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
-	assignmentID := insertAssignment(t, pool, h.userID, "https://school.instructure.com/courses/1/assignments/prune-orphan")
+	assignmentID := insertAssignment(t, pool, userID, "https://school.instructure.com/courses/1/assignments/prune-orphan")
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		DraftFiles: []importpayload.DraftFile{
@@ -577,22 +579,27 @@ func testPool(t *testing.T) *pgxpool.Pool {
 	return database.Pool
 }
 
-func testHandler(t *testing.T, pool *pgxpool.Pool) *Handlers {
+func testHandler(t *testing.T, pool *pgxpool.Pool) (*Handlers, int64) {
 	t.Helper()
-	userID, err := auth.EnsureLocalUser(context.Background(), pool)
+	authSvc := auth.NewService(pool, auth.DefaultSessionTTL)
+	email := fmt.Sprintf("test-%d@rubrical.dev", time.Now().UnixNano())
+	user, err := authSvc.CreateUserWithPassword(context.Background(), email, "password123", "Test User")
 	if err != nil {
-		t.Fatalf("local user: %v", err)
+		t.Fatalf("create test user: %v", err)
 	}
 	files, err := draftfiles.NewStore(t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
 	return &Handlers{
-		db:          &db.DB{Pool: pool},
-		files:       files,
-		userID:      userID,
+		db:           &db.DB{Pool: pool},
+		files:        files,
 		importLimits: importpayload.DefaultLimits(),
-	}
+	}, user.ID
+}
+
+func testCtx(userID int64) context.Context {
+	return auth.WithUser(context.Background(), auth.User{ID: userID, Email: "test@rubrical.dev"})
 }
 
 func insertAssignment(t *testing.T, pool *pgxpool.Pool, userID int64, sourceURL string) int64 {

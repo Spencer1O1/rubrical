@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -13,9 +12,10 @@ import (
 
 func TestDraftManifestEmptyWhenNeverImported(t *testing.T) {
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
 
 	req := httptest.NewRequest(http.MethodGet, "/assignments/draft-manifest?sourceUrl="+urlQueryEscape("https://school.instructure.com/courses/1/assignments/never"), nil)
+	req = req.WithContext(testCtx(userID))
 	rec := httptest.NewRecorder()
 
 	h.DraftManifest(rec, req)
@@ -34,12 +34,12 @@ func TestDraftManifestEmptyWhenNeverImported(t *testing.T) {
 }
 
 func TestDraftManifestReturnsStoredFiles(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
 	sourceURL := "https://school.instructure.com/courses/1/assignments/manifest-test"
-	assignmentID := insertAssignment(t, pool, h.userID, sourceURL)
+	assignmentID := insertAssignment(t, pool, userID, sourceURL)
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		DraftFiles: []importpayload.DraftFile{{
@@ -52,6 +52,7 @@ func TestDraftManifestReturnsStoredFiles(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/assignments/draft-manifest?sourceUrl="+urlQueryEscape(sourceURL), nil)
+	req = req.WithContext(testCtx(userID))
 	rec := httptest.NewRecorder()
 
 	h.DraftManifest(rec, req)
@@ -79,12 +80,12 @@ func TestDraftManifestReturnsStoredFiles(t *testing.T) {
 }
 
 func TestDraftManifestReturnsCanvasFileID(t *testing.T) {
-	ctx := context.Background()
 	pool := testPool(t)
-	h := testHandler(t, pool)
+	h, userID := testHandler(t, pool)
+	ctx := testCtx(userID)
 
 	sourceURL := "https://school.instructure.com/courses/1/assignments/manifest-canvas-id"
-	assignmentID := insertAssignment(t, pool, h.userID, sourceURL)
+	assignmentID := insertAssignment(t, pool, userID, sourceURL)
 
 	if err := h.saveDraftFromImport(ctx, assignmentID, importpayload.Payload{
 		DraftFiles: []importpayload.DraftFile{{
@@ -98,6 +99,7 @@ func TestDraftManifestReturnsCanvasFileID(t *testing.T) {
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/assignments/draft-manifest?sourceUrl="+urlQueryEscape(sourceURL), nil)
+	req = req.WithContext(testCtx(userID))
 	rec := httptest.NewRecorder()
 
 	h.DraftManifest(rec, req)

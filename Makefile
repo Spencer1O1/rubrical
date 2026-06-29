@@ -57,6 +57,10 @@ sqlc:
 
 extension-build:
 	pnpm --filter rubrical-extension typecheck
+	pnpm --filter rubrical-extension build:dev
+
+extension-build-prod:
+	pnpm --filter rubrical-extension typecheck
 	pnpm --filter rubrical-extension build
 
 install-js:

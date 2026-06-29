@@ -25,6 +25,20 @@ The server refuses to start without this key. The settings API never returns raw
 
 Default provider/model when empty: `openai` / `gpt-4o-mini` (Anthropic: `claude-sonnet-4-20250514`).
 
+## Auth (ENV)
+
+| Variable | Description |
+|----------|-------------|
+| `RUBRICAL_PUBLIC_URL` | Canonical site origin for OAuth redirects and password-reset links (default `http://localhost:8787`) |
+| `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` | Google OAuth (optional; omit to hide “Continue with Google”) |
+| `RUBRICAL_EXTENSION_ORIGINS` | Comma-separated `chrome-extension://…` origins allowed by CORS with credentials |
+| `SESSION_TTL` | Session cookie lifetime (default 720h) |
+| `EMAIL_DEV_LOG` | Log outbound email to server stdout instead of sending |
+| `EMAIL_FROM` | From address for password reset |
+| `RESEND_API_KEY` or `SMTP_*` | Outbound email for password reset |
+
+Sign up at `/login?mode=signup` before importing assignments. The extension sends the session cookie (`credentials: include`) to the API.
+
 ## The limit model (read this first)
 
 Everything falls into **three lifecycle stages**. Only the middle column is “analysis tuning.”

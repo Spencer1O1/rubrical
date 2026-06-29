@@ -1,7 +1,8 @@
-import { RUBRICAL_API_BASES } from "./api-bases";
+import { RUBRICAL_API_BASE } from "./api-bases";
+import { RubricalAuthRequiredError } from "./auth-api";
 import { executeRubricalFetch, type RubricalFetchRequest } from "./api-fetch";
 
-export { RUBRICAL_API_BASES };
+export { RUBRICAL_API_BASE };
 
 async function fetchRubricalApi<T>(
   path: string,
@@ -31,6 +32,9 @@ async function fetchRubricalApi<T>(
 
   const result = await executeRubricalFetch(request);
   if (!result.ok) {
+    if (result.authRequired) {
+      throw new RubricalAuthRequiredError(result.base);
+    }
     throw new Error(result.error);
   }
 

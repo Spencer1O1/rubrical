@@ -34,8 +34,8 @@ var AnthropicModelOptions = []struct {
 	{ID: "claude-3-5-haiku-20241022", Label: "Claude 3.5 Haiku"},
 }
 
-templ SettingsPage(settings aisettings.Settings, errorMessage string, saved bool) {
-	@components.Layout("Settings", settingsPageContent(settings, errorMessage, saved))
+templ SettingsPage(settings aisettings.Settings, user components.LayoutUser, errorMessage string, saved bool) {
+	@components.Layout("Settings", user, settingsPageContent(settings, errorMessage, saved))
 }
 
 templ SettingsEmbed(settings aisettings.Settings, errorMessage string, assignmentBackURL string, assignmentID int64, saved bool) {

@@ -62,7 +62,7 @@ type AssignmentView struct {
 }
 
 // Assignment is the full revisit view from the dashboard.
-func Assignment(view AssignmentView) templ.Component {
+func Assignment(view AssignmentView, user components.LayoutUser) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -83,7 +83,7 @@ func Assignment(view AssignmentView) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.Layout(view.Title, assignmentPageContent(view)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Layout(view.Title, user, assignmentPageContent(view)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
