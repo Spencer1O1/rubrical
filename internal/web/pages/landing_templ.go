@@ -60,7 +60,7 @@ func landingContent() templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<main><section class=\"relative overflow-hidden border-b border-stone-200 bg-gradient-to-b from-indigo-50/80 via-white to-white\"><div class=\"pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(79,70,229,0.12),_transparent_55%)]\"></div><div class=\"relative mx-auto max-w-6xl px-4 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20\"><div class=\"mx-auto max-w-3xl text-center\"><p class=\"mb-4 inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-800\">For Canvas students</p><h1 class=\"text-4xl font-semibold tracking-tight text-stone-900 sm:text-5xl sm:leading-tight\">Check the rubric <span class=\"text-indigo-600\">before </span> you hit submit</h1><p class=\"mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-stone-600\">Rubrical imports your assignment from Canvas, reads the rubric, and gives you clear AI feedback on what to improve — while you still have time to fix it.</p><div class=\"mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row\"><a href=\"/login?mode=signup\" class=\"w-full rounded-xl bg-indigo-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 sm:w-auto\">Start free</a> <a href=\"#how-it-works\" class=\"w-full rounded-xl border border-stone-300 bg-white px-6 py-3 text-center text-sm font-semibold text-stone-800 transition hover:border-stone-400 hover:bg-stone-50 sm:w-auto\">See how it works</a></div></div><div class=\"mx-auto mt-14 max-w-4xl rounded-2xl border border-stone-200 bg-white p-4 shadow-xl shadow-stone-200/60 sm:p-6\"><div class=\"rounded-xl border border-stone-100 bg-stone-50 p-4 sm:p-6\"><div class=\"flex items-center justify-between gap-3 border-b border-stone-200 pb-4\"><div><p class=\"text-xs font-medium uppercase tracking-wide text-stone-500\">Sample feedback</p><p class=\"mt-1 font-semibold text-stone-900\">Art History Essay · Rubric check</p></div><span class=\"rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-600/20\">3 criteria reviewed</span></div><ul class=\"mt-4 space-y-3 text-sm\"><li class=\"rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950\"><span class=\"font-semibold\">Thesis &amp; argument</span> — Your thesis is present but could name the specific visual element you're analyzing in paragraph one.</li><li class=\"rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sky-950\"><span class=\"font-semibold\">Evidence &amp; citations</span> — Strong use of course readings; add one more primary source reference for full credit.</li><li class=\"rounded-lg border border-stone-200 bg-white px-4 py-3 text-stone-800\"><span class=\"font-semibold\">Organization</span> — Clear structure. Consider a short transition before the conclusion.</li></ul></div></div></div></section><section id=\"features\" class=\"mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20\"><div class=\"mx-auto max-w-2xl text-center\"><h2 class=\"text-3xl font-semibold tracking-tight text-stone-900\">Everything you need before the deadline</h2><p class=\"mt-3 text-stone-600\">One workflow from Canvas to rubric-aligned feedback — no copy-paste, no guessing what graders want.</p></div><div class=\"mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<main><section class=\"relative overflow-hidden border-b border-stone-200 bg-gradient-to-b from-indigo-50/80 via-white to-white\"><div class=\"pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(79,70,229,0.12),_transparent_55%)]\"></div><div class=\"relative mx-auto max-w-6xl px-4 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20\"><div class=\"mx-auto max-w-3xl text-center\"><p class=\"mb-4 inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-800\">For Canvas students</p><h1 class=\"text-4xl font-semibold tracking-tight text-stone-900 sm:text-5xl sm:leading-tight\">Check the rubric before it <span class=\"text-indigo-600\">checks you</span></h1><p class=\"mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-stone-600\">Rubrical imports your assignment from Canvas, reads the rubric, and gives you clear AI feedback on what to improve — while you still have time to fix it.</p><div class=\"mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row\"><a href=\"/login?mode=signup\" class=\"w-full rounded-xl bg-indigo-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700 sm:w-auto\">Start free</a> <a href=\"#how-it-works\" class=\"w-full rounded-xl border border-stone-300 bg-white px-6 py-3 text-center text-sm font-semibold text-stone-800 transition hover:border-stone-400 hover:bg-stone-50 sm:w-auto\">See how it works</a></div></div><div class=\"mx-auto mt-14 max-w-4xl rounded-2xl border border-stone-200 bg-white p-4 shadow-xl shadow-stone-200/60 sm:p-6\"><div class=\"rounded-xl border border-stone-100 bg-stone-50 p-4 sm:p-6\"><div class=\"flex items-center justify-between gap-3 border-b border-stone-200 pb-4\"><div><p class=\"text-xs font-medium uppercase tracking-wide text-stone-500\">Sample feedback</p><p class=\"mt-1 font-semibold text-stone-900\">Art History Essay · Rubric check</p></div><span class=\"rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 ring-1 ring-emerald-600/20\">3 criteria reviewed</span></div><ul class=\"mt-4 space-y-3 text-sm\"><li class=\"rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950\"><span class=\"font-semibold\">Thesis &amp; argument</span> — Your thesis is present but could name the specific visual element you're analyzing in paragraph one.</li><li class=\"rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sky-950\"><span class=\"font-semibold\">Evidence &amp; citations</span> — Strong use of course readings; add one more primary source reference for full credit.</li><li class=\"rounded-lg border border-stone-200 bg-white px-4 py-3 text-stone-800\"><span class=\"font-semibold\">Organization</span> — Clear structure. Consider a short transition before the conclusion.</li></ul></div></div></div></section><section id=\"features\" class=\"mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20\"><div class=\"mx-auto max-w-2xl text-center\"><h2 class=\"text-3xl font-semibold tracking-tight text-stone-900\">Everything you need before the deadline</h2><p class=\"mt-3 text-stone-600\">One workflow from Canvas to rubric-aligned feedback — no copy-paste, no guessing what graders want.</p></div><div class=\"mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -148,7 +148,7 @@ func featureCard(title, body, accent string) templ.Component {
 		var templ_7745c5c3_Var4 string
 		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 111, Col: 58}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 110, Col: 58}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 		if templ_7745c5c3_Err != nil {
@@ -161,7 +161,7 @@ func featureCard(title, body, accent string) templ.Component {
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(body)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 112, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 111, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -260,7 +260,7 @@ func stepCard(number, title, body string) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(number)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 135, Col: 130}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 134, Col: 130}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -273,7 +273,7 @@ func stepCard(number, title, body string) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(title)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 136, Col: 55}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 135, Col: 55}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -286,7 +286,7 @@ func stepCard(number, title, body string) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(body)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 137, Col: 63}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/landing.templ`, Line: 136, Col: 63}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
