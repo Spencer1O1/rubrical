@@ -29,7 +29,7 @@ make server       # terminal 3
 
 `make setup` runs `pnpm setup:secrets-key`, which creates `.env.local` (from `.env.example` if needed) and writes `RUBRICAL_SECRETS_ENCRYPTION_KEY`. The server requires this key to encrypt BYOK API keys at rest. Re-run `pnpm setup:secrets-key` only on a fresh machine — changing the key invalidates saved API keys.
 
-Open http://localhost:8787 and **sign up** for an account (email/password, or Google OAuth when configured). Each user sees only their own imported assignments.
+Open http://localhost:8787 for the marketing landing page. Sign up at `/login?mode=signup` or click **Get started** on the home page.
 
 For Google sign-in, set `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `RUBRICAL_PUBLIC_URL` in `.env.local`. Password reset emails use `EMAIL_DEV_LOG=1` in dev (logged to the server console) or Resend/SMTP in production.
 
@@ -51,7 +51,7 @@ The Go server runs in WSL, but Edge/Chrome usually runs on Windows. Local dev bu
 From **Windows** PowerShell, verify the server is reachable:
 
 ```powershell
-curl http://localhost:8787/health -UseBasicParsing
+curl http://localhost:8787/auth/config -UseBasicParsing
 ```
 
 You should get `{"status":"ok"}`. On WSL2, **`localhost` usually works from Windows but `127.0.0.1` often does not** — the dev extension uses `localhost`.
@@ -155,6 +155,7 @@ make server
 | `make templ-watch` | Watch templ templates |
 | `make extension-build` | Build extension for local dev (`http://localhost:8787`) |
 | `make extension-build-prod` | Build extension for production (`https://rubrical.spencerls.dev`) |
+| `make vercel-build` | Export static landing to `public/` for Vercel |
 | `make test` | Run Go tests |
 
 ## templ IDE errors
@@ -181,3 +182,7 @@ See [spec-checklist.md](./spec-checklist.md) and specification §14 for the MVP 
 **File staging:** when a student picks a file on Canvas, the content script stores the `Blob` in IndexedDB via `staged-files/store.ts` (Canvas site origin). After **Check with Rubrical**, assignment files upload via multipart (`POST …/draft/upload`), not inline JSON.
 
 Rebuild after extension changes: `make extension-build`, then reload the extension in the browser.
+
+## Deployment
+
+See [deployment.md](./deployment.md) for Vercel (marketing site) and production hosting.

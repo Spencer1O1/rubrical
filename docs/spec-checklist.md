@@ -28,7 +28,7 @@ Last reviewed: 2026-06-26
 - [x] Postgres (Docker Compose)
 - [x] goose migrations
 - [x] sqlc type-safe queries
-- [x] Health route (`/health`)
+- [x] Public client config route (`GET /auth/config`)
 - [x] CORS for extension (credentials + origin allowlist)
 - [x] Multi-user auth (email/password, Google OAuth, sessions)
 
@@ -227,7 +227,7 @@ Spec §5.5 and §5.4 require: when Canvas has no readable draft (file upload, ex
 | Route | Spec | Status |
 |-------|------|--------|
 | `GET /` | Dashboard | ✅ |
-| `GET /health` | — | ✅ (+ strictExtraction flag) |
+| `GET /auth/config` | — | ✅ (`googleEnabled`, `strictExtraction`) |
 | `POST /imports` | Import | ✅ (+ `draftFileRefs`) |
 | `GET /assignments/draft-manifest` | Extension metadata | ✅ |
 | `GET /assignments/{id}` | Detail | ✅ (+ embed query) |

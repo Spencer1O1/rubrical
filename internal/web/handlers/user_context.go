@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"rubrical/internal/auth"
+	"rubrical/internal/web/pages"
 )
 
 func userIDFrom(ctx context.Context) (int64, error) {
@@ -26,7 +27,7 @@ func redirectAfterLogin(w http.ResponseWriter, r *http.Request) {
 		next = auth.SanitizeNextPath(r.URL.Query().Get("next"))
 	}
 	if next == "" {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, pages.DashboardPath, http.StatusSeeOther)
 		return
 	}
 	http.Redirect(w, r, next, http.StatusSeeOther)

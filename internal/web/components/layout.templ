@@ -85,6 +85,7 @@ templ Layout(title string, user LayoutUser, content templ.Component) {
 					</a>
 					<div class="flex items-center gap-4">
 						if user.SignedIn {
+							<a href="/dashboard" class="text-sm font-medium text-stone-600 hover:text-stone-900">Dashboard</a>
 							<span class="hidden text-sm text-stone-600 sm:inline">{ user.Email }</span>
 							<form method="POST" action="/logout">
 								<button type="submit" class="text-sm font-medium text-stone-600 hover:text-stone-900">Sign out</button>

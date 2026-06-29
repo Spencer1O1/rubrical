@@ -11,7 +11,7 @@ import (
 
 func (h *Handlers) AuthPage(w http.ResponseWriter, r *http.Request) {
 	if _, err := auth.UserFromContext(r.Context()); err == nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, pages.DashboardPath, http.StatusSeeOther)
 		return
 	}
 	h.renderAuthPage(w, r, pages.AuthFormView{
@@ -183,7 +183,7 @@ func (h *Handlers) GoogleAuthCallback(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{Name: "rubrical_oauth_next", Value: "", Path: "/", MaxAge: -1})
 	}
 	if next == "" {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		http.Redirect(w, r, pages.DashboardPath, http.StatusSeeOther)
 		return
 	}
 	http.Redirect(w, r, next, http.StatusSeeOther)

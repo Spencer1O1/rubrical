@@ -673,7 +673,7 @@ POST /assignments/{id}/draft   Save draft
 POST /assignments/{id}/analyze Analyze draft
 GET  /assignments/{id}/results Results panel
 POST /feedback/{id}/resolve    Mark feedback item resolved
-GET  /health                   Health check
+GET  /auth/config              Public client config (googleEnabled, strictExtraction)
 ```
 
 HTMX routes should return HTML fragments when appropriate.

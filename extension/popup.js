@@ -167,10 +167,13 @@ async function fetchAuthConfig() {
     headers: { Accept: "application/json" }
   });
   if (!result.ok) {
-    return { googleEnabled: false };
+    return { googleEnabled: false, strictExtraction: false };
   }
   const data = result.data;
-  return { googleEnabled: Boolean(data.googleEnabled) };
+  return {
+    googleEnabled: Boolean(data.googleEnabled),
+    strictExtraction: Boolean(data.strictExtraction)
+  };
 }
 async function fetchSession() {
   const result = await executeRubricalFetch({

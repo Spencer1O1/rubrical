@@ -8,6 +8,7 @@ export type RubricalSession = {
 
 export type AuthConfig = {
   googleEnabled: boolean;
+  strictExtraction: boolean;
 };
 
 export class RubricalAuthRequiredError extends Error {
@@ -32,10 +33,13 @@ export async function fetchAuthConfig(): Promise<AuthConfig> {
     headers: { Accept: "application/json" },
   });
   if (!result.ok) {
-    return { googleEnabled: false };
+    return { googleEnabled: false, strictExtraction: false };
   }
   const data = result.data as Partial<AuthConfig>;
-  return { googleEnabled: Boolean(data.googleEnabled) };
+  return {
+    googleEnabled: Boolean(data.googleEnabled),
+    strictExtraction: Boolean(data.strictExtraction),
+  };
 }
 
 export async function fetchSession(): Promise<RubricalSession | null> {

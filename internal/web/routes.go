@@ -37,8 +37,6 @@ func NewRouter(
 
 	h := handlers.New(database, fileStore, authSvc, cfg, analysisSvc, aiSettings, mailer)
 
-	r.Get("/health", h.Health)
-
 	r.Group(func(r chi.Router) {
 		r.Get("/login", h.AuthPage)
 		r.Post("/login", h.Login)
@@ -53,12 +51,13 @@ func NewRouter(
 		r.Get("/auth/config", h.AuthConfigAPI)
 		r.Get("/auth/google", h.GoogleAuthStart)
 		r.Get("/auth/google/callback", h.GoogleAuthCallback)
+		r.Get("/", h.Landing)
 	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.RequireUser)
 
-		r.Get("/", h.Dashboard)
+		r.Get("/dashboard", h.Dashboard)
 		r.Get("/settings", h.SettingsPage)
 		r.Get("/settings/ai", h.GetAISettingsAPI)
 		r.Post("/settings/ai", h.SaveAISettings)

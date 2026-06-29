@@ -2,6 +2,8 @@ package pages
 
 import "net/url"
 
+const DashboardPath = "/dashboard"
+
 type AuthMode string
 
 const (

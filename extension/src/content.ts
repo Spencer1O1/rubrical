@@ -69,7 +69,7 @@ async function handleRubricalClick(pageType: string): Promise<void> {
         : "Unknown error";
     const serverHint = detail.toLowerCase().includes("canvas attachment")
       ? ""
-      : `\n\nIf this is a connection problem, check Rubrical at:\n${RUBRICAL_API_BASE}\n\nFrom WSL run: make server\nFrom Windows test: curl http://localhost:8787/health -UseBasicParsing`;
+      : `\n\nIf this is a connection problem, check Rubrical at:\n${RUBRICAL_API_BASE}\n\nFrom WSL run: make server\nFrom Windows test: curl http://localhost:8787/auth/config -UseBasicParsing`;
     alert(`Rubrical import failed.\n\n${detail}${serverHint}`);
   } finally {
     importInFlight = false;

@@ -20,6 +20,9 @@ package-lock.json
 # Extension build
 /extension/dist/
 
+# Vercel static export (make vercel-build)
+/public/
+
 # Environment
 .env
 .env.local

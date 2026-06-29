@@ -29,11 +29,15 @@ type authUserResponse struct {
 }
 
 type authConfigResponse struct {
-	GoogleEnabled bool `json:"googleEnabled"`
+	GoogleEnabled    bool `json:"googleEnabled"`
+	StrictExtraction bool `json:"strictExtraction"`
 }
 
 func (h *Handlers) AuthConfigAPI(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, authConfigResponse{GoogleEnabled: h.google.Enabled()})
+	writeJSON(w, authConfigResponse{
+		GoogleEnabled:    h.google.Enabled(),
+		StrictExtraction: h.strictExtraction,
+	})
 }
 
 func (h *Handlers) LoginAPI(w http.ResponseWriter, r *http.Request) {
