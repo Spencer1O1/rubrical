@@ -1,0 +1,21 @@
+[Unit]
+Description=GitHub deploy webhook for rubrical
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=CHANGE_ME
+WorkingDirectory=/opt/deploy-hook
+EnvironmentFile=/etc/homeserver/server.env
+EnvironmentFile=/etc/homeserver/deploy-hooks/rubrical.env
+# Map shared hook listen address from server.env (single source of truth).
+Environment=DEPLOY_HOOK_HOST=${RUBRICAL_HOOK_HOST}
+Environment=DEPLOY_HOOK_PORT=${RUBRICAL_HOOK_PORT}
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=/opt/deploy-hook/bin/deploy-hook
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

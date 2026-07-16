@@ -211,32 +211,47 @@ Manual deploy:
 
 ## 8. Deploy-hook + GitHub webhook
 
+### Webhook secret
+
+GitHub does not issue this — you generate it, then paste the **same** value in two places (env file + GitHub UI):
+
 ```bash
-sudo cp /srv/repos/rubrical/deploy/homeserver/deploy-hook.env.example \
-  /etc/homeserver/deploy-hooks/rubrical.env
-sudo nano /etc/homeserver/deploy-hooks/rubrical.env   # set GITHUB_WEBHOOK_SECRET
-sudo chmod 600 /etc/homeserver/deploy-hooks/rubrical.env
+openssl rand -hex 32
 ```
 
-Create `/etc/systemd/system/deploy-hook-rubrical.service` from HOMESERVER.md §14 (`EnvironmentFile=/etc/homeserver/deploy-hooks/rubrical.env`).
+### Hook env + systemd
+
+Hook listen address comes only from `server.env` (`RUBRICAL_HOOK_HOST` / `RUBRICAL_HOOK_PORT`). The unit maps those to `DEPLOY_HOOK_*` for the binary.
 
 ```bash
+sudo mkdir -p /etc/homeserver/deploy-hooks
+sudo cp /srv/repos/rubrical/deploy/homeserver/deploy-hook.env.example \
+  /etc/homeserver/deploy-hooks/rubrical.env
+sudo nano /etc/homeserver/deploy-hooks/rubrical.env   # paste GITHUB_WEBHOOK_SECRET
+sudo chmod 600 /etc/homeserver/deploy-hooks/rubrical.env
+
+sudo cp /srv/repos/rubrical/deploy/homeserver/deploy-hook-rubrical.service \
+  /etc/systemd/system/deploy-hook-rubrical.service
+sudo nano /etc/systemd/system/deploy-hook-rubrical.service   # set User=
 sudo systemctl daemon-reload
 sudo systemctl enable --now deploy-hook-rubrical
-curl -i http://127.0.0.1:9011/_github/rubrical
+
+# Use the port from server.env (default 9011)
+curl -i "http://127.0.0.1:${RUBRICAL_HOOK_PORT:-9011}/_github/rubrical"
 # expect 405
 curl -ki --resolve rubrical.spencerls.dev:443:127.0.0.1 \
   https://rubrical.spencerls.dev/_github/rubrical
 # expect 405
 ```
 
-GitHub → repo → Settings → Webhooks:
+GitHub → repo → Settings → Webhooks → Add webhook:
 
 ```text
 Payload URL:   https://rubrical.spencerls.dev/_github/rubrical
 Content type:  application/json
-Secret:        same as GITHUB_WEBHOOK_SECRET
+Secret:        the openssl value (same as GITHUB_WEBHOOK_SECRET)
 Events:        Just the push event
+Active:        checked
 ```
 
 Push to `main` and confirm deploy logs:
