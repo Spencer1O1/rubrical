@@ -222,7 +222,7 @@ openssl rand -hex 32
 
 ### Hook env + systemd
 
-Hook listen address comes only from `server.env` (`RUBRICAL_HOOK_HOST` / `RUBRICAL_HOOK_PORT`). The unit maps those to `DEPLOY_HOOK_*` for the binary.
+Same as spencerls: `DEPLOY_HOOK_*` in the hook env file; `RUBRICAL_HOOK_*` in `server.env` for Caddy. Keep the port numbers equal.
 
 ```bash
 sudo mkdir -p /etc/homeserver/deploy-hooks
@@ -237,8 +237,7 @@ sudo nano /etc/systemd/system/deploy-hook-rubrical.service   # set User=
 sudo systemctl daemon-reload
 sudo systemctl enable --now deploy-hook-rubrical
 
-# Use the port from server.env (default 9011)
-curl -i "http://127.0.0.1:${RUBRICAL_HOOK_PORT:-9011}/_github/rubrical"
+curl -i http://127.0.0.1:9011/_github/rubrical
 # expect 405
 curl -ki --resolve rubrical.spencerls.dev:443:127.0.0.1 \
   https://rubrical.spencerls.dev/_github/rubrical
