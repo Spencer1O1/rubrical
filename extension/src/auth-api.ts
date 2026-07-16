@@ -171,3 +171,27 @@ export function googleAuthURL(base?: string): string {
 export function webLoginURL(): string {
   return `${rubricalWebURL()}/login`;
 }
+
+/**
+ * Mint a CHIPS session handoff URL for the Canvas modal iframe.
+ * Service worker has the first-party session; the iframe gets SameSite=None; Partitioned.
+ */
+export async function fetchEmbedHandoffURL(nextPath: string): Promise<string> {
+  const next = nextPath.startsWith("/") ? nextPath : `/${nextPath}`;
+  const result = await executeRubricalFetch({
+    path: `/auth/embed-url?next=${encodeURIComponent(next)}`,
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+  if (!result.ok) {
+    if (result.authRequired) {
+      throw new RubricalAuthRequiredError(result.base);
+    }
+    throw new Error(authErrorMessage(result));
+  }
+  const data = result.data as { url?: string };
+  if (!data.url?.trim()) {
+    throw new Error("Could not open Rubrical in Canvas.");
+  }
+  return data.url.trim();
+}

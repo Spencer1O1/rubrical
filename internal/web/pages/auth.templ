@@ -3,7 +3,7 @@ package pages
 import "rubrical/internal/web/components"
 
 templ AuthPage(view AuthFormView) {
-	@components.AuthLayout(AuthPageTitle(view.Mode), authCard(view))
+	@components.AuthLayout(AuthPageTitle(view.Mode), authCard(view), view.Bare)
 }
 
 templ authCard(view AuthFormView) {
@@ -47,19 +47,28 @@ templ loginForm(view AuthFormView) {
 		if view.Next != "" {
 			<input type="hidden" name="next" value={ view.Next }/>
 		}
+		if view.Bare {
+			<input type="hidden" name="embed" value="1"/>
+		}
 		@emailField("email", "Email", "email")
-		@passwordFieldWithForgot("password", "Password", "current-password")
+		@passwordFieldWithForgot("password", "Password", "current-password", view.Bare)
 		<button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Sign in</button>
 	</form>
 	if view.GoogleEnabled {
 		@authOrDivider()
-		<a href={ templ.SafeURL(googleAuthURL(view.Next)) } class="flex w-full items-center justify-center rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50">
+		<a
+			href={ templ.SafeURL(googleAuthURL(view.Next)) }
+			if view.Bare {
+				target="_top"
+			}
+			class="flex w-full items-center justify-center rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+		>
 			Continue with Google
 		</a>
 	}
 	<p class="text-center text-sm text-stone-600">
 		Don't have an account?
-		<a href={ templ.SafeURL(AuthModeURL(AuthModeSignup, view.Next)) } class="font-medium text-indigo-700 hover:text-indigo-900">Sign up</a>
+		<a href={ templ.SafeURL(AuthModeURL(AuthModeSignup, view.Next, view.Bare)) } class="font-medium text-indigo-700 hover:text-indigo-900">Sign up</a>
 	</p>
 }
 
@@ -67,6 +76,9 @@ templ signupForm(view AuthFormView) {
 	<form method="POST" action="/signup" class="space-y-4">
 		if view.Next != "" {
 			<input type="hidden" name="next" value={ view.Next }/>
+		}
+		if view.Bare {
+			<input type="hidden" name="embed" value="1"/>
 		}
 		<div>
 			<label for="displayName" class="block text-sm font-medium text-stone-700">Display name</label>
@@ -78,25 +90,34 @@ templ signupForm(view AuthFormView) {
 	</form>
 	if view.GoogleEnabled {
 		@authOrDivider()
-		<a href={ templ.SafeURL(googleAuthURL(view.Next)) } class="flex w-full items-center justify-center rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50">
+		<a
+			href={ templ.SafeURL(googleAuthURL(view.Next)) }
+			if view.Bare {
+				target="_top"
+			}
+			class="flex w-full items-center justify-center rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-700 hover:bg-stone-50"
+		>
 			Continue with Google
 		</a>
 	}
 	<p class="text-center text-sm text-stone-600">
 		Already have an account?
-		<a href={ templ.SafeURL(AuthModeURL(AuthModeLogin, view.Next)) } class="font-medium text-indigo-700 hover:text-indigo-900">Sign in</a>
+		<a href={ templ.SafeURL(AuthModeURL(AuthModeLogin, view.Next, view.Bare)) } class="font-medium text-indigo-700 hover:text-indigo-900">Sign in</a>
 	</p>
 }
 
 templ forgotForm(view AuthFormView) {
 	if view.SuccessMessage == "" {
 		<form method="POST" action="/forgot-password" class="space-y-4">
+			if view.Bare {
+				<input type="hidden" name="embed" value="1"/>
+			}
 			@emailField("email", "Email", "email")
 			<button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Send reset link</button>
 		</form>
 	}
 	<p class="text-center text-sm">
-		<a href={ templ.SafeURL(AuthModeURL(AuthModeLogin, view.Next)) } class="text-indigo-700 hover:text-indigo-900">Back to sign in</a>
+		<a href={ templ.SafeURL(AuthModeURL(AuthModeLogin, view.Next, view.Bare)) } class="text-indigo-700 hover:text-indigo-900">Back to sign in</a>
 	</p>
 }
 
@@ -125,11 +146,11 @@ templ emailField(id, label, autocomplete string) {
 	</div>
 }
 
-templ passwordFieldWithForgot(id, label, autocomplete string) {
+templ passwordFieldWithForgot(id, label, autocomplete string, embed bool) {
 	<div>
 		<div class="flex items-baseline justify-between gap-2">
 			<label for={ id } class="block text-sm font-medium text-stone-700">{ label }</label>
-			<a href={ templ.SafeURL(AuthModeURL(AuthModeForgot, "")) } class="text-sm font-medium text-indigo-700 hover:text-indigo-900">Forgot password?</a>
+			<a href={ templ.SafeURL(AuthModeURL(AuthModeForgot, "", embed)) } class="text-sm font-medium text-indigo-700 hover:text-indigo-900">Forgot password?</a>
 		</div>
 		<input id={ id } name="password" type="password" required autocomplete={ autocomplete } class="mt-1 block w-full rounded-lg border border-stone-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"/>
 	</div>

@@ -103,7 +103,7 @@ templ Layout(title string, user LayoutUser, content templ.Component) {
 	</html>
 }
 
-templ AuthLayout(title string, content templ.Component) {
+templ AuthLayout(title string, content templ.Component, bare bool) {
 	<!DOCTYPE html>
 	<html lang="en" class="h-full bg-stone-50">
 		<head>
@@ -113,15 +113,21 @@ templ AuthLayout(title string, content templ.Component) {
 			<link rel="stylesheet" href="/static/css/app.css"/>
 		</head>
 		<body class="flex min-h-full flex-col text-stone-900 antialiased">
-			<header class="border-b border-stone-200 bg-white">
-				<div class="mx-auto flex max-w-5xl items-center px-4 py-4 sm:px-6">
-					<a href="/" class="flex items-center gap-2">
-						<span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">R</span>
-						<p class="text-lg font-semibold tracking-tight">Rubrical</p>
-					</a>
-				</div>
-			</header>
-			<main class="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
+			if !bare {
+				<header class="border-b border-stone-200 bg-white">
+					<div class="mx-auto flex max-w-5xl items-center px-4 py-4 sm:px-6">
+						<a href="/" class="flex items-center gap-2">
+							<span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">R</span>
+							<p class="text-lg font-semibold tracking-tight">Rubrical</p>
+						</a>
+					</div>
+				</header>
+			}
+			<main class={
+				"flex flex-1 items-center justify-center px-4 sm:px-6",
+				templ.KV("py-6", bare),
+				templ.KV("py-10", !bare),
+			}>
 				@content
 			</main>
 		</body>

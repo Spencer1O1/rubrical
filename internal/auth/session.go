@@ -44,6 +44,21 @@ func SetSessionCookie(w http.ResponseWriter, token string, expiresAt time.Time, 
 	})
 }
 
+// SetEmbedSessionCookie sets a CHIPS cookie for the Canvas iframe partition.
+// Requires HTTPS. Used after embed handoff and after password login inside the modal.
+func SetEmbedSessionCookie(w http.ResponseWriter, token string, expiresAt time.Time) {
+	http.SetCookie(w, &http.Cookie{
+		Name:        SessionCookieName,
+		Value:       token,
+		Path:        "/",
+		HttpOnly:    true,
+		Secure:      true,
+		SameSite:    http.SameSiteNoneMode,
+		Partitioned: true,
+		Expires:     expiresAt,
+	})
+}
+
 func ClearSessionCookie(w http.ResponseWriter, secure bool) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     SessionCookieName,
@@ -53,6 +68,20 @@ func ClearSessionCookie(w http.ResponseWriter, secure bool) {
 		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
+	})
+}
+
+// ClearEmbedSessionCookie clears the CHIPS session in the Canvas iframe partition.
+func ClearEmbedSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:        SessionCookieName,
+		Value:       "",
+		Path:        "/",
+		HttpOnly:    true,
+		Secure:      true,
+		SameSite:    http.SameSiteNoneMode,
+		Partitioned: true,
+		MaxAge:      -1,
 	})
 }
 

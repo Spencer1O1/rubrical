@@ -22,6 +22,7 @@ type Handlers struct {
 	mailer           email.Sender
 	publicURL        string
 	authSecure       bool
+	embedSecret      string
 	strictExtraction bool
 	analysis         *analysis.Service
 	aiSettings       *aisettings.Store
@@ -49,6 +50,7 @@ func New(
 		mailer:           mailer,
 		publicURL:        cfg.PublicURL,
 		authSecure:       cfg.CookieSecure(),
+		embedSecret:      cfg.SecretsEncryptionKey,
 		strictExtraction: cfg.StrictExtraction,
 		analysis:         analysisSvc,
 		aiSettings:       aiSettings,

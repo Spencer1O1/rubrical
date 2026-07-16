@@ -25,6 +25,9 @@ func TestSanitizeNextPath(t *testing.T) {
 	if SanitizeNextPath("/assignments/1") != "/assignments/1" {
 		t.Fatal("expected valid next path")
 	}
+	if SanitizeNextPath("/assignments/1?embed=1") != "/assignments/1?embed=1" {
+		t.Fatal("expected embed query preserved")
+	}
 	if SanitizeNextPath("//evil") != "" {
 		t.Fatal("expected protocol-relative path rejected")
 	}

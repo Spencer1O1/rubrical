@@ -1,3 +1,4 @@
+import { fetchEmbedHandoffURL } from "./auth-api";
 import { refreshStagedFileIndicators } from "./staged-files";
 
 export const MODAL_ID = "rubrical-modal";
@@ -21,8 +22,14 @@ export function closeAssignmentModal(): void {
   void refreshStagedFileIndicators();
 }
 
-export function openAssignmentModal(base: string, path: string, title: string): void {
+/** Open assignment UI in a Canvas iframe via embed handoff (CHIPS session). */
+export async function openAssignmentModal(base: string, path: string, title: string): Promise<void> {
   closeAssignmentModal();
+
+  const next = new URL(path, base);
+  next.searchParams.set("embed", "1");
+  // First navigation must be /auth/embed?token=… so the iframe can store a partitioned cookie.
+  const handoffURL = await fetchEmbedHandoffURL(`${next.pathname}${next.search}`);
 
   const overlay = document.createElement("div");
   overlay.id = MODAL_ID;
@@ -99,10 +106,7 @@ export function openAssignmentModal(base: string, path: string, title: string): 
   const iframe = document.createElement("iframe");
   iframe.id = MODAL_IFRAME_ID;
   iframe.title = `Rubrical: ${title}`;
-  const embedUrl = new URL(path, base);
-  embedUrl.searchParams.set("embed", "1");
-  embedUrl.searchParams.set("_", String(Date.now()));
-  iframe.src = embedUrl.toString();
+  iframe.src = handoffURL;
   iframe.style.cssText = "flex:1;width:100%;border:none;background:#fafaf9";
 
   header.append(heading, closeButton);

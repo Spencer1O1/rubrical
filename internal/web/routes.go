@@ -51,6 +51,7 @@ func NewRouter(
 		r.Get("/auth/config", h.AuthConfigAPI)
 		r.Get("/auth/google", h.GoogleAuthStart)
 		r.Get("/auth/google/callback", h.GoogleAuthCallback)
+		r.Get("/auth/embed", h.EmbedHandoff)
 		r.Get("/install", h.Install)
 		r.Get("/install/rubrical-extension.zip", h.ExtensionZip)
 		// Legacy path — same no-store handler (Cloudflare was caching FileServer zips).
@@ -62,6 +63,7 @@ func NewRouter(
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.RequireUser)
 
+		r.Get("/auth/embed-url", h.EmbedURL)
 		r.Get("/settings", h.SettingsPage)
 		r.Get("/settings/ai", h.GetAISettingsAPI)
 		r.Post("/settings/ai", h.SaveAISettings)

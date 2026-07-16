@@ -15,12 +15,14 @@ func (h *Handlers) AuthPage(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, pages.DashboardPath, http.StatusSeeOther)
 		return
 	}
+	next := auth.SanitizeNextPath(r.URL.Query().Get("next"))
 	h.renderAuthPage(w, r, pages.AuthFormView{
-		Mode:          pages.ParseAuthMode(r.URL.Query().Get("mode")),
-		Next:          auth.SanitizeNextPath(r.URL.Query().Get("next")),
-		GoogleEnabled: h.google.Enabled(),
-		ErrorMessage:  authPageErrorMessage(r),
+		Mode:           pages.ParseAuthMode(r.URL.Query().Get("mode")),
+		Next:           next,
+		GoogleEnabled:  h.google.Enabled(),
+		ErrorMessage:   authPageErrorMessage(r),
 		SuccessMessage: authPageSuccessMessage(r),
+		Bare:           authPageBare(r, next),
 	})
 }
 
@@ -28,6 +30,7 @@ func (h *Handlers) ResetPasswordPage(w http.ResponseWriter, r *http.Request) {
 	h.renderAuthPage(w, r, pages.AuthFormView{
 		Mode:       pages.AuthModeReset,
 		ResetToken: r.URL.Query().Get("token"),
+		Bare:       authPageBare(r, ""),
 	})
 }
 
@@ -36,13 +39,15 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
+	next := auth.SanitizeNextPath(r.FormValue("next"))
 	user, err := h.auth.AuthenticatePassword(r.Context(), r.FormValue("email"), r.FormValue("password"))
 	if err != nil {
 		h.renderAuthPage(w, r, pages.AuthFormView{
 			Mode:          pages.AuthModeLogin,
-			Next:          auth.SanitizeNextPath(r.FormValue("next")),
+			Next:          next,
 			GoogleEnabled: h.google.Enabled(),
 			ErrorMessage:  auth.PasswordLoginMessage(err),
+			Bare:          authPageBare(r, next),
 		})
 		return
 	}
@@ -58,13 +63,15 @@ func (h *Handlers) Signup(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid form", http.StatusBadRequest)
 		return
 	}
+	next := auth.SanitizeNextPath(r.FormValue("next"))
 	user, err := h.auth.CreateUserWithPassword(r.Context(), r.FormValue("email"), r.FormValue("password"), r.FormValue("displayName"))
 	if err != nil {
 		h.renderAuthPage(w, r, pages.AuthFormView{
 			Mode:          pages.AuthModeSignup,
-			Next:          auth.SanitizeNextPath(r.FormValue("next")),
+			Next:          next,
 			GoogleEnabled: h.google.Enabled(),
 			ErrorMessage:  auth.SignupMessage(err),
+			Bare:          authPageBare(r, next),
 		})
 		return
 	}
@@ -79,6 +86,11 @@ func (h *Handlers) Logout(w http.ResponseWriter, r *http.Request) {
 	token := auth.SessionTokenFromRequest(r)
 	_ = h.auth.RevokeSession(r.Context(), token)
 	auth.ClearSessionCookie(w, h.authSecure)
+	auth.ClearEmbedSessionCookie(w)
+	if auth.WantsEmbed(r) {
+		http.Redirect(w, r, "/login?embed=1", http.StatusSeeOther)
+		return
+	}
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
@@ -100,6 +112,7 @@ func (h *Handlers) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	h.renderAuthPage(w, r, pages.AuthFormView{
 		Mode:           pages.AuthModeForgot,
 		SuccessMessage: "If an account exists for that email, a reset link has been sent.",
+		Bare:           authPageBare(r, ""),
 	})
 }
 
@@ -117,6 +130,7 @@ func (h *Handlers) ResetPassword(w http.ResponseWriter, r *http.Request) {
 			Mode:         pages.AuthModeReset,
 			ResetToken:   token,
 			ErrorMessage: "Invalid or expired reset link.",
+			Bare:         authPageBare(r, ""),
 		})
 		return
 	}
@@ -212,6 +226,11 @@ func (h *Handlers) renderAuthPage(w http.ResponseWriter, r *http.Request, view p
 	pages.AuthPage(view).Render(r.Context(), w)
 }
 
+// Bare auth chrome for the extension modal — driven only by embed=1 (no UA heuristics).
+func authPageBare(r *http.Request, next string) bool {
+	return auth.RequestIsEmbed(r) || auth.IsEmbedNext(next)
+}
+
 func authPageErrorMessage(r *http.Request) string {
 	switch r.URL.Query().Get("error") {
 	case "oauth_state":
@@ -222,6 +241,8 @@ func authPageErrorMessage(r *http.Request) string {
 		return "Your Google email must be verified before you can sign in."
 	case "oauth_user":
 		return "Could not sign in with Google."
+	case "embed_handoff":
+		return "Canvas sign-in handoff expired. Try Check with Rubrical again."
 	default:
 		return r.URL.Query().Get("error")
 	}

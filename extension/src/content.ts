@@ -108,7 +108,7 @@ async function handleRubricalClick(pageType: string): Promise<void> {
       alert(`Rubrical imported your work, but:\n\n${draftWarning}`);
     }
     if (redirect) {
-      openAssignmentModal(base, redirect, title);
+      await openAssignmentModal(base, redirect, title);
     }
   } catch (err) {
     alert(formatImportFailureAlert(err));

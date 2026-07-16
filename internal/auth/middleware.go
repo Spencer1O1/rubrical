@@ -50,6 +50,9 @@ func (m *Middleware) unauthorized(w http.ResponseWriter, r *http.Request) {
 	next := SanitizeNextPath(r.URL.Query().Get("next"))
 	if next == "" && r.URL.Path != "/" {
 		next = r.URL.Path
+		if r.URL.Query().Get("embed") == "1" {
+			next += "?embed=1"
+		}
 	}
 	http.Redirect(w, r, loginRedirectURL(next), http.StatusSeeOther)
 }
@@ -77,12 +80,20 @@ func loginRedirectURL(next string) string {
 	if next == "" {
 		return "/login"
 	}
-	return "/login?next=" + url.QueryEscape(next)
+	u := "/login?next=" + url.QueryEscape(next)
+	if IsEmbedNext(next) {
+		u += "&embed=1"
+	}
+	return u
 }
 
 func SanitizeNextPath(next string) string {
 	next = strings.TrimSpace(next)
 	if next == "" || !strings.HasPrefix(next, "/") || strings.HasPrefix(next, "//") {
+		return ""
+	}
+	// Allow relative paths with query (e.g. /assignments/1?embed=1); reject absolute URLs.
+	if strings.Contains(next, "://") {
 		return ""
 	}
 	return next

@@ -21,6 +21,8 @@ type AuthFormView struct {
 	ErrorMessage   string
 	SuccessMessage string
 	ResetToken     string
+	// Bare hides site chrome — used inside the Canvas extension modal.
+	Bare bool
 }
 
 func ParseAuthMode(raw string) AuthMode {
@@ -49,7 +51,7 @@ func AuthPageTitle(mode AuthMode) string {
 	}
 }
 
-func AuthModeURL(mode AuthMode, next string) string {
+func AuthModeURL(mode AuthMode, next string, embed bool) string {
 	path := "/login"
 	query := url.Values{}
 	if mode != AuthModeLogin && mode != AuthModeReset {
@@ -57,6 +59,9 @@ func AuthModeURL(mode AuthMode, next string) string {
 	}
 	if next != "" {
 		query.Set("next", next)
+	}
+	if embed {
+		query.Set("embed", "1")
 	}
 	if encoded := query.Encode(); encoded != "" {
 		return path + "?" + encoded

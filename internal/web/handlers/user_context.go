@@ -17,6 +17,11 @@ func writeAuthSession(w http.ResponseWriter, r *http.Request, authSvc *auth.Serv
 	if err != nil {
 		return err
 	}
+	// Iframe on Canvas: first-party Lax cookies are not stored/sent — use CHIPS.
+	if auth.RequestIsEmbed(r) {
+		auth.SetEmbedSessionCookie(w, session.Token, session.ExpiresAt)
+		return nil
+	}
 	auth.SetSessionCookie(w, session.Token, session.ExpiresAt, secure)
 	return nil
 }
