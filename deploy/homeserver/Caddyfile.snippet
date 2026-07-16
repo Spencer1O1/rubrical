@@ -1,0 +1,17 @@
+# Merge into /etc/caddy/Caddyfile.
+# Requires /etc/homeserver/server.env entries:
+#   RUBRICAL_HOST=127.0.0.1
+#   RUBRICAL_PORT=8787
+#   RUBRICAL_HOOK_HOST=127.0.0.1
+#   RUBRICAL_HOOK_PORT=9011
+
+rubrical.spencerls.dev {
+	@deployHook path /_github/rubrical /_github/rubrical/*
+	handle @deployHook {
+		reverse_proxy {$RUBRICAL_HOOK_HOST}:{$RUBRICAL_HOOK_PORT}
+	}
+
+	handle {
+		reverse_proxy {$RUBRICAL_HOST}:{$RUBRICAL_PORT}
+	}
+}

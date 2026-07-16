@@ -185,4 +185,4 @@ Rebuild after extension changes: `make extension-build`, then reload the extensi
 
 ## Deployment
 
-See [deployment.md](./deployment.md) for Vercel (marketing site) and production hosting.
+See [deployment.md](./deployment.md) for home-server production hosting.

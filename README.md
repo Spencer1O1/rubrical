@@ -9,6 +9,7 @@ A rubric-aware preflight checker for student assignments — import Canvas assig
 | Doc | Description |
 |-----|-------------|
 | [Development guide](docs/development.md) | Setup, WSL, Docker, Makefile |
+| [Deployment](docs/deployment.md) | Home server production (apt Postgres, systemd, Caddy) |
 | [Specification](docs/specification.md) | Full product & technical spec |
 | [Spec checklist](docs/spec-checklist.md) | MVP progress, gaps, and what's next |
 

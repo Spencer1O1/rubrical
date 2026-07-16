@@ -1,0 +1,18 @@
+[Unit]
+Description=Rubrical (rubrical.spencerls.dev)
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+
+[Service]
+Type=simple
+# Set to the Linux user that owns /srv/repos/rubrical
+User=CHANGE_ME
+WorkingDirectory=/srv/repos/rubrical
+EnvironmentFile=/etc/homeserver/apps/rubrical.env
+ExecStart=/srv/repos/rubrical/bin/rubrical
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

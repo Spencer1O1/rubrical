@@ -40,3 +40,6 @@ package-lock.json
 
 # OS
 .DS_Store
+
+# Cursor
+__pycache__/
