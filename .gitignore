@@ -21,6 +21,9 @@ package-lock.json
 /extension/dist/
 /static/downloads/*.zip
 
+# Tailwind output (make css / make css-watch); source is assets/css/input.css
+/static/css/app.css
+
 # Environment
 .env
 .env.local

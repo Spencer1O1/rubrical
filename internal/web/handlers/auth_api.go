@@ -48,7 +48,7 @@ func (h *Handlers) LoginAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := h.auth.AuthenticatePassword(r.Context(), req.Email, req.Password)
 	if err != nil {
-		http.Error(w, "invalid email or password", http.StatusUnauthorized)
+		http.Error(w, auth.PasswordLoginMessage(err), http.StatusUnauthorized)
 		return
 	}
 	if err := writeAuthSession(w, r, h.auth, h.authSecure, user); err != nil {
@@ -66,11 +66,7 @@ func (h *Handlers) SignupAPI(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := h.auth.CreateUserWithPassword(r.Context(), req.Email, req.Password, req.DisplayName)
 	if err != nil {
-		msg := err.Error()
-		if err == auth.ErrEmailTaken {
-			msg = "An account with that email already exists."
-		}
-		http.Error(w, msg, http.StatusBadRequest)
+		http.Error(w, auth.SignupMessage(err), http.StatusBadRequest)
 		return
 	}
 	if err := writeAuthSession(w, r, h.auth, h.authSecure, user); err != nil {

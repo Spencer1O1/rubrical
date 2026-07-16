@@ -151,6 +151,7 @@ make server
 | `make migrate-up` | Apply database migrations |
 | `make server` | Run Go server on :8787 |
 | `make purge` | One-shot purge of draft files past retention |
+| `make css` | Build Tailwind → `static/css/app.css` (gitignored; required before serving UI) |
 | `make css-watch` | Watch Tailwind CSS |
 | `make templ-watch` | Watch templ templates |
 | `make extension-build` | Build extension for local dev (`http://localhost:8787`) |

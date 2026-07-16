@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"rubrical/internal/auth"
@@ -41,7 +42,7 @@ func (h *Handlers) Login(w http.ResponseWriter, r *http.Request) {
 			Mode:          pages.AuthModeLogin,
 			Next:          auth.SanitizeNextPath(r.FormValue("next")),
 			GoogleEnabled: h.google.Enabled(),
-			ErrorMessage:  "Invalid email or password.",
+			ErrorMessage:  auth.PasswordLoginMessage(err),
 		})
 		return
 	}
@@ -59,15 +60,11 @@ func (h *Handlers) Signup(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := h.auth.CreateUserWithPassword(r.Context(), r.FormValue("email"), r.FormValue("password"), r.FormValue("displayName"))
 	if err != nil {
-		msg := err.Error()
-		if err == auth.ErrEmailTaken {
-			msg = "An account with that email already exists."
-		}
 		h.renderAuthPage(w, r, pages.AuthFormView{
 			Mode:          pages.AuthModeSignup,
 			Next:          auth.SanitizeNextPath(r.FormValue("next")),
 			GoogleEnabled: h.google.Enabled(),
-			ErrorMessage:  msg,
+			ErrorMessage:  auth.SignupMessage(err),
 		})
 		return
 	}
@@ -170,6 +167,10 @@ func (h *Handlers) GoogleAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 	user, err := h.auth.FindOrCreateGoogleUser(r.Context(), profile.Sub, profile.Email, profile.Name, profile.EmailVerified)
 	if err != nil {
+		if errors.Is(err, auth.ErrGoogleEmailUnverified) {
+			http.Redirect(w, r, "/login?error=oauth_unverified", http.StatusSeeOther)
+			return
+		}
 		http.Redirect(w, r, "/login?error=oauth_user", http.StatusSeeOther)
 		return
 	}
@@ -217,6 +218,8 @@ func authPageErrorMessage(r *http.Request) string {
 		return "Google sign-in expired. Try again."
 	case "oauth_exchange":
 		return "Google sign-in failed. Try again."
+	case "oauth_unverified":
+		return "Your Google email must be verified before you can sign in."
 	case "oauth_user":
 		return "Could not sign in with Google."
 	default:

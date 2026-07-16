@@ -75,7 +75,7 @@ func authCard(view AuthFormView) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else if view.Mode == AuthModeForgot {
-			templ_7745c5c3_Err = authCardHeader("Reset your password", "Enter your email and we will send a reset link.").Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = authCardHeader("Reset your password", "Enter your email and we will send a reset link. Also works to set a password on Google-only accounts.").Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

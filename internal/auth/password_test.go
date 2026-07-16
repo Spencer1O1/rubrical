@@ -38,3 +38,19 @@ func TestNormalizeEmail(t *testing.T) {
 		t.Fatal("expected normalized email")
 	}
 }
+
+func TestPasswordLoginMessage(t *testing.T) {
+	if PasswordLoginMessage(ErrNoPassword) == "Invalid email or password." {
+		t.Fatal("expected Google/forgot-password guidance for ErrNoPassword")
+	}
+	if PasswordLoginMessage(ErrInvalidCredentials) != "Invalid email or password." {
+		t.Fatal("expected generic credentials message")
+	}
+}
+
+func TestSignupMessage(t *testing.T) {
+	msg := SignupMessage(ErrEmailTaken)
+	if msg == ErrEmailTaken.Error() {
+		t.Fatal("expected guidance beyond raw ErrEmailTaken")
+	}
+}

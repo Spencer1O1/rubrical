@@ -14,7 +14,7 @@ templ authCard(view AuthFormView) {
 			} else if view.Mode == AuthModeSignup {
 				@authCardHeader("Create your account", "One account for Canvas imports and AI settings.")
 			} else if view.Mode == AuthModeForgot {
-				@authCardHeader("Reset your password", "Enter your email and we will send a reset link.")
+				@authCardHeader("Reset your password", "Enter your email and we will send a reset link. Also works to set a password on Google-only accounts.")
 			} else {
 				@authCardHeader("Sign in", "Import assignments and save AI settings.")
 			}

@@ -18,10 +18,30 @@ const (
 )
 
 var (
-	ErrEmailTaken      = errors.New("email is already registered")
-	ErrNoPassword      = errors.New("password login is not available for this account")
-	ErrInvalidReset    = errors.New("invalid or expired reset link")
+	ErrEmailTaken            = errors.New("email is already registered")
+	ErrNoPassword            = errors.New("password login is not available for this account")
+	ErrInvalidReset          = errors.New("invalid or expired reset link")
+	ErrGoogleEmailUnverified = errors.New("google email is not verified")
 )
+
+// PasswordLoginMessage is a user-facing message for AuthenticatePassword failures.
+func PasswordLoginMessage(err error) string {
+	if errors.Is(err, ErrNoPassword) {
+		return "This account uses Google sign-in. Continue with Google, or use Forgot password to set a password."
+	}
+	return "Invalid email or password."
+}
+
+// SignupMessage is a user-facing message for CreateUserWithPassword failures.
+func SignupMessage(err error) string {
+	if errors.Is(err, ErrEmailTaken) {
+		return "An account with that email already exists. Sign in (with Google if you used it before), or use Forgot password to set a password."
+	}
+	if err != nil {
+		return err.Error()
+	}
+	return "Could not create account."
+}
 
 type Service struct {
 	pool       *pgxpool.Pool
@@ -189,43 +209,40 @@ func (s *Service) FindOrCreateGoogleUser(ctx context.Context, subject, email, di
 		return User{}, err
 	}
 
-	email = NormalizeEmail(email)
-	if email != "" {
-		if user, err := s.UserByEmail(ctx, email); err == nil {
-			if err := s.LinkIdentity(ctx, user.ID, ProviderGoogle, subject); err != nil {
-				return User{}, err
-			}
-			if emailVerified {
-				_, _ = s.pool.Exec(ctx, `
-					UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()), updated_at = NOW()
-					WHERE id = $1
-				`, user.ID)
-			}
-			return user, nil
-		} else if !errors.Is(err, ErrNoUser) {
-			return User{}, err
-		}
+	// Only auto-link or create when Google attests the email (prevents account takeover).
+	if !emailVerified {
+		return User{}, ErrGoogleEmailUnverified
 	}
 
+	email = NormalizeEmail(email)
 	if email == "" {
 		return User{}, fmt.Errorf("google account did not provide an email")
+	}
+
+	if user, err := s.UserByEmail(ctx, email); err == nil {
+		// Password (or prior) account with same email → link Google and sign in.
+		if err := s.LinkIdentity(ctx, user.ID, ProviderGoogle, subject); err != nil {
+			return User{}, err
+		}
+		_, _ = s.pool.Exec(ctx, `
+			UPDATE users SET email_verified_at = COALESCE(email_verified_at, NOW()), updated_at = NOW()
+			WHERE id = $1
+		`, user.ID)
+		return user, nil
+	} else if !errors.Is(err, ErrNoUser) {
+		return User{}, err
 	}
 	displayName = strings.TrimSpace(displayName)
 	if displayName == "" {
 		displayName = email
 	}
 
-	var verifiedAt any
-	if emailVerified {
-		verifiedAt = time.Now().UTC()
-	}
-
 	var user User
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO users (email, display_name, email_verified_at)
-		VALUES ($1, $2, $3)
+		VALUES ($1, $2, NOW())
 		RETURNING id, email, display_name
-	`, email, displayName, verifiedAt).Scan(&user.ID, &user.Email, &user.DisplayName)
+	`, email, displayName).Scan(&user.ID, &user.Email, &user.DisplayName)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
 			user, err = s.UserByEmail(ctx, email)
