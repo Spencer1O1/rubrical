@@ -2,11 +2,11 @@ package pages
 
 import "rubrical/internal/web/components"
 
-templ Install(nav components.MarketingNav, zipAvailable bool) {
-	@components.MarketingPage(nav, installContent(nav.SignedIn, zipAvailable))
+templ Install(nav components.MarketingNav, zipAvailable bool, downloadURL string) {
+	@components.MarketingPage(nav, installContent(nav.SignedIn, zipAvailable, downloadURL))
 }
 
-templ installContent(signedIn bool, zipAvailable bool) {
+templ installContent(signedIn bool, zipAvailable bool, downloadURL string) {
 	<main>
 		<section class="border-b border-stone-200 bg-gradient-to-b from-indigo-50/80 via-white to-white">
 			<div class="mx-auto max-w-2xl px-4 py-14 sm:px-6 sm:py-20">
@@ -18,7 +18,7 @@ templ installContent(signedIn bool, zipAvailable bool) {
 				<div class="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
 					if zipAvailable {
 						<a
-							href="/static/downloads/rubrical-extension.zip"
+							href={ downloadURL }
 							class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700"
 						>
 							Download extension (.zip)

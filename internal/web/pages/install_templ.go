@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "rubrical/internal/web/components"
 
-func Install(nav components.MarketingNav, zipAvailable bool) templ.Component {
+func Install(nav components.MarketingNav, zipAvailable bool, downloadURL string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -31,7 +31,7 @@ func Install(nav components.MarketingNav, zipAvailable bool) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.MarketingPage(nav, installContent(nav.SignedIn, zipAvailable)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.MarketingPage(nav, installContent(nav.SignedIn, zipAvailable, downloadURL)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -39,7 +39,7 @@ func Install(nav components.MarketingNav, zipAvailable bool) templ.Component {
 	})
 }
 
-func installContent(signedIn bool, zipAvailable bool) templ.Component {
+func installContent(signedIn bool, zipAvailable bool, downloadURL string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -65,28 +65,41 @@ func installContent(signedIn bool, zipAvailable bool) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if zipAvailable {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<a href=\"/static/downloads/rubrical-extension.zip\" class=\"inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700\">Download extension (.zip)</a> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "<a href=\"")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			var templ_7745c5c3_Var3 templ.SafeURL
+			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(downloadURL)
+			if templ_7745c5c3_Err != nil {
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/install.templ`, Line: 21, Col: 25}
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "\" class=\"inline-flex items-center justify-center rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 transition hover:bg-indigo-700\">Download extension (.zip)</a> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<span class=\"inline-flex items-center justify-center rounded-xl bg-stone-200 px-6 py-3 text-sm font-semibold text-stone-500\">Download not built yet</span> ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<span class=\"inline-flex items-center justify-center rounded-xl bg-stone-200 px-6 py-3 text-sm font-semibold text-stone-500\">Download not built yet</span> ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
 		if signedIn {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<a href=\"/\" class=\"inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50\">Go to dashboard</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<a href=\"/\" class=\"inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50\">Go to dashboard</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<a href=\"/login?mode=signup\" class=\"inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50\">Create account</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<a href=\"/login?mode=signup\" class=\"inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50\">Create account</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</div></div></section><section class=\"mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16\"><ol class=\"space-y-8\"><li class=\"flex gap-4\"><span class=\"flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">1</span><div><h2 class=\"font-semibold text-stone-900\">Download and unzip</h2><p class=\"mt-1 text-sm leading-relaxed text-stone-600\">Save the zip, then extract it to a folder you’ll keep (for example <code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-xs\">~/Downloads/rubrical-extension</code>). Don’t delete that folder after installing.</p></div></li><li class=\"flex gap-4\"><span class=\"flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">2</span><div><h2 class=\"font-semibold text-stone-900\">Load unpacked in Chrome or Edge</h2><p class=\"mt-1 text-sm leading-relaxed text-stone-600\">Open <code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-xs\">chrome://extensions</code> (or <code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-xs\">edge://extensions</code>), turn on <strong>Developer mode</strong>, click <strong>Load unpacked</strong>, and select the unzipped folder (the one that contains <code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-xs\">manifest.json</code>).</p></div></li><li class=\"flex gap-4\"><span class=\"flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">3</span><div><h2 class=\"font-semibold text-stone-900\">Sign in on Rubrical</h2><p class=\"mt-1 text-sm leading-relaxed text-stone-600\"><a href=\"/login\" class=\"font-medium text-indigo-700 hover:text-indigo-900\">Sign in</a> (or create an account) in this browser. The extension uses that session when you import from Canvas.</p></div></li><li class=\"flex gap-4\"><span class=\"flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">4</span><div><h2 class=\"font-semibold text-stone-900\">Open a Canvas assignment</h2><p class=\"mt-1 text-sm leading-relaxed text-stone-600\">Go to an assignment on Canvas and use Rubrical from the page (or the extension popup) to import and check against the rubric.</p></div></li></ol><p class=\"mt-10 text-sm text-stone-500\">After a Rubrical update, download a fresh zip, replace the folder contents, then click <strong>Reload</strong> on the Rubrical card in the extensions page.</p></section></main>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "</div></div></section><section class=\"mx-auto max-w-2xl px-4 py-12 sm:px-6 sm:py-16\"><ol class=\"space-y-8\"><li class=\"flex gap-4\"><span class=\"flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">1</span><div><h2 class=\"font-semibold text-stone-900\">Download and unzip</h2><p class=\"mt-1 text-sm leading-relaxed text-stone-600\">Save the zip, then extract it to a folder you’ll keep (for example <code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-xs\">~/Downloads/rubrical-extension</code>). Don’t delete that folder after installing.</p></div></li><li class=\"flex gap-4\"><span class=\"flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">2</span><div><h2 class=\"font-semibold text-stone-900\">Load unpacked in Chrome or Edge</h2><p class=\"mt-1 text-sm leading-relaxed text-stone-600\">Open <code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-xs\">chrome://extensions</code> (or <code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-xs\">edge://extensions</code>), turn on <strong>Developer mode</strong>, click <strong>Load unpacked</strong>, and select the unzipped folder (the one that contains <code class=\"rounded bg-stone-100 px-1.5 py-0.5 text-xs\">manifest.json</code>).</p></div></li><li class=\"flex gap-4\"><span class=\"flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">3</span><div><h2 class=\"font-semibold text-stone-900\">Sign in on Rubrical</h2><p class=\"mt-1 text-sm leading-relaxed text-stone-600\"><a href=\"/login\" class=\"font-medium text-indigo-700 hover:text-indigo-900\">Sign in</a> (or create an account) in this browser. The extension uses that session when you import from Canvas.</p></div></li><li class=\"flex gap-4\"><span class=\"flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white\">4</span><div><h2 class=\"font-semibold text-stone-900\">Open a Canvas assignment</h2><p class=\"mt-1 text-sm leading-relaxed text-stone-600\">Go to an assignment on Canvas and use Rubrical from the page (or the extension popup) to import and check against the rubric.</p></div></li></ol><p class=\"mt-10 text-sm text-stone-500\">After a Rubrical update, download a fresh zip, replace the folder contents, then click <strong>Reload</strong> on the Rubrical card in the extensions page.</p></section></main>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

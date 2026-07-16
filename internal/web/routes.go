@@ -52,6 +52,9 @@ func NewRouter(
 		r.Get("/auth/google", h.GoogleAuthStart)
 		r.Get("/auth/google/callback", h.GoogleAuthCallback)
 		r.Get("/install", h.Install)
+		r.Get("/install/rubrical-extension.zip", h.ExtensionZip)
+		// Legacy path — same no-store handler (Cloudflare was caching FileServer zips).
+		r.Get("/static/downloads/rubrical-extension.zip", h.ExtensionZip)
 		r.Get("/onboarding", h.Onboarding)
 		r.Get("/", h.Home)
 	})

@@ -284,8 +284,11 @@ Confirm:
 
 ```bash
 curl -I https://rubrical.spencerls.dev/install
-curl -I https://rubrical.spencerls.dev/static/downloads/rubrical-extension.zip
+curl -I https://rubrical.spencerls.dev/install/rubrical-extension.zip
+# expect: cache-control: no-store… and cf-cache-status: DYNAMIC or BYPASS (not HIT on a stale zip)
 ```
+
+If an old zip was already cached at the Cloudflare edge, purge that URL once in the Cloudflare dashboard (Caching → Configuration → Purge Cache), or rely on the new `/install/rubrical-extension.zip?v=…` link after this deploy.
 
 ### Google OAuth (optional)
 
