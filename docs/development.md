@@ -130,7 +130,7 @@ make server
 
 | Variable | Default |
 |----------|---------|
-| `RUBRICAL_ADDR` | `:8787` |
+| `RUBRICAL_HOST` / `RUBRICAL_PORT` | empty / `8787` (listen `:8787`) |
 | `DATABASE_URL` | `postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable` |
 | `RUBRICAL_STRICT_EXTRACTION` | unset (fallbacks enabled); set `1` to disable extraction/display fallbacks |
 | `RUBRICAL_DATA_DIR` | `./data` — draft file bytes on disk |

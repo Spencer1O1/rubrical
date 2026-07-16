@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	Addr                         string
+	Host                         string
+	Port                         int
 	DatabaseURL                  string
 	DataDir                      string
 	SecretsEncryptionKey         string
@@ -26,48 +27,49 @@ type Config struct {
 	SMTPPassword                 string
 	EmailDevLog                  bool
 	DraftMaxUploadBytes          int
-	DraftMaxUploadSlots     int
+	DraftMaxUploadSlots          int
 	AnalysisMaxSubmissionTextChars int
 	AnalysisMaxTotalBytes          int
-	AIMaxRunsPerHour        int
-	AIMaxRunsPerDay         int
-	AIMinSecondsBetweenRuns int
-	AIEnforceRateLimits     bool
-	StrictExtraction        bool
-	AllowLocalURLFetch      bool
-	PostDueDateRetention    time.Duration
-	PostUploadRetention     time.Duration
+	AIMaxRunsPerHour             int
+	AIMaxRunsPerDay              int
+	AIMinSecondsBetweenRuns      int
+	AIEnforceRateLimits          bool
+	StrictExtraction             bool
+	AllowLocalURLFetch           bool
+	PostDueDateRetention         time.Duration
+	PostUploadRetention          time.Duration
 }
 
 func Load() (Config, error) {
 	loadEnvFiles()
 
 	cfg := Config{
-		Addr:                    envOrDefault("RUBRICAL_ADDR", DefaultAddr),
-		DatabaseURL:             envOrDefault("DATABASE_URL", DefaultDatabaseURL),
-		DataDir:                 envOrDefault("RUBRICAL_DATA_DIR", DefaultDataDir),
-		SecretsEncryptionKey:    strings.TrimSpace(os.Getenv("RUBRICAL_SECRETS_ENCRYPTION_KEY")),
-		PublicURL:               strings.TrimRight(strings.TrimSpace(envOrDefault("RUBRICAL_PUBLIC_URL", DefaultPublicURL)), "/"),
-		GoogleOAuthClientID:     strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_ID")),
-		GoogleOAuthClientSecret: strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET")),
-		ExtensionOrigins:        splitCSV(os.Getenv("RUBRICAL_EXTENSION_ORIGINS")),
-		EmailFrom:               envOrDefault("EMAIL_FROM", DefaultEmailFrom),
-		ResendAPIKey:            strings.TrimSpace(os.Getenv("RESEND_API_KEY")),
-		SMTPHost:                strings.TrimSpace(os.Getenv("SMTP_HOST")),
-		SMTPPort:                envOrDefault("SMTP_PORT", DefaultSMTPPort),
-		SMTPUsername:            strings.TrimSpace(os.Getenv("SMTP_USERNAME")),
-		SMTPPassword:            strings.TrimSpace(os.Getenv("SMTP_PASSWORD")),
-		EmailDevLog:             envBool("EMAIL_DEV_LOG"),
-		DraftMaxUploadBytes:     envInt("DRAFT_MAX_UPLOAD_BYTES", DefaultDraftMaxUploadBytes),
-		DraftMaxUploadSlots:     envInt("DRAFT_MAX_UPLOAD_SLOTS", DefaultDraftMaxUploadSlots),
+		Host:                           strings.TrimSpace(envOrDefault("RUBRICAL_HOST", DefaultHost)),
+		Port:                           envInt("RUBRICAL_PORT", DefaultPort),
+		DatabaseURL:                    envOrDefault("DATABASE_URL", DefaultDatabaseURL),
+		DataDir:                        envOrDefault("RUBRICAL_DATA_DIR", DefaultDataDir),
+		SecretsEncryptionKey:           strings.TrimSpace(os.Getenv("RUBRICAL_SECRETS_ENCRYPTION_KEY")),
+		PublicURL:                      strings.TrimRight(strings.TrimSpace(envOrDefault("RUBRICAL_PUBLIC_URL", DefaultPublicURL)), "/"),
+		GoogleOAuthClientID:            strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_ID")),
+		GoogleOAuthClientSecret:        strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET")),
+		ExtensionOrigins:               splitCSV(os.Getenv("RUBRICAL_EXTENSION_ORIGINS")),
+		EmailFrom:                      envOrDefault("EMAIL_FROM", DefaultEmailFrom),
+		ResendAPIKey:                   strings.TrimSpace(os.Getenv("RESEND_API_KEY")),
+		SMTPHost:                       strings.TrimSpace(os.Getenv("SMTP_HOST")),
+		SMTPPort:                       envOrDefault("SMTP_PORT", DefaultSMTPPort),
+		SMTPUsername:                   strings.TrimSpace(os.Getenv("SMTP_USERNAME")),
+		SMTPPassword:                   strings.TrimSpace(os.Getenv("SMTP_PASSWORD")),
+		EmailDevLog:                    envBool("EMAIL_DEV_LOG"),
+		DraftMaxUploadBytes:            envInt("DRAFT_MAX_UPLOAD_BYTES", DefaultDraftMaxUploadBytes),
+		DraftMaxUploadSlots:            envInt("DRAFT_MAX_UPLOAD_SLOTS", DefaultDraftMaxUploadSlots),
 		AnalysisMaxSubmissionTextChars: envInt("ANALYSIS_MAX_SUBMISSION_TEXT_CHARS", DefaultAnalysisMaxSubmissionTextChars),
 		AnalysisMaxTotalBytes:          envInt("ANALYSIS_MAX_TOTAL_BYTES", DefaultAnalysisMaxTotalBytes),
-		AIMaxRunsPerHour:        envInt("AI_MAX_RUNS_PER_HOUR", DefaultAIMaxRunsPerHour),
-		AIMaxRunsPerDay:         envInt("AI_MAX_RUNS_PER_DAY", DefaultAIMaxRunsPerDay),
-		AIMinSecondsBetweenRuns: envInt("AI_MIN_SECONDS_BETWEEN_RUNS", DefaultAIMinSecondsBetweenRuns),
-		AIEnforceRateLimits:     envBool("AI_ENFORCE_RATE_LIMITS"),
-		StrictExtraction:        envBool("RUBRICAL_STRICT_EXTRACTION"),
-		AllowLocalURLFetch:      envBool("RUBRICAL_ALLOW_LOCAL_URL_FETCH"),
+		AIMaxRunsPerHour:               envInt("AI_MAX_RUNS_PER_HOUR", DefaultAIMaxRunsPerHour),
+		AIMaxRunsPerDay:                envInt("AI_MAX_RUNS_PER_DAY", DefaultAIMaxRunsPerDay),
+		AIMinSecondsBetweenRuns:        envInt("AI_MIN_SECONDS_BETWEEN_RUNS", DefaultAIMinSecondsBetweenRuns),
+		AIEnforceRateLimits:            envBool("AI_ENFORCE_RATE_LIMITS"),
+		StrictExtraction:               envBool("RUBRICAL_STRICT_EXTRACTION"),
+		AllowLocalURLFetch:             envBool("RUBRICAL_ALLOW_LOCAL_URL_FETCH"),
 	}
 
 	retention, err := envDuration("POST_DUE_DATE_RETENTION_TIME", DefaultPostDueDateRetention)
@@ -88,6 +90,9 @@ func Load() (Config, error) {
 	}
 	cfg.SessionTTL = sessionTTL
 
+	if cfg.Port <= 0 || cfg.Port > 65535 {
+		return Config{}, fmt.Errorf("RUBRICAL_PORT must be between 1 and 65535")
+	}
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL is required")
 	}
@@ -95,14 +100,13 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
-func (c Config) Port() int {
-	if len(c.Addr) > 0 && c.Addr[0] == ':' {
-		port, err := strconv.Atoi(c.Addr[1:])
-		if err == nil {
-			return port
-		}
+// ListenAddr is the net/http listen address from RUBRICAL_HOST + RUBRICAL_PORT.
+// Empty host means all interfaces (":8787"), matching local WSL defaults.
+func (c Config) ListenAddr() string {
+	if c.Host == "" {
+		return fmt.Sprintf(":%d", c.Port)
 	}
-	return 8787
+	return fmt.Sprintf("%s:%d", c.Host, c.Port)
 }
 
 func envOrDefault(key, fallback string) string {
@@ -177,7 +181,10 @@ func (c Config) AllowedOrigins() []string {
 	if c.PublicURL != "" {
 		origins = append(origins, c.PublicURL)
 	}
-	origins = append(origins, "http://localhost:8787", "http://127.0.0.1:8787")
+	origins = append(origins,
+		fmt.Sprintf("http://localhost:%d", c.Port),
+		fmt.Sprintf("http://127.0.0.1:%d", c.Port),
+	)
 	seen := make(map[string]struct{}, len(origins))
 	out := make([]string, 0, len(origins))
 	for _, origin := range origins {

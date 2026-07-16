@@ -8,7 +8,12 @@ Production hosting for Rubrical is the **home server** pattern in [HOMESERVER.md
 | `rubrical.spencerls.dev` | Landing, auth, dashboard, extension API (same origin) |
 
 
-Templates live in `[deploy/homeserver/](../deploy/homeserver/)`. Secrets and ports live under `/etc/homeserver/` so auto-deploy (`git reset --hard`) never wipes them.
+Templates live in [`deploy/homeserver/`](../deploy/homeserver/). Config outside the git checkout so auto-deploy (`git reset --hard`) never wipes it:
+
+| File | Owns |
+|------|------|
+| `/etc/homeserver/server.env` | **Only** place for `RUBRICAL_HOST` / `RUBRICAL_PORT` (and hook host/port). Loaded by Caddy **and** `rubrical.service`. |
+| `/etc/homeserver/apps/rubrical.env` | Secrets and app settings (`DATABASE_URL`, encryption key, OAuth, …). No listen address. |
 
 ---
 
@@ -80,38 +85,9 @@ Docker Compose Postgres stays for **local WSL only** (`make db-up`). Production 
 
 ---
 
-## 4. App env (outside the repo)
+## 4. Host/port (`server.env` — single source of truth)
 
-```bash
-sudo mkdir -p /etc/homeserver/apps
-sudo cp /srv/repos/rubrical/deploy/homeserver/rubrical.env.example \
-  /etc/homeserver/apps/rubrical.env
-sudo nano /etc/homeserver/apps/rubrical.env
-# Deploy user must read this (deploy.sh sources it for migrate/build).
-# systemd still loads it as root via EnvironmentFile=.
-sudo chown root:<LINUX_USER> /etc/homeserver/apps/rubrical.env
-sudo chmod 640 /etc/homeserver/apps/rubrical.env
-```
-
-Set at least:
-
-```env
-RUBRICAL_ADDR=127.0.0.1:8787
-RUBRICAL_PUBLIC_URL=https://rubrical.spencerls.dev
-DATABASE_URL=postgres://rubrical:<password>@127.0.0.1:5432/rubrical?sslmode=disable
-RUBRICAL_DATA_DIR=/srv/repos/rubrical/data
-RUBRICAL_SECRETS_ENCRYPTION_KEY=<stable 32-byte key>
-```
-
-Generate the secrets key once on any machine (`pnpm setup:secrets-key` or copy from a generated `.env.local`) and paste it here. **Do not rotate** casually — it encrypts user AI API keys at rest.
-
-Optional: Google OAuth, Resend/SMTP, `RUBRICAL_EXTENSION_ORIGINS`. See [configuration.md](./configuration.md).
-
----
-
-## 5. Caddy ports + site block
-
-Append to `/etc/homeserver/server.env`:
+Append [`deploy/homeserver/server.env.snippet`](../deploy/homeserver/server.env.snippet) to `/etc/homeserver/server.env`:
 
 ```env
 RUBRICAL_HOST=127.0.0.1
@@ -120,13 +96,42 @@ RUBRICAL_HOOK_HOST=127.0.0.1
 RUBRICAL_HOOK_PORT=9011
 ```
 
-Caddy must load that file (`systemctl edit caddy` → `EnvironmentFile=/etc/homeserver/server.env`). Then merge `[deploy/homeserver/Caddyfile.snippet](../deploy/homeserver/Caddyfile.snippet)` into `/etc/caddy/Caddyfile`:
+Caddy reverse-proxies using these vars. The Go process listens using the same vars (`RUBRICAL_HOST` + `RUBRICAL_PORT`). Do **not** put a listen address in `apps/rubrical.env`.
+
+Caddy must load that file (`systemctl edit caddy` → `EnvironmentFile=/etc/homeserver/server.env`). Then merge [`deploy/homeserver/Caddyfile.snippet`](../deploy/homeserver/Caddyfile.snippet) into `/etc/caddy/Caddyfile`:
 
 ```bash
 sudo caddy fmt --overwrite /etc/caddy/Caddyfile
 sudo caddy validate --config /etc/caddy/Caddyfile
 sudo systemctl restart caddy   # restart if server.env changed; else reload
 ```
+
+---
+
+## 5. App secrets (`apps/rubrical.env`)
+
+```bash
+sudo mkdir -p /etc/homeserver/apps
+sudo cp /srv/repos/rubrical/deploy/homeserver/rubrical.env.example \
+  /etc/homeserver/apps/rubrical.env
+sudo nano /etc/homeserver/apps/rubrical.env
+# Deploy user must read this (deploy.sh sources it for migrate/build).
+sudo chown root:<LINUX_USER> /etc/homeserver/apps/rubrical.env
+sudo chmod 640 /etc/homeserver/apps/rubrical.env
+```
+
+Set at least:
+
+```env
+RUBRICAL_PUBLIC_URL=https://rubrical.spencerls.dev
+DATABASE_URL=postgres://rubrical:<password>@127.0.0.1:5432/rubrical?sslmode=disable
+RUBRICAL_DATA_DIR=/srv/repos/rubrical/data
+RUBRICAL_SECRETS_ENCRYPTION_KEY=<stable 32-byte key>
+```
+
+Generate the secrets key once (`pnpm setup:secrets-key` or copy from `.env.local`) and paste it here. **Do not rotate** casually — it encrypts user AI API keys at rest.
+
+Optional: Google OAuth, Resend/SMTP, `RUBRICAL_EXTENSION_ORIGINS`. See [configuration.md](./configuration.md).
 
 ---
 

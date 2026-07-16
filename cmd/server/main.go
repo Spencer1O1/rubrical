@@ -103,8 +103,9 @@ func main() {
 	)
 	purge.RunBackground(purgeCtx, database.Pool, fileStore, policy, time.Hour)
 
+	listenAddr := cfg.ListenAddr()
 	server := &http.Server{
-		Addr:         cfg.Addr,
+		Addr:         listenAddr,
 		Handler:      web.NewRouter(database, fileStore, cfg, analysisSvc, aiSettingsStore, authSvc, mailer),
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 180 * time.Second,
@@ -112,7 +113,11 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("rubrical listening on http://localhost%s", cfg.Addr)
+		if cfg.Host == "" {
+			log.Printf("rubrical listening on http://localhost:%d", cfg.Port)
+		} else {
+			log.Printf("rubrical listening on http://%s", listenAddr)
+		}
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server: %v", err)
 		}

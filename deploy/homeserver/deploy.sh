@@ -19,12 +19,19 @@ SERVICE="${RUBRICAL_SERVICE:-rubrical.service}"
   echo "=== Rubrical deploy started at $(date) ==="
   echo "repo=$REPO branch=$BRANCH"
 
+  SERVER_ENV="${RUBRICAL_SERVER_ENV:-/etc/homeserver/server.env}"
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "missing env file: $ENV_FILE" >&2
     exit 1
   fi
+  if [[ ! -f "$SERVER_ENV" ]]; then
+    echo "missing server env: $SERVER_ENV" >&2
+    exit 1
+  fi
 
   set -a
+  # shellcheck disable=SC1090
+  source "$SERVER_ENV"
   # shellcheck disable=SC1090
   source "$ENV_FILE"
   set +a

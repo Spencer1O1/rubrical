@@ -9,6 +9,9 @@ Type=simple
 # Set to the Linux user that owns /srv/repos/rubrical
 User=CHANGE_ME
 WorkingDirectory=/srv/repos/rubrical
+# server.env: RUBRICAL_HOST / RUBRICAL_PORT (shared with Caddy)
+# apps/rubrical.env: secrets and app settings
+EnvironmentFile=/etc/homeserver/server.env
 EnvironmentFile=/etc/homeserver/apps/rubrical.env
 ExecStart=/srv/repos/rubrical/bin/rubrical
 Restart=always

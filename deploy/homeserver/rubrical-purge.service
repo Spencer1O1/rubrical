@@ -7,5 +7,6 @@ Requires=postgresql.service
 Type=oneshot
 User=CHANGE_ME
 WorkingDirectory=/srv/repos/rubrical
+EnvironmentFile=/etc/homeserver/server.env
 EnvironmentFile=/etc/homeserver/apps/rubrical.env
 ExecStart=/srv/repos/rubrical/bin/rubrical-purge

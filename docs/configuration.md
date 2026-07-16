@@ -87,7 +87,8 @@ Override defaults at deploy time. See [`.env.example`](../.env.example).
 
 | Variable | Default (in code) | Purpose |
 |----------|-------------------|---------|
-| `RUBRICAL_ADDR` | `:8787` | HTTP listen address |
+| `RUBRICAL_HOST` | empty (all interfaces) | HTTP listen host; production: `127.0.0.1` in `/etc/homeserver/server.env` |
+| `RUBRICAL_PORT` | `8787` | HTTP listen port; same `server.env` as Caddy reverse_proxy |
 | `DATABASE_URL` | local postgres URL | Postgres connection |
 | `RUBRICAL_DATA_DIR` | `./data` | Draft file storage on disk |
 | `RUBRICAL_STRICT_EXTRACTION` | off | Dev: disable Canvas fallbacks |
