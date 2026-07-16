@@ -186,18 +186,25 @@ sudo systemctl enable --now rubrical-purge.timer
 
 ## 7. Deploy script + sudoers
 
-The versioned script is `[deploy/homeserver/deploy.sh](../deploy/homeserver/deploy.sh)`. Point the webhook at that path (no copy under `/srv/deploy` required).
+Same layout as spencerls: runtime script under `/srv/deploy/`, not inside the git checkout (so `git reset --hard` cannot rewrite the script mid-deploy). The file in the repo is only a template.
 
 ```bash
+sudo mkdir -p /srv/deploy/rubrical
+sudo cp /srv/repos/rubrical/deploy/homeserver/deploy.sh /srv/deploy/rubrical/deploy.sh
+sudo chown "$USER:$USER" /srv/deploy/rubrical/deploy.sh
+chmod +x /srv/deploy/rubrical/deploy.sh
+
 sudo visudo
 # add (exact service name only):
 # <LINUX_USER> ALL=(root) NOPASSWD: /usr/bin/systemctl restart rubrical.service
 ```
 
+If you change the template later, re-copy it to `/srv/deploy/rubrical/deploy.sh`.
+
 Manual deploy:
 
 ```bash
-/srv/repos/rubrical/deploy/homeserver/deploy.sh
+/srv/deploy/rubrical/deploy.sh
 ```
 
 ---
@@ -258,7 +265,7 @@ journalctl -u deploy-hook-rubrical -f
 git push origin main
   → GitHub webhook
   → deploy-hook
-  → deploy/homeserver/deploy.sh
+  → /srv/deploy/rubrical/deploy.sh
   → fetch/reset, pnpm, css/templ, migrate, build, restart rubrical
 ```
 

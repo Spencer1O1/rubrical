@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
-# Auto-deploy entrypoint for the home server.
-# Invoked by deploy-hook; safe to run manually:
-#   /srv/repos/rubrical/deploy/homeserver/deploy.sh
+# Template: copy to /srv/deploy/rubrical/deploy.sh (same layout as spencerls).
+# Do not run from the git checkout — git reset --hard would rewrite this file mid-deploy.
+#
+#   sudo mkdir -p /srv/deploy/rubrical
+#   sudo cp /srv/repos/rubrical/deploy/homeserver/deploy.sh /srv/deploy/rubrical/deploy.sh
+#   sudo chown "$USER:$USER" /srv/deploy/rubrical/deploy.sh
+#   chmod +x /srv/deploy/rubrical/deploy.sh
 set -euo pipefail
 
-REPO="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO="${RUBRICAL_REPO:-/srv/repos/rubrical}"
 BRANCH="${DEPLOY_BRANCH:-main}"
 LOCK_FILE="/tmp/rubrical-deploy.lock"
 ENV_FILE="${RUBRICAL_ENV_FILE:-/etc/homeserver/apps/rubrical.env}"
+SERVER_ENV="${RUBRICAL_SERVER_ENV:-/etc/homeserver/server.env}"
 SERVICE="${RUBRICAL_SERVICE:-rubrical.service}"
 
 (
@@ -19,7 +24,6 @@ SERVICE="${RUBRICAL_SERVICE:-rubrical.service}"
   echo "=== Rubrical deploy started at $(date) ==="
   echo "repo=$REPO branch=$BRANCH"
 
-  SERVER_ENV="${RUBRICAL_SERVER_ENV:-/etc/homeserver/server.env}"
   if [[ ! -f "$ENV_FILE" ]]; then
     echo "missing env file: $ENV_FILE" >&2
     exit 1
