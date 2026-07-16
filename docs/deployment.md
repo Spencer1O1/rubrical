@@ -333,10 +333,3 @@ git push origin main
 | Public DNS      | `dig +short rubrical.spencerls.dev @1.1.1.1`                                              |
 | App logs        | `journalctl -u rubrical -f`                                                               |
 | Deploy logs     | `journalctl -u deploy-hook-rubrical -f`                                                   |
-
-
----
-
-## Optional: Vercel marketing split
-
-Not used for `rubrical.spencerls.dev`. If you ever host a **different** marketing hostname on Vercel, `make vercel-build` + `vercel.json` can proxy app paths to this Go host. Do not point the same hostname at both Vercel and Caddy.

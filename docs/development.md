@@ -156,7 +156,6 @@ make server
 | `make extension-build` | Build extension for local dev (`http://localhost:8787`) |
 | `make extension-build-prod` | Build extension for production (`https://rubrical.spencerls.dev`) |
 | `make extension-package` | Prod build + zip at `static/downloads/rubrical-extension.zip` (`/install`) |
-| `make vercel-build` | Export static landing to `public/` for Vercel |
 | `make test` | Run Go tests |
 
 ## templ IDE errors

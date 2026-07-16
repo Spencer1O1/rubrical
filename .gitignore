@@ -21,9 +21,6 @@ package-lock.json
 /extension/dist/
 /static/downloads/*.zip
 
-# Vercel static export (make vercel-build)
-/public/
-
 # Environment
 .env
 .env.local
