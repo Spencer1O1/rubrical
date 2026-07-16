@@ -83,7 +83,7 @@ func Assignment(view AssignmentView, user components.LayoutUser) templ.Component
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.Layout(view.Title, user, assignmentPageContent(view)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellApp, Title: view.Title, User: user}, assignmentPageContent(view)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -113,7 +113,7 @@ func AssignmentEmbed(view AssignmentView) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.EmbedLayout(view.Title, assignmentEmbedContent(view)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellEmbed, Title: view.Title}, assignmentEmbedContent(view)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

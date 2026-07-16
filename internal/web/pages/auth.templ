@@ -3,7 +3,11 @@ package pages
 import "rubrical/internal/web/components"
 
 templ AuthPage(view AuthFormView) {
-	@components.AuthLayout(AuthPageTitle(view.Mode), authCard(view), view.Bare)
+	if view.Bare {
+		@components.Shell(components.ShellView{Kind: components.ShellAuthBare, Title: AuthPageTitle(view.Mode)}, authCard(view))
+	} else {
+		@components.Shell(components.ShellView{Kind: components.ShellAuth, Title: AuthPageTitle(view.Mode)}, authCard(view))
+	}
 }
 
 templ authCard(view AuthFormView) {
@@ -128,7 +132,7 @@ templ resetForm(view AuthFormView) {
 		<button type="submit" class="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700">Update password</button>
 	</form>
 	<p class="text-center text-sm">
-		<a href="/login" class="text-indigo-700 hover:text-indigo-900">Back to sign in</a>
+		<a href={ templ.SafeURL(AuthModeURL(AuthModeLogin, "", view.Bare)) } class="text-indigo-700 hover:text-indigo-900">Back to sign in</a>
 	</p>
 }
 

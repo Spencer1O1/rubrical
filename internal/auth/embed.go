@@ -10,7 +10,7 @@ package auth
 //     then 303 to next.
 //  5. Later iframe navigations / HTMX send that partitioned cookie.
 //
-// embed=1 means “inside the extension modal”: EmbedLayout / bare auth (modal owns chrome).
+// embed=1 means “inside the extension modal”: ShellEmbed / ShellAuthBare (modal owns chrome).
 
 import (
 	"crypto/hmac"

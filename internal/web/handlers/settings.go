@@ -23,7 +23,7 @@ func (h *Handlers) SettingsPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	saved := r.URL.Query().Get("saved") == "1"
-	if r.URL.Query().Get("embed") == "1" {
+	if requestEmbed(r) {
 		id := assignmentIDFromRequest(r)
 		pages.SettingsEmbed(settings, "", assignmentEmbedBackURL(r), id, saved).Render(r.Context(), w)
 		return

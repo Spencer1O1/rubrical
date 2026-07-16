@@ -2,8 +2,13 @@ package pages
 
 import "rubrical/internal/web/components"
 
-templ Install(nav components.MarketingNav, zipAvailable bool, downloadURL string) {
-	@components.MarketingPage(nav, installContent(nav.SignedIn, zipAvailable, downloadURL))
+templ Install(user components.LayoutUser, zipAvailable bool, downloadURL string) {
+	@components.Shell(components.ShellView{
+		Kind:            components.ShellMarketing,
+		Title:           "Install",
+		User:            user,
+		MetaDescription: "Install the Rubrical browser extension for Canvas.",
+	}, installContent(user.SignedIn, zipAvailable, downloadURL))
 }
 
 templ installContent(signedIn bool, zipAvailable bool, downloadURL string) {

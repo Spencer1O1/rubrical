@@ -41,7 +41,7 @@ func Dashboard(assignments []AssignmentListItem, user components.LayoutUser) tem
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.Layout("Dashboard", user, dashboardContent(assignments)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellApp, Title: "Dashboard", User: user}, dashboardContent(assignments)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

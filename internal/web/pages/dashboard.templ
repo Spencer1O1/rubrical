@@ -13,7 +13,7 @@ type AssignmentListItem struct {
 }
 
 templ Dashboard(assignments []AssignmentListItem, user components.LayoutUser) {
-	@components.Layout("Dashboard", user, dashboardContent(assignments))
+	@components.Shell(components.ShellView{Kind: components.ShellApp, Title: "Dashboard", User: user}, dashboardContent(assignments))
 }
 
 templ dashboardContent(assignments []AssignmentListItem) {

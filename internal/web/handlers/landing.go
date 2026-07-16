@@ -9,7 +9,7 @@ import (
 
 func (h *Handlers) Onboarding(w http.ResponseWriter, r *http.Request) {
 	user, signedIn := h.currentUser(r)
-	nav := components.MarketingNav{SignedIn: signedIn}
+	nav := components.LayoutUser{SignedIn: signedIn}
 	if signedIn {
 		nav.Email = user.Email
 	}

@@ -35,11 +35,11 @@ var AnthropicModelOptions = []struct {
 }
 
 templ SettingsPage(settings aisettings.Settings, user components.LayoutUser, errorMessage string, saved bool) {
-	@components.Layout("Settings", user, settingsPageContent(settings, errorMessage, saved))
+	@components.Shell(components.ShellView{Kind: components.ShellApp, Title: "Settings", User: user}, settingsPageContent(settings, errorMessage, saved))
 }
 
 templ SettingsEmbed(settings aisettings.Settings, errorMessage string, assignmentBackURL string, assignmentID int64, saved bool) {
-	@components.EmbedLayout("AI settings", settingsEmbedContent(settings, errorMessage, assignmentBackURL, assignmentID, saved))
+	@components.Shell(components.ShellView{Kind: components.ShellEmbed, Title: "AI settings"}, settingsEmbedContent(settings, errorMessage, assignmentBackURL, assignmentID, saved))
 }
 
 templ settingsEmbedContent(settings aisettings.Settings, errorMessage string, assignmentBackURL string, assignmentID int64, saved bool) {

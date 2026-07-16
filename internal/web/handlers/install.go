@@ -13,7 +13,7 @@ const extensionZipPath = "static/downloads/rubrical-extension.zip"
 
 func (h *Handlers) Install(w http.ResponseWriter, r *http.Request) {
 	user, signedIn := h.currentUser(r)
-	nav := components.MarketingNav{SignedIn: signedIn}
+	nav := components.LayoutUser{SignedIn: signedIn}
 	if signedIn {
 		nav.Email = user.Email
 	}

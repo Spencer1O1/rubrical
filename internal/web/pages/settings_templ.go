@@ -63,7 +63,7 @@ func SettingsPage(settings aisettings.Settings, user components.LayoutUser, erro
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.Layout("Settings", user, settingsPageContent(settings, errorMessage, saved)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellApp, Title: "Settings", User: user}, settingsPageContent(settings, errorMessage, saved)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -92,7 +92,7 @@ func SettingsEmbed(settings aisettings.Settings, errorMessage string, assignment
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.EmbedLayout("AI settings", settingsEmbedContent(settings, errorMessage, assignmentBackURL, assignmentID, saved)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellEmbed, Title: "AI settings"}, settingsEmbedContent(settings, errorMessage, assignmentBackURL, assignmentID, saved)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

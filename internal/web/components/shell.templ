@@ -1,0 +1,198 @@
+package components
+
+// ShellKind selects document chrome. One shell — modes toggle header/scripts/footer.
+type ShellKind string
+
+const (
+	ShellApp       ShellKind = "app"
+	ShellEmbed     ShellKind = "embed"
+	ShellAuth      ShellKind = "auth"
+	ShellAuthBare  ShellKind = "authBare"
+	ShellMarketing ShellKind = "marketing"
+)
+
+type ShellView struct {
+	Kind            ShellKind
+	Title           string
+	User            LayoutUser
+	MetaDescription string
+}
+
+templ Shell(view ShellView, content templ.Component) {
+	<!DOCTYPE html>
+	<html
+		lang="en"
+		class={
+			templ.KV("h-full bg-stone-50", view.Kind != ShellMarketing),
+			templ.KV("scroll-smooth bg-white", view.Kind == ShellMarketing),
+		}
+	>
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			if view.MetaDescription != "" {
+				<meta name="description" content={ view.MetaDescription }/>
+			}
+			<title>{ view.Title } · Rubrical</title>
+			<link rel="stylesheet" href="/static/css/app.css"/>
+			if view.Kind == ShellApp || view.Kind == ShellEmbed {
+				@MaterialSymbolsHead()
+				<script src="https://unpkg.com/htmx.org@2.0.4" integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+" crossorigin="anonymous"></script>
+			}
+		</head>
+		<body
+			class={
+				"text-stone-900 antialiased",
+				templ.KV("min-h-full", view.Kind == ShellApp || view.Kind == ShellEmbed),
+				templ.KV("flex min-h-full flex-col", view.Kind == ShellAuth || view.Kind == ShellAuthBare),
+			}
+		>
+			if view.Kind == ShellApp || view.Kind == ShellEmbed {
+				@appClientScripts()
+			}
+			if view.Kind == ShellEmbed {
+				@embedDraftFileScripts()
+			}
+			switch view.Kind {
+				case ShellApp:
+					@appHeader(view.User)
+					<main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+						@htmxErrorBanner()
+						@content
+					</main>
+				case ShellEmbed:
+					<main class="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+						@htmxErrorBanner()
+						@content
+					</main>
+				case ShellAuth:
+					@authHeader()
+					<main class="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
+						@content
+					</main>
+				case ShellAuthBare:
+					<main class="flex flex-1 items-center justify-center px-4 py-6 sm:px-6">
+						@content
+					</main>
+				case ShellMarketing:
+					@marketingNav(view.User)
+					@content
+					@marketingFooter(view.User.SignedIn)
+			}
+		</body>
+	</html>
+}
+
+templ appHeader(user LayoutUser) {
+	<header class="border-b border-stone-200 bg-white">
+		<div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
+			<a href="/" class="flex items-center gap-2">
+				<span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">R</span>
+				<div>
+					<p class="text-lg font-semibold tracking-tight">Rubrical</p>
+					<p class="text-xs text-stone-500">Check the rubric before the rubric checks you.</p>
+				</div>
+			</a>
+			if user.SignedIn {
+				<div class="flex items-center gap-4 text-sm font-medium leading-none">
+					<a href="/" class="text-stone-600 hover:text-stone-900">Dashboard</a>
+					<a href="/settings" class="text-stone-600 hover:text-stone-900">Settings</a>
+					<span class="hidden text-stone-500 sm:inline">{ user.Email }</span>
+					<form method="POST" action="/logout" class="m-0 inline-flex items-center">
+						<button type="submit" class="inline-flex items-center border-0 bg-transparent p-0 font-medium leading-none text-stone-600 hover:text-stone-900">Sign out</button>
+					</form>
+				</div>
+			}
+		</div>
+	</header>
+}
+
+templ authHeader() {
+	<header class="border-b border-stone-200 bg-white">
+		<div class="mx-auto flex max-w-5xl items-center px-4 py-4 sm:px-6">
+			<a href="/onboarding" class="flex items-center gap-2">
+				<span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">R</span>
+				<p class="text-lg font-semibold tracking-tight">Rubrical</p>
+			</a>
+		</div>
+	</header>
+}
+
+templ htmxErrorBanner() {
+	<div id="htmx-error-banner" class="mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert"></div>
+}
+
+templ appClientScripts() {
+	<script>
+		function requestPath(event) {
+			return String(
+				event.detail?.pathInfo?.requestPath ??
+					event.detail?.pathInfo?.finalRequestPath ??
+					event.detail?.requestConfig?.path ??
+					"",
+			);
+		}
+		function showHTMXErrorBanner(message) {
+			const banner = document.getElementById("htmx-error-banner");
+			if (!banner) return;
+			banner.textContent = message;
+			banner.classList.remove("hidden");
+		}
+		function hideHTMXErrorBanner() {
+			const banner = document.getElementById("htmx-error-banner");
+			if (banner) banner.classList.add("hidden");
+		}
+		document.body.addEventListener("htmx:beforeRequest", function (event) {
+			hideHTMXErrorBanner();
+			const path = requestPath(event);
+			if (!path.includes("/analyze")) return;
+			const form = event.detail?.elt;
+			const pendingId = form?.getAttribute?.("data-analyze-pending-id");
+			const pending = pendingId ? document.getElementById(pendingId) : null;
+			const target = document.getElementById("analysis-results");
+			if (target && pending) {
+				target.innerHTML = pending.innerHTML;
+			}
+		});
+		document.body.addEventListener("htmx:responseError", function (event) {
+			const path = requestPath(event);
+			if (path.includes("/analyze")) {
+				const target = document.getElementById("analysis-results");
+				if (!target) return;
+				const isTimeout =
+					event.detail?.error === "timeout" ||
+					String(event.detail?.xhr?.status ?? "") === "0";
+				target.innerHTML = isTimeout
+					? '<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><p class="font-medium">Analysis timed out</p><p class="mt-1">The request took longer than two minutes. Try again with a shorter draft or fewer files.</p></div>'
+					: (function () {
+						const body = event.detail?.xhr?.responseText?.trim() ?? "";
+						if (body && body.includes("analysis-error")) {
+							return body;
+						}
+						const message = body || "Analysis failed. Try again in a moment.";
+						return '<div class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800"><p class="font-medium">Analysis failed</p><p class="mt-1">' + message.replace(/</g, "&lt;") + '</p></div>';
+					})();
+				return;
+			}
+			const message =
+				event.detail?.xhr?.responseText?.trim() ||
+				"Something went wrong. Try again.";
+			showHTMXErrorBanner(message);
+		});
+	</script>
+}
+
+templ embedDraftFileScripts() {
+	<script>
+		function notifyParentDraftFilesChanged(event) {
+			if (window.parent === window) return;
+			const detail = event.detail;
+			if (!detail || detail.failed || detail.isError) return;
+			const path = requestPath(event);
+			if (!path.includes("/draft/files") && !path.includes("/draft/upload") && !path.includes("/draft/discussion-attachment")) return;
+			window.parent.postMessage({ type: "rubrical:draft-files-changed" }, "*");
+		}
+		document.body.addEventListener("htmx:afterSwap", notifyParentDraftFilesChanged);
+		document.body.addEventListener("htmx:afterSettle", notifyParentDraftFilesChanged);
+	</script>
+}

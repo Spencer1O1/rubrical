@@ -2,8 +2,13 @@ package pages
 
 import "rubrical/internal/web/components"
 
-templ Onboarding(nav components.MarketingNav) {
-	@components.MarketingPage(nav, onboardingContent(nav.SignedIn))
+templ Onboarding(user components.LayoutUser) {
+	@components.Shell(components.ShellView{
+		Kind:            components.ShellMarketing,
+		Title:           "Check the rubric before the rubric checks you",
+		User:            user,
+		MetaDescription: "Rubrical helps you check Canvas assignments against the rubric before you submit — with AI feedback tied to each criterion.",
+	}, onboardingContent(user.SignedIn))
 }
 
 templ onboardingContent(signedIn bool) {

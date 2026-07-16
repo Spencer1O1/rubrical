@@ -55,12 +55,12 @@ type AssignmentView struct {
 
 // Assignment is the full revisit view from the dashboard.
 templ Assignment(view AssignmentView, user components.LayoutUser) {
-	@components.Layout(view.Title, user, assignmentPageContent(view))
+	@components.Shell(components.ShellView{Kind: components.ShellApp, Title: view.Title, User: user}, assignmentPageContent(view))
 }
 
 // AssignmentEmbed is the in-Canvas popup: draft-first, context collapsed.
 templ AssignmentEmbed(view AssignmentView) {
-	@components.EmbedLayout(view.Title, assignmentEmbedContent(view))
+	@components.Shell(components.ShellView{Kind: components.ShellEmbed, Title: view.Title}, assignmentEmbedContent(view))
 }
 
 templ assignmentPageContent(view AssignmentView) {

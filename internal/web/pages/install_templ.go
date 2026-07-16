@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "rubrical/internal/web/components"
 
-func Install(nav components.MarketingNav, zipAvailable bool, downloadURL string) templ.Component {
+func Install(user components.LayoutUser, zipAvailable bool, downloadURL string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -31,7 +31,12 @@ func Install(nav components.MarketingNav, zipAvailable bool, downloadURL string)
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = components.MarketingPage(nav, installContent(nav.SignedIn, zipAvailable, downloadURL)).Render(ctx, templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = components.Shell(components.ShellView{
+			Kind:            components.ShellMarketing,
+			Title:           "Install",
+			User:            user,
+			MetaDescription: "Install the Rubrical browser extension for Canvas.",
+		}, installContent(user.SignedIn, zipAvailable, downloadURL)).Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -72,7 +77,7 @@ func installContent(signedIn bool, zipAvailable bool, downloadURL string) templ.
 			var templ_7745c5c3_Var3 templ.SafeURL
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(downloadURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/install.templ`, Line: 21, Col: 25}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/install.templ`, Line: 26, Col: 25}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
