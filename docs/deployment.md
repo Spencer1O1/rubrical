@@ -115,9 +115,12 @@ sudo mkdir -p /etc/homeserver/apps
 sudo cp /srv/repos/rubrical/deploy/homeserver/rubrical.env.example \
   /etc/homeserver/apps/rubrical.env
 sudo nano /etc/homeserver/apps/rubrical.env
-# Deploy user must read this (deploy.sh sources it for migrate/build).
-sudo chown root:<LINUX_USER> /etc/homeserver/apps/rubrical.env
+# Your login user must be able to read this (deploy.sh / first build source it).
+# Do not use root:root mode 600 here.
+sudo chown "root:$USER" /etc/homeserver/apps/rubrical.env
 sudo chmod 640 /etc/homeserver/apps/rubrical.env
+# server.env is host/port only — world-readable is fine
+sudo chmod 644 /etc/homeserver/server.env
 ```
 
 Set at least:
@@ -143,11 +146,18 @@ sudo cp /srv/repos/rubrical/deploy/homeserver/rubrical.service \
 sudo nano /etc/systemd/system/rubrical.service   # set User= to your deploy user
 ```
 
-First build + migrate (as the deploy user, with env loaded):
+First build + migrate as your normal user (**not** `sudo source` — `source` is a shell builtin):
 
 ```bash
-set -a && source /etc/homeserver/apps/rubrical.env && set +a
+# If you still get "Permission denied", re-run the chown/chmod from §5.
+set -a
+source /etc/homeserver/server.env
+source /etc/homeserver/apps/rubrical.env
+set +a
+
 cd /srv/repos/rubrical
+# If frozen-lockfile fails, the lockfile on main is stale — fix it in the
+# laptop checkout with `pnpm install`, commit pnpm-lock.yaml, push, then pull here.
 pnpm install --frozen-lockfile
 make css templ migrate-up build
 mkdir -p data
