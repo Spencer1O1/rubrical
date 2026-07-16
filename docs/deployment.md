@@ -8,12 +8,14 @@ Production hosting for Rubrical is the **home server** pattern in [HOMESERVER.md
 | `rubrical.spencerls.dev` | Landing, auth, dashboard, extension API (same origin) |
 
 
-Templates live in [`deploy/homeserver/`](../deploy/homeserver/). Config outside the git checkout so auto-deploy (`git reset --hard`) never wipes it:
+Templates live in `[deploy/homeserver/](../deploy/homeserver/)`. Config outside the git checkout so auto-deploy (`git reset --hard`) never wipes it:
 
-| File | Owns |
-|------|------|
-| `/etc/homeserver/server.env` | **Only** place for `RUBRICAL_HOST` / `RUBRICAL_PORT` (and hook host/port). Loaded by Caddy **and** `rubrical.service`. |
-| `/etc/homeserver/apps/rubrical.env` | Secrets and app settings (`DATABASE_URL`, encryption key, OAuth, …). No listen address. |
+
+| File                                | Owns                                                                                                                   |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `/etc/homeserver/server.env`        | **Only** place for `RUBRICAL_HOST` / `RUBRICAL_PORT` (and hook host/port). Loaded by Caddy **and** `rubrical.service`. |
+| `/etc/homeserver/apps/rubrical.env` | Secrets and app settings (`DATABASE_URL`, encryption key, OAuth, …). No listen address.                                |
+
 
 ---
 
@@ -87,7 +89,7 @@ Docker Compose Postgres stays for **local WSL only** (`make db-up`). Production 
 
 ## 4. Host/port (`server.env` — single source of truth)
 
-Append [`deploy/homeserver/server.env.snippet`](../deploy/homeserver/server.env.snippet) to `/etc/homeserver/server.env`:
+Append `[deploy/homeserver/server.env.snippet](../deploy/homeserver/server.env.snippet)` to `/etc/homeserver/server.env`:
 
 ```env
 RUBRICAL_HOST=127.0.0.1
@@ -98,7 +100,7 @@ RUBRICAL_HOOK_PORT=9011
 
 Caddy reverse-proxies using these vars. The Go process listens using the same vars (`RUBRICAL_HOST` + `RUBRICAL_PORT`). Do **not** put a listen address in `apps/rubrical.env`.
 
-Caddy must load that file (`systemctl edit caddy` → `EnvironmentFile=/etc/homeserver/server.env`). Then merge [`deploy/homeserver/Caddyfile.snippet`](../deploy/homeserver/Caddyfile.snippet) into `/etc/caddy/Caddyfile`:
+Caddy must load that file (`systemctl edit caddy` → `EnvironmentFile=/etc/homeserver/server.env`). Then merge `[deploy/homeserver/Caddyfile.snippet](../deploy/homeserver/Caddyfile.snippet)` into `/etc/caddy/Caddyfile`:
 
 ```bash
 sudo caddy fmt --overwrite /etc/caddy/Caddyfile
@@ -116,7 +118,6 @@ sudo cp /srv/repos/rubrical/deploy/homeserver/rubrical.env.example \
   /etc/homeserver/apps/rubrical.env
 sudo nano /etc/homeserver/apps/rubrical.env
 # Your login user must be able to read this (deploy.sh / first build source it).
-# Do not use root:root mode 600 here.
 sudo chown "root:$USER" /etc/homeserver/apps/rubrical.env
 sudo chmod 640 /etc/homeserver/apps/rubrical.env
 # server.env is host/port only — world-readable is fine
