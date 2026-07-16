@@ -1,6 +1,5 @@
 import type { MultipartFetchResult, RubricalMultipartMessage } from "./api-multipart-types";
-import { executeRubricalMultipartDirect, fetchWithTimeout } from "./api-direct";
-import { RUBRICAL_API_BASE } from "./api-bases";
+import { executeRubricalMultipartDirect } from "./api-direct";
 import { arrayBufferToBase64 } from "./staged-files/file-bytes";
 
 export type { MultipartFetchResult } from "./api-multipart-types";
@@ -64,44 +63,17 @@ export async function postRubricalMultipart(
   return executeRubricalMultipartDirect(message);
 }
 
-/** Upload from a Blob in the content script — no base64 over sendMessage. */
+/** Upload a Blob via the service worker (never fetch from the Canvas page origin). */
 export async function postRubricalMultipartBlob(
   path: string,
   blob: Blob,
   fileName: string,
   canvasFileId?: string,
 ): Promise<MultipartFetchResult> {
-  const base = RUBRICAL_API_BASE;
-
-  try {
-    const formData = new FormData();
-    formData.append("draft_file", blob, fileName);
-    if (canvasFileId?.trim()) {
-      formData.append("canvas_file_id", canvasFileId.trim());
-    }
-
-    const response = await fetchWithTimeout(`${base}${path}`, {
-      method: "POST",
-      body: formData,
-      cache: "no-store",
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      const detail = await response.text();
-      const error = `HTTP ${response.status}: ${detail.slice(0, 200)}`;
-      if (response.status === 401 || response.status === 403) {
-        return { ok: false, error, authRequired: true, base };
-      }
-      return { ok: false, error, base };
-    }
-
-    return { ok: true, base };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Failed to fetch",
-      base,
-    };
+  const formData = new FormData();
+  formData.append("draft_file", blob, fileName);
+  if (canvasFileId?.trim()) {
+    formData.append("canvas_file_id", canvasFileId.trim());
   }
+  return postRubricalMultipart(path, formData);
 }

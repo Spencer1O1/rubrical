@@ -7,7 +7,7 @@ import {
   setRubricalButtonEnabled,
 } from "./injector";
 import { RUBRICAL_API_BASE } from "./api";
-import { fetchSession } from "./auth-api";
+import { fetchSession, RubricalConnectionError } from "./auth-api";
 import { showAuthModal } from "./auth-modal";
 import {
   isAssignmentContextReady,
@@ -30,6 +30,54 @@ const PLACE_DEBOUNCE_MS = 300;
 const PREFETCH_DEBOUNCE_MS = 500;
 
 let importInFlight = false;
+
+function isDevApiBase(base: string): boolean {
+  return /localhost|127\.0\.0\.1/.test(base);
+}
+
+function isNetworkishDetail(detail: string): boolean {
+  const lower = detail.toLowerCase();
+  return (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("network error") ||
+    lower.includes("timed out") ||
+    lower.includes("timeout") ||
+    lower.includes("abort") ||
+    lower.includes("couldn't reach rubrical") ||
+    lower.includes("service worker unavailable")
+  );
+}
+
+/** User-facing import failure copy — no WSL/dev instructions in production builds. */
+function formatImportFailureAlert(err: unknown): string {
+  const detail =
+    err instanceof Error && err.message.trim() !== ""
+      ? err.message.trim()
+      : "Something went wrong.";
+
+  if (detail.toLowerCase().includes("canvas attachment")) {
+    return `Rubrical couldn't import this assignment.\n\n${detail}`;
+  }
+
+  if (err instanceof RubricalConnectionError || isNetworkishDetail(detail)) {
+    if (isDevApiBase(RUBRICAL_API_BASE)) {
+      return (
+        `Rubrical couldn't reach the local server.\n\n` +
+        `Start it with make server, then try again.\n` +
+        `(${RUBRICAL_API_BASE})`
+      );
+    }
+    return (
+      `Rubrical couldn't reach the server.\n\n` +
+      `1. Open ${RUBRICAL_API_BASE} and sign in in this browser\n` +
+      `2. Try Check with Rubrical again\n\n` +
+      `If it still fails, reinstall from ${RUBRICAL_API_BASE}/install`
+    );
+  }
+
+  return `Rubrical couldn't import this assignment.\n\n${detail}`;
+}
 
 function syncButtonReadyState(): void {
   if (!isSupportedCanvasPage()) {
@@ -63,14 +111,7 @@ async function handleRubricalClick(pageType: string): Promise<void> {
       openAssignmentModal(base, redirect, title);
     }
   } catch (err) {
-    const detail =
-      err instanceof Error && err.message.trim() !== ""
-        ? err.message
-        : "Unknown error";
-    const serverHint = detail.toLowerCase().includes("canvas attachment")
-      ? ""
-      : `\n\nIf this is a connection problem, check Rubrical at:\n${RUBRICAL_API_BASE}\n\nFrom WSL run: make server\nFrom Windows test: curl http://localhost:8787/auth/config -UseBasicParsing`;
-    alert(`Rubrical import failed.\n\n${detail}${serverHint}`);
+    alert(formatImportFailureAlert(err));
   } finally {
     importInFlight = false;
   }

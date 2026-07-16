@@ -21,6 +21,27 @@ export class RubricalAuthRequiredError extends Error {
   }
 }
 
+export class RubricalConnectionError extends Error {
+  constructor(detail?: string) {
+    const suffix = detail?.trim() ? ` (${detail.trim()})` : "";
+    super(`Couldn't reach Rubrical${suffix}.`);
+    this.name = "RubricalConnectionError";
+  }
+}
+
+function isNetworkFailure(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes("failed to fetch") ||
+    lower.includes("networkerror") ||
+    lower.includes("network error") ||
+    lower.includes("timed out") ||
+    lower.includes("timeout") ||
+    lower.includes("abort") ||
+    lower.includes("service worker unavailable")
+  );
+}
+
 function authErrorMessage(result: { ok: false; error: string }): string {
   const match = result.error.match(/^HTTP \d+: (.+)$/);
   return match?.[1]?.trim() || result.error;
@@ -49,6 +70,17 @@ export async function fetchSession(): Promise<RubricalSession | null> {
     headers: { Accept: "application/json" },
   });
   if (!result.ok) {
+    if (result.authRequired) {
+      return null;
+    }
+    if (isNetworkFailure(result.error)) {
+      throw new RubricalConnectionError(result.error);
+    }
+    // Other failures (5xx, unexpected): treat as signed-out only when clearly auth;
+    // surface connectivity-ish errors instead of a fake sign-in prompt.
+    if (/^HTTP 5\d\d/.test(result.error)) {
+      throw new RubricalConnectionError(result.error);
+    }
     return null;
   }
   const data = result.data as Partial<RubricalSession>;

@@ -3,9 +3,12 @@ import type { RubricalFetchRequest, RubricalFetchResult } from "./api-fetch-type
 import type { MultipartFetchResult } from "./api-multipart-types";
 import { base64ToArrayBuffer } from "./staged-files/file-bytes";
 
-const REQUEST_TIMEOUT_MS = 2500;
+/** JSON API calls (session, import metadata). Home-server + CDN needs headroom. */
+const REQUEST_TIMEOUT_MS = 30_000;
+/** Multipart draft uploads can be large. */
+const MULTIPART_TIMEOUT_MS = 120_000;
 
-export { REQUEST_TIMEOUT_MS };
+export { REQUEST_TIMEOUT_MS, MULTIPART_TIMEOUT_MS };
 
 function isRetryableFetchError(message: string): boolean {
   const lower = message.toLowerCase();
@@ -25,10 +28,11 @@ function authRequiredStatus(status: number): boolean {
 export async function fetchWithTimeout(
   url: string,
   init: RequestInit,
+  timeoutMs: number = REQUEST_TIMEOUT_MS,
 ): Promise<Response> {
   return fetch(url, {
     ...init,
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
 }
 
@@ -115,12 +119,16 @@ export async function executeRubricalMultipartDirect(
       formData.append("canvas_file_id", request.canvasFileId);
     }
 
-    const response = await fetchWithTimeout(`${base}${request.path}`, {
-      method: "POST",
-      body: formData,
-      cache: "no-store",
-      credentials: "include",
-    });
+    const response = await fetchWithTimeout(
+      `${base}${request.path}`,
+      {
+        method: "POST",
+        body: formData,
+        cache: "no-store",
+        credentials: "include",
+      },
+      MULTIPART_TIMEOUT_MS,
+    );
 
     if (!response.ok) {
       const detail = await response.text();

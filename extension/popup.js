@@ -8,7 +8,7 @@ function rubricalWebURL() {
 }
 
 // src/api-direct.ts
-var REQUEST_TIMEOUT_MS = 2500;
+var REQUEST_TIMEOUT_MS = 3e4;
 function isRetryableFetchError(message) {
   const lower = message.toLowerCase();
   return lower.includes("failed to fetch") || lower.includes("networkerror") || lower.includes("network error") || lower.includes("timed out") || lower.includes("abort");
@@ -16,10 +16,10 @@ function isRetryableFetchError(message) {
 function authRequiredStatus(status) {
   return status === 401 || status === 403;
 }
-async function fetchWithTimeout(url, init) {
+async function fetchWithTimeout(url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
   return fetch(url, {
     ...init,
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+    signal: AbortSignal.timeout(timeoutMs)
   });
 }
 async function executeRubricalFetchDirect(request, maxAttempts = 3) {
@@ -156,6 +156,17 @@ var RubricalAuthRequiredError = class extends Error {
     this.loginURL = rubricalLoginURL(base ?? RUBRICAL_API_BASE);
   }
 };
+var RubricalConnectionError = class extends Error {
+  constructor(detail) {
+    const suffix = detail?.trim() ? ` (${detail.trim()})` : "";
+    super(`Couldn't reach Rubrical${suffix}.`);
+    this.name = "RubricalConnectionError";
+  }
+};
+function isNetworkFailure(message) {
+  const lower = message.toLowerCase();
+  return lower.includes("failed to fetch") || lower.includes("networkerror") || lower.includes("network error") || lower.includes("timed out") || lower.includes("timeout") || lower.includes("abort") || lower.includes("service worker unavailable");
+}
 function authErrorMessage(result) {
   const match = result.error.match(/^HTTP \d+: (.+)$/);
   return match?.[1]?.trim() || result.error;
@@ -182,6 +193,15 @@ async function fetchSession() {
     headers: { Accept: "application/json" }
   });
   if (!result.ok) {
+    if (result.authRequired) {
+      return null;
+    }
+    if (isNetworkFailure(result.error)) {
+      throw new RubricalConnectionError(result.error);
+    }
+    if (/^HTTP 5\d\d/.test(result.error)) {
+      throw new RubricalConnectionError(result.error);
+    }
     return null;
   }
   const data = result.data;

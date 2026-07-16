@@ -14,7 +14,8 @@
   }
 
   // src/api-direct.ts
-  var REQUEST_TIMEOUT_MS = 2500;
+  var REQUEST_TIMEOUT_MS = 3e4;
+  var MULTIPART_TIMEOUT_MS = 12e4;
   function isRetryableFetchError(message) {
     const lower = message.toLowerCase();
     return lower.includes("failed to fetch") || lower.includes("networkerror") || lower.includes("network error") || lower.includes("timed out") || lower.includes("abort");
@@ -22,10 +23,10 @@
   function authRequiredStatus(status) {
     return status === 401 || status === 403;
   }
-  async function fetchWithTimeout(url, init) {
+  async function fetchWithTimeout(url, init, timeoutMs = REQUEST_TIMEOUT_MS) {
     return fetch(url, {
       ...init,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+      signal: AbortSignal.timeout(timeoutMs)
     });
   }
   async function executeRubricalFetchDirect(request, maxAttempts = 3) {
@@ -88,12 +89,16 @@
       if (request.canvasFileId) {
         formData.append("canvas_file_id", request.canvasFileId);
       }
-      const response = await fetchWithTimeout(`${base}${request.path}`, {
-        method: "POST",
-        body: formData,
-        cache: "no-store",
-        credentials: "include"
-      });
+      const response = await fetchWithTimeout(
+        `${base}${request.path}`,
+        {
+          method: "POST",
+          body: formData,
+          cache: "no-store",
+          credentials: "include"
+        },
+        MULTIPART_TIMEOUT_MS
+      );
       if (!response.ok) {
         const detail = await response.text();
         const error = `HTTP ${response.status}: ${detail.slice(0, 200)}`;
