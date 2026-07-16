@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type AnalysisAttempt struct {
+	ID                   int64              `json:"id"`
+	UserID               int64              `json:"user_id"`
+	AssignmentSnapshotID int64              `json:"assignment_snapshot_id"`
+	AnalysisRunID        pgtype.Int8        `json:"analysis_run_id"`
+	Status               string             `json:"status"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
+}
+
 type AnalysisRun struct {
 	ID                   int64              `json:"id"`
 	AssignmentSnapshotID int64              `json:"assignment_snapshot_id"`
@@ -25,49 +35,65 @@ type AnalysisRun struct {
 	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
 }
 
-type AnalysisAttempt struct {
-	ID                   int64              `json:"id"`
-	UserID               int64              `json:"user_id"`
-	AssignmentSnapshotID int64              `json:"assignment_snapshot_id"`
-	AnalysisRunID        pgtype.Int8        `json:"analysis_run_id"`
-	Status               string             `json:"status"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
+type AssignmentSnapshot struct {
+	ID                     int64              `json:"id"`
+	UserID                 pgtype.Int8        `json:"user_id"`
+	SourceUrl              string             `json:"source_url"`
+	SourcePlatform         string             `json:"source_platform"`
+	PageType               pgtype.Text        `json:"page_type"`
+	CourseName             pgtype.Text        `json:"course_name"`
+	AssignmentTitle        pgtype.Text        `json:"assignment_title"`
+	RawText                pgtype.Text        `json:"raw_text"`
+	InstructionsText       pgtype.Text        `json:"instructions_text"`
+	DueAt                  pgtype.Timestamptz `json:"due_at"`
+	PointsPossible         pgtype.Numeric     `json:"points_possible"`
+	SubmissionType         pgtype.Text        `json:"submission_type"`
+	AllowedSubmissionTypes []byte             `json:"allowed_submission_types"`
+	ImportedAt             pgtype.Timestamptz `json:"imported_at"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
 
-type AssignmentSnapshot struct {
-	ID               int64              `json:"id"`
-	UserID           pgtype.Int8        `json:"user_id"`
-	SourceUrl        string             `json:"source_url"`
-	SourcePlatform   string             `json:"source_platform"`
-	PageType         pgtype.Text        `json:"page_type"`
-	CourseName       pgtype.Text        `json:"course_name"`
-	AssignmentTitle  pgtype.Text        `json:"assignment_title"`
-	RawText          pgtype.Text        `json:"raw_text"`
-	InstructionsText pgtype.Text        `json:"instructions_text"`
-	DueAt            pgtype.Timestamptz `json:"due_at"`
-	PointsPossible   pgtype.Numeric     `json:"points_possible"`
-	SubmissionType   pgtype.Text        `json:"submission_type"`
-	ImportedAt       pgtype.Timestamptz `json:"imported_at"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+type ExtractedSource struct {
+	ID                   int64              `json:"id"`
+	AssignmentSnapshotID int64              `json:"assignment_snapshot_id"`
+	SourceKind           string             `json:"source_kind"`
+	RawContent           pgtype.Text        `json:"raw_content"`
+	NormalizedContent    pgtype.Text        `json:"normalized_content"`
+	ExtractionMethod     pgtype.Text        `json:"extraction_method"`
+	Confidence           pgtype.Text        `json:"confidence"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 }
 
 type FeedbackItem struct {
-	ID                int64              `json:"id"`
-	AnalysisRunID     int64              `json:"analysis_run_id"`
-	RubricCriterionID pgtype.Int8        `json:"rubric_criterion_id"`
-	Category          string             `json:"category"`
-	Severity          string             `json:"severity"`
-	Title             string             `json:"title"`
+	ID                      int64              `json:"id"`
+	AnalysisRunID           int64              `json:"analysis_run_id"`
+	RubricCriterionID       pgtype.Int8        `json:"rubric_criterion_id"`
+	Category                string             `json:"category"`
+	Severity                string             `json:"severity"`
+	Title                   string             `json:"title"`
 	Explanation             pgtype.Text        `json:"explanation"`
 	ScoreRationale          pgtype.Text        `json:"score_rationale"`
 	FulfilledRequirements   []byte             `json:"fulfilled_requirements"`
 	UnfulfilledRequirements []byte             `json:"unfulfilled_requirements"`
+	CriterionStatus         pgtype.Text        `json:"criterion_status"`
+	CriterionScore          pgtype.Numeric     `json:"criterion_score"`
+	PredictedPoints         pgtype.Numeric     `json:"predicted_points"`
+	MaxPoints               pgtype.Numeric     `json:"max_points"`
+	SelectedRating          pgtype.Text        `json:"selected_rating"`
 	Status                  string             `json:"status"`
-	SortOrder         int32              `json:"sort_order"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	SortOrder               int32              `json:"sort_order"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+}
+
+type PasswordResetToken struct {
+	ID        int64              `json:"id"`
+	TokenHash string             `json:"token_hash"`
+	UserID    int64              `json:"user_id"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
 type RubricCriterium struct {
@@ -83,6 +109,15 @@ type RubricCriterium struct {
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Session struct {
+	ID         int64              `json:"id"`
+	TokenHash  string             `json:"token_hash"`
+	UserID     int64              `json:"user_id"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	LastSeenAt pgtype.Timestamptz `json:"last_seen_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
 type SubmissionDraft struct {
 	ID                   int64              `json:"id"`
 	AssignmentSnapshotID int64              `json:"assignment_snapshot_id"`
@@ -90,15 +125,50 @@ type SubmissionDraft struct {
 	Body                 string             `json:"body"`
 	WordCount            int32              `json:"word_count"`
 	SourceType           string             `json:"source_type"`
+	DraftMode            string             `json:"draft_mode"`
+	SubmissionUrl        pgtype.Text        `json:"submission_url"`
 	CapturedFromCanvas   bool               `json:"captured_from_canvas"`
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
+type SubmissionDraftFile struct {
+	ID                int64              `json:"id"`
+	SubmissionDraftID int64              `json:"submission_draft_id"`
+	SourceFileName    string             `json:"source_file_name"`
+	FileStorageKey    string             `json:"file_storage_key"`
+	FileMimeType      pgtype.Text        `json:"file_mime_type"`
+	FileByteSize      pgtype.Int8        `json:"file_byte_size"`
+	CanvasFileID      pgtype.Text        `json:"canvas_file_id"`
+	UploadedAt        pgtype.Timestamptz `json:"uploaded_at"`
+	SortOrder         int32              `json:"sort_order"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
 type User struct {
-	ID          int64              `json:"id"`
-	Email       string             `json:"email"`
-	DisplayName pgtype.Text        `json:"display_name"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID              int64              `json:"id"`
+	Email           string             `json:"email"`
+	DisplayName     pgtype.Text        `json:"display_name"`
+	PasswordHash    pgtype.Text        `json:"password_hash"`
+	EmailVerifiedAt pgtype.Timestamptz `json:"email_verified_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserAiSetting struct {
+	UserID          int64              `json:"user_id"`
+	AiProvider      string             `json:"ai_provider"`
+	AiModel         string             `json:"ai_model"`
+	OpenaiApiKey    string             `json:"openai_api_key"`
+	AnthropicApiKey string             `json:"anthropic_api_key"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type UserIdentity struct {
+	ID              int64              `json:"id"`
+	UserID          int64              `json:"user_id"`
+	Provider        string             `json:"provider"`
+	ProviderSubject string             `json:"provider_subject"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 }

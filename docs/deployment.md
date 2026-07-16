@@ -5,7 +5,7 @@ Production hosting for Rubrical is the **home server** pattern in [HOMESERVER.md
 
 | Host                     | Role                                                  |
 | ------------------------ | ----------------------------------------------------- |
-| `rubrical.spencerls.dev` | Landing, auth, dashboard, extension API (same origin) |
+| `rubrical.spencerls.dev` | `/` dashboard (or → `/onboarding`), auth, extension API (same origin) |
 
 
 Templates live in `[deploy/homeserver/](../deploy/homeserver/)`. Config outside the git checkout so auto-deploy (`git reset --hard`) never wipes it:
@@ -306,7 +306,7 @@ GOOGLE_OAUTH_CLIENT_SECRET=...
 Without this, forgot-password won’t send real mail. Prefer [Resend](https://resend.com/):
 
 ```env
-EMAIL_FROM=Rubrical <noreply@rubrical.spencerls.dev>
+EMAIL_FROM="Rubrical <noreply@rubrical.spencerls.dev>"
 RESEND_API_KEY=re_...
 # do not set EMAIL_DEV_LOG in production
 ```

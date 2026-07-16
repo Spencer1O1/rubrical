@@ -3,10 +3,10 @@ package pages
 import "rubrical/internal/web/components"
 
 templ Install(nav components.MarketingNav, zipAvailable bool) {
-	@components.MarketingPage(nav, installContent(zipAvailable))
+	@components.MarketingPage(nav, installContent(nav.SignedIn, zipAvailable))
 }
 
-templ installContent(zipAvailable bool) {
+templ installContent(signedIn bool, zipAvailable bool) {
 	<main>
 		<section class="border-b border-stone-200 bg-gradient-to-b from-indigo-50/80 via-white to-white">
 			<div class="mx-auto max-w-2xl px-4 py-14 sm:px-6 sm:py-20">
@@ -28,9 +28,15 @@ templ installContent(zipAvailable bool) {
 							Download not built yet
 						</span>
 					}
-					<a href="/login?mode=signup" class="inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50">
-						Create account
-					</a>
+					if signedIn {
+						<a href="/" class="inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50">
+							Go to dashboard
+						</a>
+					} else {
+						<a href="/login?mode=signup" class="inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-6 py-3 text-sm font-semibold text-stone-800 transition hover:bg-stone-50">
+							Create account
+						</a>
+					}
 				</div>
 			</div>
 		</section>

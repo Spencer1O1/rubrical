@@ -52,13 +52,13 @@ func NewRouter(
 		r.Get("/auth/google", h.GoogleAuthStart)
 		r.Get("/auth/google/callback", h.GoogleAuthCallback)
 		r.Get("/install", h.Install)
-		r.Get("/", h.Landing)
+		r.Get("/onboarding", h.Onboarding)
+		r.Get("/", h.Home)
 	})
 
 	r.Group(func(r chi.Router) {
 		r.Use(authMW.RequireUser)
 
-		r.Get("/dashboard", h.Dashboard)
 		r.Get("/settings", h.SettingsPage)
 		r.Get("/settings/ai", h.GetAISettingsAPI)
 		r.Post("/settings/ai", h.SaveAISettings)

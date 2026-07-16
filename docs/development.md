@@ -29,7 +29,7 @@ make server       # terminal 3
 
 `make setup` runs `pnpm setup:secrets-key`, which creates `.env.local` (from `.env.example` if needed) and writes `RUBRICAL_SECRETS_ENCRYPTION_KEY`. The server requires this key to encrypt BYOK API keys at rest. Re-run `pnpm setup:secrets-key` only on a fresh machine — changing the key invalidates saved API keys.
 
-Open http://localhost:8787 for the marketing landing page. Sign up at `/login?mode=signup` or click **Get started** on the home page.
+Open http://localhost:8787 — signed-in users see the dashboard; others are sent to `/onboarding`. Sign up at `/login?mode=signup` or click **Get started** on the onboarding page.
 
 For Google sign-in, set `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `RUBRICAL_PUBLIC_URL` in `.env.local`. Password reset emails use `EMAIL_DEV_LOG=1` in dev (logged to the server console) or Resend/SMTP in production.
 

@@ -7,11 +7,11 @@ import (
 	"rubrical/internal/web/pages"
 )
 
-func (h *Handlers) Landing(w http.ResponseWriter, r *http.Request) {
+func (h *Handlers) Onboarding(w http.ResponseWriter, r *http.Request) {
 	user, signedIn := h.currentUser(r)
 	nav := components.MarketingNav{SignedIn: signedIn}
 	if signedIn {
 		nav.Email = user.Email
 	}
-	pages.Landing(nav).Render(r.Context(), w)
+	pages.Onboarding(nav).Render(r.Context(), w)
 }
