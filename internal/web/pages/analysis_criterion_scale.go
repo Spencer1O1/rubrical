@@ -188,6 +188,10 @@ func formatRatingLabel(title, points string) string {
 	if points == "" {
 		return title
 	}
+	// Title may already be a normalized points label ("8 pts").
+	if strings.Contains(strings.ToLower(title), "pt") {
+		return title
+	}
 	return fmt.Sprintf("%s (%s)", title, points)
 }
 

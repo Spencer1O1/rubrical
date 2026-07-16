@@ -10,12 +10,13 @@ func TestBuildSystem_scoringGuidance(t *testing.T) {
 		"unfulfilledRequirements",
 		"bandPosition",
 		"guidance",
-		"every rubric criterion",
-		"passion for helping students reach their full potential",
+		"Exactly one object per rubric criterion",
+		"in rubric order",
+		"criterionName",
 	) {
 		t.Fatalf("system prompt missing scoring guidance: %q", got)
 	}
-	if contains(got, "predictedScore") || contains(got, "Do NOT return") {
+	if contains(got, "predictedScore") || contains(got, "criterionScore") {
 		t.Fatalf("system prompt should not mention server-only fields: %q", got)
 	}
 }

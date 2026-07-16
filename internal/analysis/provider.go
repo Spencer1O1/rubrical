@@ -96,8 +96,9 @@ func promptFileContextFrom(result files.ProcessResult) prompt.FileContext {
 func promptInputFrom(input Input, fileContext prompt.FileContext) prompt.Input {
 	rows := make([]prompt.RubricRow, len(input.Rubric.Rows))
 	for i, row := range input.Rubric.Rows {
-		ratings := make([]prompt.RubricRating, len(row.Ratings))
-		for j, rating := range row.Ratings {
+		normalized := NormalizeRowRatingTitles(row)
+		ratings := make([]prompt.RubricRating, len(normalized.Ratings))
+		for j, rating := range normalized.Ratings {
 			ratings[j] = prompt.RubricRating{
 				Title:       rating.Title,
 				Description: rating.Description,
@@ -105,9 +106,9 @@ func promptInputFrom(input Input, fileContext prompt.FileContext) prompt.Input {
 			}
 		}
 		rows[i] = prompt.RubricRow{
-			Criterion:                row.Criterion,
-			CriterionLongDescription: row.CriterionLongDescription,
-			Points:                   row.Points,
+			Criterion:                normalized.Criterion,
+			CriterionLongDescription: normalized.CriterionLongDescription,
+			Points:                   normalized.Points,
 			Ratings:                  ratings,
 		}
 	}

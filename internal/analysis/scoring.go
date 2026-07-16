@@ -165,6 +165,58 @@ func matchRatingBand(row RubricRow, title string) (int, scoredBand, error) {
 	return 0, scoredBand{}, fmt.Errorf("selectedRating %q not found in rubric", strings.TrimSpace(title))
 }
 
+// ratingSelectionLabel is the stable selectedRating value for a band.
+// Prefer Canvas title; if empty, use points (visible on the cell); else a short description.
+func ratingSelectionLabel(rating RubricRating) string {
+	if title := strings.TrimSpace(rating.Title); title != "" {
+		return title
+	}
+	if pts, ok := ratingPoints(rating); ok {
+		return formatRatingPointsLabel(pts)
+	}
+	if desc := strings.TrimSpace(rating.Description); desc != "" {
+		return truncateSelectionLabel(desc, 48)
+	}
+	return ""
+}
+
+func formatRatingPointsLabel(pts float64) string {
+	if pts == float64(int64(pts)) {
+		return fmt.Sprintf("%d pts", int64(pts))
+	}
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.1f", pts), "0"), ".") + " pts"
+}
+
+func truncateSelectionLabel(s string, max int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if max <= 0 || len(s) <= max {
+		return s
+	}
+	return strings.TrimSpace(s[:max]) + "…"
+}
+
+// uniquifySelectionLabels ensures selectedRating enum values are unique within a criterion.
+func uniquifySelectionLabels(bands []scoredBand) {
+	used := make(map[string]bool, len(bands))
+	for i := range bands {
+		label := strings.TrimSpace(bands[i].rating.Title)
+		if label == "" {
+			label = formatRatingPointsLabel(bands[i].points)
+		}
+		candidate := label
+		if used[normalizeCriterionLabel(candidate)] {
+			candidate = label + " · " + formatRatingPointsLabel(bands[i].points)
+		}
+		n := 2
+		for used[normalizeCriterionLabel(candidate)] {
+			candidate = fmt.Sprintf("%s (%d)", label, n)
+			n++
+		}
+		bands[i].rating.Title = candidate
+		used[normalizeCriterionLabel(candidate)] = true
+	}
+}
+
 func criterionStatusFromBandIndex(bandIdx, bandCount int) string {
 	if bandCount <= 1 {
 		return "met"
@@ -213,11 +265,50 @@ func parseRatingBands(ratings []RubricRating) []scoredBand {
 	var bands []scoredBand
 	for _, rating := range ratings {
 		if pts, ok := ratingPoints(rating); ok {
-			bands = append(bands, scoredBand{rating: rating, points: pts})
+			normalized := rating
+			normalized.Title = ratingSelectionLabel(rating)
+			bands = append(bands, scoredBand{rating: normalized, points: pts})
 		}
 	}
 	sort.Slice(bands, func(i, j int) bool { return bands[i].points < bands[j].points })
+	uniquifySelectionLabels(bands)
 	return bands
+}
+
+// NormalizeRowRatingTitles rewrites empty/duplicate rating titles to the same stable
+// selection labels used by the selectedRating schema enum and scoring.
+func NormalizeRowRatingTitles(row RubricRow) RubricRow {
+	out := row
+	if len(row.Ratings) == 0 {
+		return out
+	}
+	out.Ratings = append([]RubricRating(nil), row.Ratings...)
+	bands := parseRatingBands(row.Ratings)
+	claimed := make([]bool, len(out.Ratings))
+	for _, b := range bands {
+		best := -1
+		for i, rating := range out.Ratings {
+			if claimed[i] {
+				continue
+			}
+			pts, ok := ratingPoints(rating)
+			if !ok || pts != b.points {
+				continue
+			}
+			if strings.TrimSpace(rating.Description) == strings.TrimSpace(b.rating.Description) {
+				best = i
+				break
+			}
+			if best < 0 {
+				best = i
+			}
+		}
+		if best >= 0 {
+			out.Ratings[best].Title = b.rating.Title
+			claimed[best] = true
+		}
+	}
+	return out
 }
 
 func RatingBandsForUI(row RubricRow) []RatingBandUI {
