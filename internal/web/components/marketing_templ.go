@@ -79,7 +79,7 @@ func marketingNav(nav MarketingNav) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<header class=\"sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md\"><div class=\"mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6\"><a href=\"/\" class=\"flex items-center gap-2.5\"><span class=\"inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm\">R</span> <span class=\"text-lg font-semibold tracking-tight text-stone-900\">Rubrical</span></a><nav class=\"hidden items-center gap-8 text-sm font-medium text-stone-600 md:flex\"><a href=\"#features\" class=\"transition hover:text-stone-900\">Features</a> <a href=\"#how-it-works\" class=\"transition hover:text-stone-900\">How it works</a></nav><div class=\"flex items-center gap-2 sm:gap-3\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<header class=\"sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md\"><div class=\"mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6\"><a href=\"/\" class=\"flex items-center gap-2.5\"><span class=\"inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm\">R</span> <span class=\"text-lg font-semibold tracking-tight text-stone-900\">Rubrical</span></a><nav class=\"hidden items-center gap-8 text-sm font-medium text-stone-600 md:flex\"><a href=\"/#features\" class=\"transition hover:text-stone-900\">Features</a> <a href=\"/#how-it-works\" class=\"transition hover:text-stone-900\">How it works</a> <a href=\"/install\" class=\"transition hover:text-stone-900\">Install</a></nav><div class=\"flex items-center gap-2 sm:gap-3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -91,7 +91,7 @@ func marketingNav(nav MarketingNav) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(nav.Email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/marketing.templ`, Line: 39, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/marketing.templ`, Line: 40, Col: 93}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
@@ -136,7 +136,7 @@ func marketingFooter() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<footer class=\"border-t border-stone-200 bg-stone-50\"><div class=\"mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-10 sm:flex-row sm:px-6\"><div class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white\">R</span><p class=\"text-sm text-stone-600\">Rubrical — built for students on Canvas.</p></div><div class=\"flex flex-wrap items-center justify-center gap-6 text-sm text-stone-600\"><a href=\"/login\" class=\"hover:text-indigo-700\">Sign in</a> <a href=\"/login?mode=signup\" class=\"hover:text-indigo-700\">Create account</a> <a href=\"/dashboard\" class=\"hover:text-indigo-700\">Dashboard</a></div></div></footer>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 8, "<footer class=\"border-t border-stone-200 bg-stone-50\"><div class=\"mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-10 sm:flex-row sm:px-6\"><div class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white\">R</span><p class=\"text-sm text-stone-600\">Rubrical — built for students on Canvas.</p></div><div class=\"flex flex-wrap items-center justify-center gap-6 text-sm text-stone-600\"><a href=\"/install\" class=\"hover:text-indigo-700\">Install extension</a> <a href=\"/login\" class=\"hover:text-indigo-700\">Sign in</a> <a href=\"/login?mode=signup\" class=\"hover:text-indigo-700\">Create account</a> <a href=\"/dashboard\" class=\"hover:text-indigo-700\">Dashboard</a></div></div></footer>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

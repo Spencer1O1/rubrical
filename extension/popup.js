@@ -1,5 +1,5 @@
 // src/api-bases.ts
-var RUBRICAL_API_BASE = "http://localhost:8787";
+var RUBRICAL_API_BASE = "https://rubrical.spencerls.dev";
 function rubricalLoginURL(base = RUBRICAL_API_BASE) {
   return `${base.replace(/\/$/, "")}/login`;
 }

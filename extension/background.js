@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   // src/api-bases.ts
-  var RUBRICAL_API_BASE = "http://localhost:8787";
+  var RUBRICAL_API_BASE = "https://rubrical.spencerls.dev";
 
   // src/staged-files/file-bytes.ts
   function base64ToArrayBuffer(base64) {

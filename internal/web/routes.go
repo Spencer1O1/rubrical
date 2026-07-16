@@ -51,6 +51,7 @@ func NewRouter(
 		r.Get("/auth/config", h.AuthConfigAPI)
 		r.Get("/auth/google", h.GoogleAuthStart)
 		r.Get("/auth/google/callback", h.GoogleAuthCallback)
+		r.Get("/install", h.Install)
 		r.Get("/", h.Landing)
 	})
 

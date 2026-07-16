@@ -264,13 +264,54 @@ journalctl -u deploy-hook-rubrical -f
 
 ## 9. Auth / email / extension
 
+These are optional for a first bring-up (email/password signup works without Google). Do them when you want Google sign-in, real password-reset mail, and the hosted extension zip.
 
-| Item           | Action                                                                                                                       |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Google OAuth   | Authorized redirect: `https://rubrical.spencerls.dev/auth/google/callback`                                                   |
-| Password reset | Set `RESEND_API_KEY` or SMTP; leave `EMAIL_DEV_LOG` unset/off                                                                |
-| Extension      | `make extension-build-prod` locally; set `RUBRICAL_EXTENSION_ORIGINS=chrome-extension://…` on the server; restart `rubrical` |
+### Extension (hosted at `/install`)
 
+Deploy already runs `make extension-package`, which builds the prod extension and writes `static/downloads/rubrical-extension.zip`. Users open [https://rubrical.spencerls.dev/install](https://rubrical.spencerls.dev/install).
+
+In `/etc/homeserver/apps/rubrical.env` set the stable origin (from the public `key` in `extension/manifest.json`):
+
+```env
+RUBRICAL_EXTENSION_ORIGINS=chrome-extension://mdjogmaimihfjhgobpajfpkbibgmecce
+```
+
+```bash
+sudo systemctl restart rubrical
+```
+
+Confirm:
+
+```bash
+curl -I https://rubrical.spencerls.dev/install
+curl -I https://rubrical.spencerls.dev/static/downloads/rubrical-extension.zip
+```
+
+### Google OAuth (optional)
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → Create OAuth client ID (Web application).
+2. Authorized JavaScript origins: `https://rubrical.spencerls.dev`
+3. Authorized redirect URI: `https://rubrical.spencerls.dev/auth/google/callback`
+4. Put client id/secret in `/etc/homeserver/apps/rubrical.env`:
+
+```env
+GOOGLE_OAUTH_CLIENT_ID=....apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=...
+```
+
+5. `sudo systemctl restart rubrical` — “Continue with Google” appears on `/login`.
+
+### Password-reset email (optional)
+
+Without this, forgot-password won’t send real mail. Prefer [Resend](https://resend.com/):
+
+```env
+EMAIL_FROM=Rubrical <noreply@rubrical.spencerls.dev>
+RESEND_API_KEY=re_...
+# do not set EMAIL_DEV_LOG in production
+```
+
+Or SMTP (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`). Restart `rubrical` after editing.
 
 ---
 

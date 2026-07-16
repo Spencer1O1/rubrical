@@ -3,6 +3,7 @@
   "name": "Rubrical",
   "description": "Check your assignment against the rubric before you submit.",
   "version": "0.1.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAlSQJRe7d/nPouJkvMU1JymE1NHuu7gaX12Daq1Zkr5UA+CbxP6TDJhjthS99Kw7YFPjN5ZTzQ0PpZYgkhJ66Dx0WeLdHD42/t9gVkq1ZGUMyUPdk5U3MsotFww5Vuhm6As/M0ZGTWyYhEGDn9TB23WxqntMj3eNeAurEJUarreNcQfbPBpsd3m2ecjECJru1KvwR/3cPCqBcbmczsmjm2KkpyEwv8RMtxu3XcI2JHuJ3BJFRhhTsxLgVrJqdUe1fmzujQHGbDmNnb7/IFQHioJ39Iekg6fo/NSvr4knapPoO2BpcajS3ICkMggK0p+zPwWRrRqHN3tXhg5Z2AtabuQIDAQAB",
   "permissions": ["activeTab", "storage"],
   "host_permissions": [
     "https://*.instructure.com/*",

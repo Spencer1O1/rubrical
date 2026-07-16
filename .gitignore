@@ -19,6 +19,7 @@ package-lock.json
 
 # Extension build
 /extension/dist/
+/static/downloads/*.zip
 
 # Vercel static export (make vercel-build)
 /public/

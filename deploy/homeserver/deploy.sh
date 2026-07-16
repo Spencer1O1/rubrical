@@ -51,6 +51,7 @@ SERVICE="${RUBRICAL_SERVICE:-rubrical.service}"
   make css templ
   make migrate-up
   make build
+  make extension-package
 
   sudo /usr/bin/systemctl restart "$SERVICE"
 

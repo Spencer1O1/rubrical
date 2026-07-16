@@ -1,4 +1,4 @@
-.PHONY: dev server purge css css-watch templ templ-watch db-up db-down db-reset migrate-up migrate-down sqlc extension-build extension-build-prod vercel-build test build tidy setup-secrets-key
+.PHONY: dev server purge css css-watch templ templ-watch db-up db-down db-reset migrate-up migrate-down sqlc extension-build extension-build-prod extension-package vercel-build test build tidy setup-secrets-key
 
 DATABASE_URL ?= postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable
 
@@ -62,6 +62,10 @@ extension-build:
 extension-build-prod:
 	pnpm --filter rubrical-extension typecheck
 	pnpm --filter rubrical-extension build
+
+# Prod extension zip for https://rubrical.spencerls.dev/install
+extension-package: extension-build-prod
+	python3 scripts/package-extension.py
 
 vercel-build: css templ
 	go run ./cmd/export-landing
