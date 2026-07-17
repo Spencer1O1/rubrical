@@ -29,7 +29,7 @@ func marketingNav(user LayoutUser) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md\"><div class=\"mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md\"><div class=\"mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -42,7 +42,7 @@ func marketingNav(user LayoutUser) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"flex shrink-0 items-center gap-2.5\"><span class=\"inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm\">R</span> <span class=\"text-lg font-semibold tracking-tight text-stone-900\">Rubrical</span></a><nav class=\"flex min-w-0 flex-1 flex-wrap items-center justify-center gap-4 text-sm font-medium text-stone-600\"><a href=\"/onboarding#features\" class=\"whitespace-nowrap transition hover:text-stone-900\">Features</a> <a href=\"/onboarding#how-it-works\" class=\"whitespace-nowrap transition hover:text-stone-900\">How it works</a> <a href=\"/install\" class=\"whitespace-nowrap transition hover:text-stone-900\">Install</a></nav><div class=\"flex shrink-0 flex-wrap items-center justify-end gap-3\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"flex shrink-0 items-center gap-2.5\"><span class=\"inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm\">R</span> <span class=\"text-lg font-semibold tracking-tight text-stone-900\">Rubrical</span></a><nav class=\"flex shrink-0 flex-nowrap items-center gap-4 text-sm font-medium text-stone-600\"><a href=\"/onboarding#features\" class=\"whitespace-nowrap transition hover:text-stone-900\">Features</a> <a href=\"/onboarding#how-it-works\" class=\"whitespace-nowrap transition hover:text-stone-900\">How it works</a> <a href=\"/install\" class=\"whitespace-nowrap transition hover:text-stone-900\">Install</a></nav><div class=\"flex shrink-0 flex-nowrap items-center gap-3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

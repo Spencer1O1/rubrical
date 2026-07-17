@@ -269,7 +269,7 @@ func appHeader(user LayoutUser) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex shrink-0 items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p></a><nav class=\"ml-auto flex flex-wrap items-center justify-end gap-4 text-sm font-medium leading-none\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex shrink-0 items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p></a><nav class=\"ml-auto flex shrink-0 flex-nowrap items-center justify-end gap-4 text-sm font-medium leading-none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
