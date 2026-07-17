@@ -256,7 +256,7 @@ func appHeader(user LayoutUser) templ.Component {
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<header class=\"border-b border-stone-200 bg-white\"><div class=\"mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 sm:px-6\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<header class=\"border-b border-stone-200 bg-white\"><div class=\"mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -269,7 +269,7 @@ func appHeader(user LayoutUser) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex shrink-0 items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p></a><nav class=\"flex max-w-full flex-wrap items-center justify-end gap-x-3 gap-y-2 text-sm font-medium leading-none sm:gap-x-4\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex shrink-0 items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p></a><nav class=\"flex flex-wrap items-center justify-end gap-4 text-sm font-medium leading-none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

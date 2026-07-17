@@ -48,7 +48,8 @@ SERVICE="${RUBRICAL_SERVICE:-rubrical.service}"
   corepack enable || true
   pnpm install --frozen-lockfile
 
-  make css templ
+  # templ before css so Tailwind scans generated *_templ.go as well as .templ
+  make templ css
   make migrate-up
   make build
   make extension-package
