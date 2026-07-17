@@ -256,7 +256,7 @@ func appHeader(user LayoutUser) templ.Component {
 			templ_7745c5c3_Var8 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<header class=\"border-b border-stone-200 bg-white\"><div class=\"mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 19, "<header class=\"border-b border-stone-200 bg-white\"><div class=\"mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 sm:px-6\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -269,35 +269,35 @@ func appHeader(user LayoutUser) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p></a><div class=\"flex items-center gap-4 text-sm font-medium leading-none\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex shrink-0 items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p></a><nav class=\"flex max-w-full flex-wrap items-center justify-end gap-x-3 gap-y-2 text-sm font-medium leading-none sm:gap-x-4\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if user.SignedIn {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a href=\"/\" class=\"text-stone-600 hover:text-stone-900\">Dashboard</a> <a href=\"/settings\" class=\"text-stone-600 hover:text-stone-900\">Settings</a> <a href=\"/install\" class=\"text-stone-600 hover:text-stone-900\">Install</a> <span class=\"hidden text-stone-500 sm:inline\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a href=\"/\" class=\"whitespace-nowrap text-stone-600 hover:text-stone-900\">Dashboard</a> <a href=\"/settings\" class=\"whitespace-nowrap text-stone-600 hover:text-stone-900\">Settings</a> <a href=\"/install\" class=\"whitespace-nowrap text-stone-600 hover:text-stone-900\">Install</a> <span class=\"hidden max-w-[12rem] truncate text-stone-500 sm:inline\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/shell.templ`, Line: 93, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/shell.templ`, Line: 93, Col: 86}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</span><form method=\"POST\" action=\"/logout\" class=\"m-0 inline-flex items-center\"><button type=\"submit\" class=\"inline-flex items-center border-0 bg-transparent p-0 font-medium leading-none text-stone-600 hover:text-stone-900\">Sign out</button></form>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</span><form method=\"POST\" action=\"/logout\" class=\"m-0 inline-flex items-center\"><button type=\"submit\" class=\"inline-flex items-center whitespace-nowrap border-0 bg-transparent p-0 font-medium leading-none text-stone-600 hover:text-stone-900\">Sign out</button></form>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<a href=\"/onboarding\" class=\"text-stone-600 hover:text-stone-900\">Home</a> <a href=\"/install\" class=\"text-stone-600 hover:text-stone-900\">Install</a> <a href=\"/login\" class=\"text-stone-600 hover:text-stone-900\">Sign in</a> <a href=\"/login?mode=signup\" class=\"text-indigo-700 hover:text-indigo-900\">Get started</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<a href=\"/onboarding\" class=\"whitespace-nowrap text-stone-600 hover:text-stone-900\">Home</a> <a href=\"/install\" class=\"whitespace-nowrap text-stone-600 hover:text-stone-900\">Install</a> <a href=\"/login\" class=\"whitespace-nowrap text-stone-600 hover:text-stone-900\">Sign in</a> <a href=\"/login?mode=signup\" class=\"whitespace-nowrap text-indigo-700 hover:text-indigo-900\">Get started</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</nav></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

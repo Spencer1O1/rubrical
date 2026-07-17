@@ -29,7 +29,7 @@ func marketingNav(user LayoutUser) templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md\"><div class=\"mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6\"><a href=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<header class=\"sticky top-0 z-50 border-b border-stone-200/80 bg-white/90 backdrop-blur-md\"><div class=\"mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-6\"><a href=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -42,7 +42,7 @@ func marketingNav(user LayoutUser) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"flex items-center gap-2.5\"><span class=\"inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm\">R</span> <span class=\"min-w-0\"><span class=\"block text-lg font-semibold tracking-tight text-stone-900\">Rubrical</span> <span class=\"hidden text-xs font-normal text-stone-500 sm:block\">Check the rubric before the rubric checks you.</span></span></a><nav class=\"hidden items-center gap-8 text-sm font-medium text-stone-600 md:flex\"><a href=\"/onboarding#features\" class=\"transition hover:text-stone-900\">Features</a> <a href=\"/onboarding#how-it-works\" class=\"transition hover:text-stone-900\">How it works</a> <a href=\"/install\" class=\"transition hover:text-stone-900\">Install</a></nav><div class=\"flex items-center gap-2 sm:gap-3\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "\" class=\"flex shrink-0 items-center gap-2.5\"><span class=\"inline-flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-600 text-sm font-bold text-white shadow-sm\">R</span> <span class=\"text-lg font-semibold tracking-tight text-stone-900\">Rubrical</span></a><nav class=\"hidden items-center gap-8 text-sm font-medium text-stone-600 md:flex\"><a href=\"/onboarding#features\" class=\"whitespace-nowrap transition hover:text-stone-900\">Features</a> <a href=\"/onboarding#how-it-works\" class=\"whitespace-nowrap transition hover:text-stone-900\">How it works</a> <a href=\"/install\" class=\"whitespace-nowrap transition hover:text-stone-900\">Install</a></nav><div class=\"flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -54,18 +54,18 @@ func marketingNav(user LayoutUser) templ.Component {
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/marketing.templ`, Line: 20, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/marketing.templ`, Line: 17, Col: 94}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span> <a href=\"/\" class=\"rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 sm:px-4\">Go to dashboard</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</span> <a href=\"/\" class=\"whitespace-nowrap rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 sm:px-4\">Go to dashboard</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<a href=\"/login\" class=\"rounded-lg px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100\">Sign in</a> <a href=\"/login?mode=signup\" class=\"rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 sm:px-4\">Get started</a>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<a href=\"/login\" class=\"whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-stone-700 transition hover:bg-stone-100\">Sign in</a> <a href=\"/login?mode=signup\" class=\"whitespace-nowrap rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 sm:px-4\">Get started</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

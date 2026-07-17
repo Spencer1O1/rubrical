@@ -80,27 +80,27 @@ templ Shell(view ShellView, content templ.Component) {
 
 templ appHeader(user LayoutUser) {
 	<header class="border-b border-stone-200 bg-white">
-		<div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-			<a href={ brandHomeHref(user.SignedIn) } class="flex items-center gap-2">
+		<div class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4 sm:px-6">
+			<a href={ brandHomeHref(user.SignedIn) } class="flex shrink-0 items-center gap-2">
 				<span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">R</span>
 				<p class="text-lg font-semibold tracking-tight">Rubrical</p>
 			</a>
-			<div class="flex items-center gap-4 text-sm font-medium leading-none">
+			<nav class="flex max-w-full flex-wrap items-center justify-end gap-x-3 gap-y-2 text-sm font-medium leading-none sm:gap-x-4">
 				if user.SignedIn {
-					<a href="/" class="text-stone-600 hover:text-stone-900">Dashboard</a>
-					<a href="/settings" class="text-stone-600 hover:text-stone-900">Settings</a>
-					<a href="/install" class="text-stone-600 hover:text-stone-900">Install</a>
-					<span class="hidden text-stone-500 sm:inline">{ user.Email }</span>
+					<a href="/" class="whitespace-nowrap text-stone-600 hover:text-stone-900">Dashboard</a>
+					<a href="/settings" class="whitespace-nowrap text-stone-600 hover:text-stone-900">Settings</a>
+					<a href="/install" class="whitespace-nowrap text-stone-600 hover:text-stone-900">Install</a>
+					<span class="hidden max-w-[12rem] truncate text-stone-500 sm:inline">{ user.Email }</span>
 					<form method="POST" action="/logout" class="m-0 inline-flex items-center">
-						<button type="submit" class="inline-flex items-center border-0 bg-transparent p-0 font-medium leading-none text-stone-600 hover:text-stone-900">Sign out</button>
+						<button type="submit" class="inline-flex items-center whitespace-nowrap border-0 bg-transparent p-0 font-medium leading-none text-stone-600 hover:text-stone-900">Sign out</button>
 					</form>
 				} else {
-					<a href="/onboarding" class="text-stone-600 hover:text-stone-900">Home</a>
-					<a href="/install" class="text-stone-600 hover:text-stone-900">Install</a>
-					<a href="/login" class="text-stone-600 hover:text-stone-900">Sign in</a>
-					<a href="/login?mode=signup" class="text-indigo-700 hover:text-indigo-900">Get started</a>
+					<a href="/onboarding" class="whitespace-nowrap text-stone-600 hover:text-stone-900">Home</a>
+					<a href="/install" class="whitespace-nowrap text-stone-600 hover:text-stone-900">Install</a>
+					<a href="/login" class="whitespace-nowrap text-stone-600 hover:text-stone-900">Sign in</a>
+					<a href="/login?mode=signup" class="whitespace-nowrap text-indigo-700 hover:text-indigo-900">Get started</a>
 				}
-			</div>
+			</nav>
 		</div>
 	</header>
 }
