@@ -269,12 +269,12 @@ func appHeader(user LayoutUser) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><div><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p><p class=\"text-xs text-stone-500\">Check the rubric before the rubric checks you.</p></div></a> ")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><div><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p><p class=\"text-xs text-stone-500\">Check the rubric before the rubric checks you.</p></div></a><div class=\"flex items-center gap-4 text-sm font-medium leading-none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if user.SignedIn {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<div class=\"flex items-center gap-4 text-sm font-medium leading-none\"><a href=\"/\" class=\"text-stone-600 hover:text-stone-900\">Dashboard</a> <a href=\"/settings\" class=\"text-stone-600 hover:text-stone-900\">Settings</a> <span class=\"hidden text-stone-500 sm:inline\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a href=\"/\" class=\"text-stone-600 hover:text-stone-900\">Dashboard</a> <a href=\"/settings\" class=\"text-stone-600 hover:text-stone-900\">Settings</a> <span class=\"hidden text-stone-500 sm:inline\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -287,12 +287,17 @@ func appHeader(user LayoutUser) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</span><form method=\"POST\" action=\"/logout\" class=\"m-0 inline-flex items-center\"><button type=\"submit\" class=\"inline-flex items-center border-0 bg-transparent p-0 font-medium leading-none text-stone-600 hover:text-stone-900\">Sign out</button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 22, "</span><form method=\"POST\" action=\"/logout\" class=\"m-0 inline-flex items-center\"><button type=\"submit\" class=\"inline-flex items-center border-0 bg-transparent p-0 font-medium leading-none text-stone-600 hover:text-stone-900\">Sign out</button></form>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		} else {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "<a href=\"/onboarding\" class=\"text-stone-600 hover:text-stone-900\">Home</a> <a href=\"/install\" class=\"text-stone-600 hover:text-stone-900\">Install</a> <a href=\"/login\" class=\"text-stone-600 hover:text-stone-900\">Sign in</a> <a href=\"/login?mode=signup\" class=\"text-indigo-700 hover:text-indigo-900\">Get started</a>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 23, "</div></header>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "</div></div></header>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -321,7 +326,7 @@ func htmxErrorBanner() templ.Component {
 			templ_7745c5c3_Var11 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 24, "<div id=\"htmx-error-banner\" class=\"mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800\" role=\"alert\"></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<div id=\"htmx-error-banner\" class=\"mb-4 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800\" role=\"alert\"></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -350,7 +355,7 @@ func appClientScripts() templ.Component {
 			templ_7745c5c3_Var12 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 25, "<script>\n\t\tfunction requestPath(event) {\n\t\t\treturn String(\n\t\t\t\tevent.detail?.pathInfo?.requestPath ??\n\t\t\t\t\tevent.detail?.pathInfo?.finalRequestPath ??\n\t\t\t\t\tevent.detail?.requestConfig?.path ??\n\t\t\t\t\t\"\",\n\t\t\t);\n\t\t}\n\t\tfunction showHTMXErrorBanner(message) {\n\t\t\tconst banner = document.getElementById(\"htmx-error-banner\");\n\t\t\tif (!banner) return;\n\t\t\tbanner.textContent = message;\n\t\t\tbanner.classList.remove(\"hidden\");\n\t\t}\n\t\tfunction hideHTMXErrorBanner() {\n\t\t\tconst banner = document.getElementById(\"htmx-error-banner\");\n\t\t\tif (banner) banner.classList.add(\"hidden\");\n\t\t}\n\t\tdocument.body.addEventListener(\"htmx:beforeRequest\", function (event) {\n\t\t\thideHTMXErrorBanner();\n\t\t\tconst path = requestPath(event);\n\t\t\tif (!path.includes(\"/analyze\")) return;\n\t\t\tconst form = event.detail?.elt;\n\t\t\tconst pendingId = form?.getAttribute?.(\"data-analyze-pending-id\");\n\t\t\tconst pending = pendingId ? document.getElementById(pendingId) : null;\n\t\t\tconst target = document.getElementById(\"analysis-results\");\n\t\t\tif (target && pending) {\n\t\t\t\ttarget.innerHTML = pending.innerHTML;\n\t\t\t}\n\t\t});\n\t\tdocument.body.addEventListener(\"htmx:responseError\", function (event) {\n\t\t\tconst path = requestPath(event);\n\t\t\tif (path.includes(\"/analyze\")) {\n\t\t\t\tconst target = document.getElementById(\"analysis-results\");\n\t\t\t\tif (!target) return;\n\t\t\t\tconst isTimeout =\n\t\t\t\t\tevent.detail?.error === \"timeout\" ||\n\t\t\t\t\tString(event.detail?.xhr?.status ?? \"\") === \"0\";\n\t\t\t\ttarget.innerHTML = isTimeout\n\t\t\t\t\t? '<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis timed out</p><p class=\"mt-1\">The request took longer than two minutes. Try again with a shorter draft or fewer files.</p></div>'\n\t\t\t\t\t: (function () {\n\t\t\t\t\t\tconst body = event.detail?.xhr?.responseText?.trim() ?? \"\";\n\t\t\t\t\t\tif (body && body.includes(\"analysis-error\")) {\n\t\t\t\t\t\t\treturn body;\n\t\t\t\t\t\t}\n\t\t\t\t\t\tconst message = body || \"Analysis failed. Try again in a moment.\";\n\t\t\t\t\t\treturn '<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis failed</p><p class=\"mt-1\">' + message.replace(/</g, \"&lt;\") + '</p></div>';\n\t\t\t\t\t})();\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tconst message =\n\t\t\t\tevent.detail?.xhr?.responseText?.trim() ||\n\t\t\t\t\"Something went wrong. Try again.\";\n\t\t\tshowHTMXErrorBanner(message);\n\t\t});\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<script>\n\t\tfunction requestPath(event) {\n\t\t\treturn String(\n\t\t\t\tevent.detail?.pathInfo?.requestPath ??\n\t\t\t\t\tevent.detail?.pathInfo?.finalRequestPath ??\n\t\t\t\t\tevent.detail?.requestConfig?.path ??\n\t\t\t\t\t\"\",\n\t\t\t);\n\t\t}\n\t\tfunction showHTMXErrorBanner(message) {\n\t\t\tconst banner = document.getElementById(\"htmx-error-banner\");\n\t\t\tif (!banner) return;\n\t\t\tbanner.textContent = message;\n\t\t\tbanner.classList.remove(\"hidden\");\n\t\t}\n\t\tfunction hideHTMXErrorBanner() {\n\t\t\tconst banner = document.getElementById(\"htmx-error-banner\");\n\t\t\tif (banner) banner.classList.add(\"hidden\");\n\t\t}\n\t\tdocument.body.addEventListener(\"htmx:beforeRequest\", function (event) {\n\t\t\thideHTMXErrorBanner();\n\t\t\tconst path = requestPath(event);\n\t\t\tif (!path.includes(\"/analyze\")) return;\n\t\t\tconst form = event.detail?.elt;\n\t\t\tconst pendingId = form?.getAttribute?.(\"data-analyze-pending-id\");\n\t\t\tconst pending = pendingId ? document.getElementById(pendingId) : null;\n\t\t\tconst target = document.getElementById(\"analysis-results\");\n\t\t\tif (target && pending) {\n\t\t\t\ttarget.innerHTML = pending.innerHTML;\n\t\t\t}\n\t\t});\n\t\tdocument.body.addEventListener(\"htmx:responseError\", function (event) {\n\t\t\tconst path = requestPath(event);\n\t\t\tif (path.includes(\"/analyze\")) {\n\t\t\t\tconst target = document.getElementById(\"analysis-results\");\n\t\t\t\tif (!target) return;\n\t\t\t\tconst isTimeout =\n\t\t\t\t\tevent.detail?.error === \"timeout\" ||\n\t\t\t\t\tString(event.detail?.xhr?.status ?? \"\") === \"0\";\n\t\t\t\ttarget.innerHTML = isTimeout\n\t\t\t\t\t? '<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis timed out</p><p class=\"mt-1\">The request took longer than two minutes. Try again with a shorter draft or fewer files.</p></div>'\n\t\t\t\t\t: (function () {\n\t\t\t\t\t\tconst body = event.detail?.xhr?.responseText?.trim() ?? \"\";\n\t\t\t\t\t\tif (body && body.includes(\"analysis-error\")) {\n\t\t\t\t\t\t\treturn body;\n\t\t\t\t\t\t}\n\t\t\t\t\t\tconst message = body || \"Analysis failed. Try again in a moment.\";\n\t\t\t\t\t\treturn '<div class=\"rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-800\"><p class=\"font-medium\">Analysis failed</p><p class=\"mt-1\">' + message.replace(/</g, \"&lt;\") + '</p></div>';\n\t\t\t\t\t})();\n\t\t\t\treturn;\n\t\t\t}\n\t\t\tconst message =\n\t\t\t\tevent.detail?.xhr?.responseText?.trim() ||\n\t\t\t\t\"Something went wrong. Try again.\";\n\t\t\tshowHTMXErrorBanner(message);\n\t\t});\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -379,7 +384,7 @@ func embedDraftFileScripts() templ.Component {
 			templ_7745c5c3_Var13 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 26, "<script>\n\t\tfunction notifyParentDraftFilesChanged(event) {\n\t\t\tif (window.parent === window) return;\n\t\t\tconst detail = event.detail;\n\t\t\tif (!detail || detail.failed || detail.isError) return;\n\t\t\tconst path = requestPath(event);\n\t\t\tif (!path.includes(\"/draft/files\") && !path.includes(\"/draft/upload\") && !path.includes(\"/draft/discussion-attachment\")) return;\n\t\t\twindow.parent.postMessage({ type: \"rubrical:draft-files-changed\" }, \"*\");\n\t\t}\n\t\tdocument.body.addEventListener(\"htmx:afterSwap\", notifyParentDraftFilesChanged);\n\t\tdocument.body.addEventListener(\"htmx:afterSettle\", notifyParentDraftFilesChanged);\n\t</script>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 27, "<script>\n\t\tfunction notifyParentDraftFilesChanged(event) {\n\t\t\tif (window.parent === window) return;\n\t\t\tconst detail = event.detail;\n\t\t\tif (!detail || detail.failed || detail.isError) return;\n\t\t\tconst path = requestPath(event);\n\t\t\tif (!path.includes(\"/draft/files\") && !path.includes(\"/draft/upload\") && !path.includes(\"/draft/discussion-attachment\")) return;\n\t\t\twindow.parent.postMessage({ type: \"rubrical:draft-files-changed\" }, \"*\");\n\t\t}\n\t\tdocument.body.addEventListener(\"htmx:afterSwap\", notifyParentDraftFilesChanged);\n\t\tdocument.body.addEventListener(\"htmx:afterSettle\", notifyParentDraftFilesChanged);\n\t</script>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

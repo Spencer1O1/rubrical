@@ -88,16 +88,21 @@ templ appHeader(user LayoutUser) {
 					<p class="text-xs text-stone-500">Check the rubric before the rubric checks you.</p>
 				</div>
 			</a>
-			if user.SignedIn {
-				<div class="flex items-center gap-4 text-sm font-medium leading-none">
+			<div class="flex items-center gap-4 text-sm font-medium leading-none">
+				if user.SignedIn {
 					<a href="/" class="text-stone-600 hover:text-stone-900">Dashboard</a>
 					<a href="/settings" class="text-stone-600 hover:text-stone-900">Settings</a>
 					<span class="hidden text-stone-500 sm:inline">{ user.Email }</span>
 					<form method="POST" action="/logout" class="m-0 inline-flex items-center">
 						<button type="submit" class="inline-flex items-center border-0 bg-transparent p-0 font-medium leading-none text-stone-600 hover:text-stone-900">Sign out</button>
 					</form>
-				</div>
-			}
+				} else {
+					<a href="/onboarding" class="text-stone-600 hover:text-stone-900">Home</a>
+					<a href="/install" class="text-stone-600 hover:text-stone-900">Install</a>
+					<a href="/login" class="text-stone-600 hover:text-stone-900">Sign in</a>
+					<a href="/login?mode=signup" class="text-indigo-700 hover:text-indigo-900">Get started</a>
+				}
+			</div>
 		</div>
 	</header>
 }
