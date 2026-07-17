@@ -12,7 +12,7 @@ templ marketingNav(user LayoutUser) {
 				<a href="/onboarding#how-it-works" class="whitespace-nowrap transition hover:text-stone-900">How it works</a>
 				<a href="/install" class="whitespace-nowrap transition hover:text-stone-900">Install</a>
 			</nav>
-			<div class="flex shrink-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
+			<div class="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-end sm:gap-3">
 				if user.SignedIn {
 					<span class="hidden max-w-[10rem] truncate text-sm text-stone-500 sm:inline">{ user.Email }</span>
 					<a href="/" class="whitespace-nowrap rounded-lg bg-indigo-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 sm:px-4">Go to dashboard</a>

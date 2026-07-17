@@ -38,8 +38,8 @@ templ dashboardContent(assignments []AssignmentListItem) {
 			<ul class="divide-y divide-stone-200 overflow-hidden rounded-xl border border-stone-200 bg-white">
 				for _, item := range assignments {
 					<li>
-						<a href={ item.URL } class="flex flex-col gap-2 px-5 py-4 transition hover:bg-stone-50 sm:flex-row sm:items-center sm:justify-between">
-							<div>
+						<a href={ item.URL } class="flex flex-col items-start gap-2 px-5 py-4 transition hover:bg-stone-50 sm:flex-row sm:items-center sm:justify-between">
+							<div class="min-w-0">
 								<p class="font-medium text-stone-900">{ item.Title }</p>
 								if item.CourseName != "" {
 									<p class="text-sm text-stone-500">{ item.CourseName }</p>
