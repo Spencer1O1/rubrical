@@ -4,15 +4,15 @@ import "rubrical/internal/web/components"
 
 templ AuthPage(view AuthFormView) {
 	if view.Bare {
-		@components.Shell(components.ShellView{Kind: components.ShellAuthBare, Title: AuthPageTitle(view.Mode)}, authCard(view))
+		@components.Shell(components.ShellView{Kind: components.ShellEmbed, Title: AuthPageTitle(view.Mode)}, authCard(view))
 	} else {
-		@components.Shell(components.ShellView{Kind: components.ShellAuth, Title: AuthPageTitle(view.Mode)}, authCard(view))
+		@components.Shell(components.ShellView{Kind: components.ShellApp, Title: AuthPageTitle(view.Mode)}, authCard(view))
 	}
 }
 
 templ authCard(view AuthFormView) {
-	<section class="mx-auto w-full max-w-md">
-		<div class="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+	<section class="mx-auto flex min-h-[70vh] w-full max-w-md items-center">
+		<div class="w-full rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
 			if view.Mode == AuthModeReset {
 				@authCardHeader("Choose a new password", "Enter a new password for your account.")
 			} else if view.Mode == AuthModeSignup {

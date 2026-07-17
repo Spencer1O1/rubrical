@@ -6,8 +6,6 @@ type ShellKind string
 const (
 	ShellApp       ShellKind = "app"
 	ShellEmbed     ShellKind = "embed"
-	ShellAuth      ShellKind = "auth"
-	ShellAuthBare  ShellKind = "authBare"
 	ShellMarketing ShellKind = "marketing"
 )
 
@@ -16,6 +14,13 @@ type ShellView struct {
 	Title           string
 	User            LayoutUser
 	MetaDescription string
+}
+
+func brandHomeHref(signedIn bool) string {
+	if signedIn {
+		return "/"
+	}
+	return "/onboarding"
 }
 
 templ Shell(view ShellView, content templ.Component) {
@@ -43,8 +48,7 @@ templ Shell(view ShellView, content templ.Component) {
 		<body
 			class={
 				"text-stone-900 antialiased",
-				templ.KV("min-h-full", view.Kind == ShellApp || view.Kind == ShellEmbed),
-				templ.KV("flex min-h-full flex-col", view.Kind == ShellAuth || view.Kind == ShellAuthBare),
+				templ.KV("min-h-full", view.Kind != ShellMarketing),
 			}
 		>
 			if view.Kind == ShellApp || view.Kind == ShellEmbed {
@@ -65,15 +69,6 @@ templ Shell(view ShellView, content templ.Component) {
 						@htmxErrorBanner()
 						@content
 					</main>
-				case ShellAuth:
-					@authHeader()
-					<main class="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
-						@content
-					</main>
-				case ShellAuthBare:
-					<main class="flex flex-1 items-center justify-center px-4 py-6 sm:px-6">
-						@content
-					</main>
 				case ShellMarketing:
 					@marketingNav(view.User)
 					@content
@@ -86,7 +81,7 @@ templ Shell(view ShellView, content templ.Component) {
 templ appHeader(user LayoutUser) {
 	<header class="border-b border-stone-200 bg-white">
 		<div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6">
-			<a href="/" class="flex items-center gap-2">
+			<a href={ brandHomeHref(user.SignedIn) } class="flex items-center gap-2">
 				<span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">R</span>
 				<div>
 					<p class="text-lg font-semibold tracking-tight">Rubrical</p>
@@ -103,17 +98,6 @@ templ appHeader(user LayoutUser) {
 					</form>
 				</div>
 			}
-		</div>
-	</header>
-}
-
-templ authHeader() {
-	<header class="border-b border-stone-200 bg-white">
-		<div class="mx-auto flex max-w-5xl items-center px-4 py-4 sm:px-6">
-			<a href="/onboarding" class="flex items-center gap-2">
-				<span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white">R</span>
-				<p class="text-lg font-semibold tracking-tight">Rubrical</p>
-			</a>
 		</div>
 	</header>
 }

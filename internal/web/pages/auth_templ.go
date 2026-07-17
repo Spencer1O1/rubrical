@@ -32,12 +32,12 @@ func AuthPage(view AuthFormView) templ.Component {
 		}
 		ctx = templ.ClearChildren(ctx)
 		if view.Bare {
-			templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellAuthBare, Title: AuthPageTitle(view.Mode)}, authCard(view)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellEmbed, Title: AuthPageTitle(view.Mode)}, authCard(view)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellAuth, Title: AuthPageTitle(view.Mode)}, authCard(view)).Render(ctx, templ_7745c5c3_Buffer)
+			templ_7745c5c3_Err = components.Shell(components.ShellView{Kind: components.ShellApp, Title: AuthPageTitle(view.Mode)}, authCard(view)).Render(ctx, templ_7745c5c3_Buffer)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -67,7 +67,7 @@ func authCard(view AuthFormView) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"mx-auto w-full max-w-md\"><div class=\"rounded-xl border border-stone-200 bg-white p-6 shadow-sm\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"mx-auto flex min-h-[70vh] w-full max-w-md items-center\"><div class=\"w-full rounded-xl border border-stone-200 bg-white p-6 shadow-sm\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
