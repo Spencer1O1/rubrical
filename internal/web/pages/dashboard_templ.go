@@ -70,7 +70,7 @@ func dashboardContent(assignments []AssignmentListItem) templ.Component {
 			templ_7745c5c3_Var2 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"space-y-6\"><div><h1 class=\"text-2xl font-semibold tracking-tight\">Your assignments</h1><p class=\"mt-1 text-stone-600\">Imported from Canvas via the Rubrical browser extension.</p><p class=\"mt-1 text-xs text-stone-400\">Showing your 50 most recently imported assignments.</p></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<section class=\"space-y-6\"><div><h1 class=\"text-2xl font-semibold tracking-tight\">Your assignments</h1><p class=\"mt-1 text-stone-600\">Imported from Canvas via the Rubrical browser extension. <a href=\"/install\" class=\"text-stone-500 underline decoration-stone-300 underline-offset-2 hover:text-stone-700\">Install or reinstall</a></p><p class=\"mt-1 text-xs text-stone-400\">Showing your 50 most recently imported assignments.</p></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -92,7 +92,7 @@ func dashboardContent(assignments []AssignmentListItem) templ.Component {
 				var templ_7745c5c3_Var3 templ.SafeURL
 				templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinURLErrs(item.URL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/dashboard.templ`, Line: 38, Col: 24}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/dashboard.templ`, Line: 41, Col: 24}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 				if templ_7745c5c3_Err != nil {
@@ -105,7 +105,7 @@ func dashboardContent(assignments []AssignmentListItem) templ.Component {
 				var templ_7745c5c3_Var4 string
 				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(item.Title)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/dashboard.templ`, Line: 40, Col: 58}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/dashboard.templ`, Line: 43, Col: 58}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 				if templ_7745c5c3_Err != nil {
@@ -123,7 +123,7 @@ func dashboardContent(assignments []AssignmentListItem) templ.Component {
 					var templ_7745c5c3_Var5 string
 					templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(item.CourseName)
 					if templ_7745c5c3_Err != nil {
-						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/dashboard.templ`, Line: 42, Col: 60}
+						return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/dashboard.templ`, Line: 45, Col: 60}
 					}
 					_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 					if templ_7745c5c3_Err != nil {
@@ -141,7 +141,7 @@ func dashboardContent(assignments []AssignmentListItem) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(item.ImportedAtLabel)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/dashboard.templ`, Line: 44, Col: 78}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/pages/dashboard.templ`, Line: 47, Col: 78}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {

@@ -20,7 +20,10 @@ templ dashboardContent(assignments []AssignmentListItem) {
 	<section class="space-y-6">
 		<div>
 			<h1 class="text-2xl font-semibold tracking-tight">Your assignments</h1>
-			<p class="mt-1 text-stone-600">Imported from Canvas via the Rubrical browser extension.</p>
+			<p class="mt-1 text-stone-600">
+				Imported from Canvas via the Rubrical browser extension.
+				<a href="/install" class="text-stone-500 underline decoration-stone-300 underline-offset-2 hover:text-stone-700">Install or reinstall</a>
+			</p>
 			<p class="mt-1 text-xs text-stone-400">Showing your 50 most recently imported assignments.</p>
 		</div>
 		if len(assignments) == 0 {

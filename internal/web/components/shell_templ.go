@@ -269,19 +269,19 @@ func appHeader(user LayoutUser) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><div><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p><p class=\"text-xs text-stone-500\">Check the rubric before the rubric checks you.</p></div></a><div class=\"flex items-center gap-4 text-sm font-medium leading-none\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 20, "\" class=\"flex items-center gap-2\"><span class=\"inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-bold text-white\">R</span><p class=\"text-lg font-semibold tracking-tight\">Rubrical</p></a><div class=\"flex items-center gap-4 text-sm font-medium leading-none\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		if user.SignedIn {
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a href=\"/\" class=\"text-stone-600 hover:text-stone-900\">Dashboard</a> <a href=\"/settings\" class=\"text-stone-600 hover:text-stone-900\">Settings</a> <span class=\"hidden text-stone-500 sm:inline\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 21, "<a href=\"/\" class=\"text-stone-600 hover:text-stone-900\">Dashboard</a> <a href=\"/settings\" class=\"text-stone-600 hover:text-stone-900\">Settings</a> <a href=\"/install\" class=\"text-stone-600 hover:text-stone-900\">Install</a> <span class=\"hidden text-stone-500 sm:inline\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var10 string
 			templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(user.Email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/shell.templ`, Line: 95, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/components/shell.templ`, Line: 93, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 			if templ_7745c5c3_Err != nil {
