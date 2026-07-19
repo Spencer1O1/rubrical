@@ -50,7 +50,13 @@ SERVICE="${RUBRICAL_SERVICE:-rubrical.service}"
 
   # templ before css so Tailwind scans generated *_templ.go as well as .templ
   make templ css
-  make migrate-up
+  make migrate-up \
+    POSTGRES_HOST="${POSTGRES_HOST}" \
+    POSTGRES_PORT="${POSTGRES_PORT}" \
+    POSTGRES_USER="${POSTGRES_USER}" \
+    POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
+    POSTGRES_DB="${POSTGRES_DB}" \
+    POSTGRES_SSLMODE="${POSTGRES_SSLMODE:-disable}"
   make build
   make extension-package
 

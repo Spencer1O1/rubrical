@@ -89,7 +89,9 @@ Override defaults at deploy time. See [`.env.example`](../.env.example).
 |----------|-------------------|---------|
 | `RUBRICAL_HOST` | empty (all interfaces) | HTTP listen host; production: `127.0.0.1` in `/etc/homeserver/server.env` |
 | `RUBRICAL_PORT` | `8787` | HTTP listen port; same `server.env` as Caddy reverse_proxy |
-| `DATABASE_URL` | local postgres URL | Postgres connection |
+| `POSTGRES_HOST` / `POSTGRES_PORT` | required | Shared Postgres listen — production: `/etc/homeserver/server.env` |
+| `POSTGRES_USER` / `PASSWORD` / `DB` | required | Per-app role; API builds URL with host/port from above |
+| `POSTGRES_SSLMODE` | required | Homeserver loopback: `disable` |
 | `RUBRICAL_DATA_DIR` | `./data` | Draft file storage on disk |
 | `RUBRICAL_STRICT_EXTRACTION` | off | Dev: disable Canvas fallbacks |
 | `POST_DUE_DATE_RETENTION_TIME` | `168h` | Purge draft files after due date |

@@ -13,8 +13,8 @@ Templates live in `[deploy/homeserver/](../deploy/homeserver/)`. Config outside 
 
 | File                                | Owns                                                                                                                   |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `/etc/homeserver/server.env`        | **Only** place for `RUBRICAL_HOST` / `RUBRICAL_PORT` (and hook host/port). Loaded by Caddy **and** `rubrical.service`. |
-| `/etc/homeserver/apps/rubrical.env` | Secrets and app settings (`DATABASE_URL`, encryption key, OAuth, …). No listen address.                                |
+| `/etc/homeserver/server.env`        | Shared + listen host/port (`POSTGRES_*`, `MINIO_*`, `RUBRICAL_*`, hook). Loaded by Caddy **and** `rubrical.service`. |
+| `/etc/homeserver/apps/rubrical.env` | Secrets and app settings (DB role, encryption key, OAuth, …). No Postgres/listen host.                               |
 
 
 ---
@@ -89,7 +89,7 @@ Docker Compose Postgres stays for **local WSL only** (`make db-up`). Production 
 
 ## 4. Host/port (`server.env` — single source of truth)
 
-Append `[deploy/homeserver/server.env.snippet](../deploy/homeserver/server.env.snippet)` to `/etc/homeserver/server.env`:
+Append `[deploy/homeserver/server.env.snippet](../deploy/homeserver/server.env.snippet)` to `/etc/homeserver/server.env` (includes shared `POSTGRES_*` / `MINIO_*` plus):
 
 ```env
 RUBRICAL_HOST=127.0.0.1
@@ -98,7 +98,7 @@ RUBRICAL_HOOK_HOST=127.0.0.1
 RUBRICAL_HOOK_PORT=9011
 ```
 
-Caddy reverse-proxies using these vars. The Go process listens using the same vars (`RUBRICAL_HOST` + `RUBRICAL_PORT`). Do **not** put a listen address in `apps/rubrical.env`.
+Caddy reverse-proxies using these vars. The Go process listens using the same vars (`RUBRICAL_HOST` + `RUBRICAL_PORT`). Do **not** put a listen address or Postgres host in `apps/rubrical.env`.
 
 Caddy must load that file (`systemctl edit caddy` → `EnvironmentFile=/etc/homeserver/server.env`). Then merge `[deploy/homeserver/Caddyfile.snippet](../deploy/homeserver/Caddyfile.snippet)` into `/etc/caddy/Caddyfile`:
 
@@ -128,10 +128,15 @@ Set at least:
 
 ```env
 RUBRICAL_PUBLIC_URL=https://rubrical.spencerls.dev
-DATABASE_URL=postgres://rubrical:<password>@127.0.0.1:5432/rubrical?sslmode=disable
+POSTGRES_USER=rubrical
+POSTGRES_PASSWORD=<password>
+POSTGRES_DB=rubrical
+POSTGRES_SSLMODE=disable
 RUBRICAL_DATA_DIR=/srv/repos/rubrical/data
 RUBRICAL_SECRETS_ENCRYPTION_KEY=<stable 32-byte key>
 ```
+
+Postgres host/port come from `server.env` (`POSTGRES_HOST` / `POSTGRES_PORT`). The API assembles the connection string.
 
 Generate the secrets key once (`pnpm setup:secrets-key` or copy from `.env.local`) and paste it here. **Do not rotate** casually — it encrypts user AI API keys at rest.
 

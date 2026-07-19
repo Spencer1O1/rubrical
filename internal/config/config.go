@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -43,10 +44,15 @@ type Config struct {
 func Load() (Config, error) {
 	loadEnvFiles()
 
+	databaseURL, err := loadDatabaseURL()
+	if err != nil {
+		return Config{}, err
+	}
+
 	cfg := Config{
 		Host:                           strings.TrimSpace(envOrDefault("RUBRICAL_HOST", DefaultHost)),
 		Port:                           envInt("RUBRICAL_PORT", DefaultPort),
-		DatabaseURL:                    envOrDefault("DATABASE_URL", DefaultDatabaseURL),
+		DatabaseURL:                    databaseURL,
 		DataDir:                        envOrDefault("RUBRICAL_DATA_DIR", DefaultDataDir),
 		SecretsEncryptionKey:           strings.TrimSpace(os.Getenv("RUBRICAL_SECRETS_ENCRYPTION_KEY")),
 		PublicURL:                      strings.TrimRight(strings.TrimSpace(envOrDefault("RUBRICAL_PUBLIC_URL", DefaultPublicURL)), "/"),
@@ -93,11 +99,59 @@ func Load() (Config, error) {
 	if cfg.Port <= 0 || cfg.Port > 65535 {
 		return Config{}, fmt.Errorf("RUBRICAL_PORT must be between 1 and 65535")
 	}
-	if cfg.DatabaseURL == "" {
-		return Config{}, fmt.Errorf("DATABASE_URL is required")
+	return cfg, nil
+}
+
+// loadDatabaseURL builds from POSTGRES_HOST/PORT (server.env) + POSTGRES_USER/PASSWORD/DB/SSLMODE (app env).
+// Every piece is required — no defaults.
+func loadDatabaseURL() (string, error) {
+	host := strings.TrimSpace(os.Getenv("POSTGRES_HOST"))
+	port := strings.TrimSpace(os.Getenv("POSTGRES_PORT"))
+	user := strings.TrimSpace(os.Getenv("POSTGRES_USER"))
+	password := os.Getenv("POSTGRES_PASSWORD")
+	db := strings.TrimSpace(os.Getenv("POSTGRES_DB"))
+	sslmode := strings.TrimSpace(os.Getenv("POSTGRES_SSLMODE"))
+
+	var missing []string
+	if host == "" {
+		missing = append(missing, "POSTGRES_HOST")
+	}
+	if port == "" {
+		missing = append(missing, "POSTGRES_PORT")
+	}
+	if user == "" {
+		missing = append(missing, "POSTGRES_USER")
+	}
+	if password == "" {
+		missing = append(missing, "POSTGRES_PASSWORD")
+	}
+	if db == "" {
+		missing = append(missing, "POSTGRES_DB")
+	}
+	if sslmode == "" {
+		missing = append(missing, "POSTGRES_SSLMODE")
+	}
+	if len(missing) > 0 {
+		return "", fmt.Errorf("missing required env: %s", strings.Join(missing, ", "))
 	}
 
-	return cfg, nil
+	u := &url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(user, password),
+		Host:   netHostPort(host, port),
+		Path:   "/" + db,
+	}
+	q := u.Query()
+	q.Set("sslmode", sslmode)
+	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
+
+func netHostPort(host, port string) string {
+	if strings.Contains(host, ":") && !strings.HasPrefix(host, "[") {
+		return "[" + host + "]:" + port
+	}
+	return host + ":" + port
 }
 
 // ListenAddr is the net/http listen address from RUBRICAL_HOST + RUBRICAL_PORT.

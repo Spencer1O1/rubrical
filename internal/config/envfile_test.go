@@ -66,14 +66,19 @@ func TestLoad_readsStrictFromEnvFile(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(
 		filepath.Join(dir, ".env.local"),
-		[]byte("RUBRICAL_STRICT_EXTRACTION=1\nDATABASE_URL=postgres://example\n"),
+		[]byte("RUBRICAL_STRICT_EXTRACTION=1\nPOSTGRES_HOST=127.0.0.1\nPOSTGRES_PORT=5432\nPOSTGRES_USER=rubrical\nPOSTGRES_PASSWORD=rubrical\nPOSTGRES_DB=rubrical\nPOSTGRES_SSLMODE=disable\n"),
 		0o600,
 	); err != nil {
 		t.Fatal(err)
 	}
 
 	_ = os.Unsetenv("RUBRICAL_STRICT_EXTRACTION")
-	_ = os.Unsetenv("DATABASE_URL")
+	for _, key := range []string{
+		"POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_USER",
+		"POSTGRES_PASSWORD", "POSTGRES_DB", "POSTGRES_SSLMODE",
+	} {
+		_ = os.Unsetenv(key)
+	}
 
 	origDir, err := os.Getwd()
 	if err != nil {

@@ -1,6 +1,26 @@
 .PHONY: dev server purge css css-watch templ templ-watch db-up db-down db-reset migrate-up migrate-down sqlc extension-build extension-build-prod extension-package test build tidy setup-secrets-key
 
-DATABASE_URL ?= postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable
+# Goose needs a URL. No Makefile defaults — load .env.local/.env, honor make/env overrides, then require every piece.
+define goose_postgres
+	@bash -euo pipefail -c '\
+	  set -a; \
+	  [ -f .env.local ] && source ./.env.local; \
+	  [ -f .env ] && source ./.env; \
+	  set +a; \
+	  [ -n "$(POSTGRES_HOST)" ] && export POSTGRES_HOST="$(POSTGRES_HOST)"; \
+	  [ -n "$(POSTGRES_PORT)" ] && export POSTGRES_PORT="$(POSTGRES_PORT)"; \
+	  [ -n "$(POSTGRES_USER)" ] && export POSTGRES_USER="$(POSTGRES_USER)"; \
+	  [ -n "$(POSTGRES_PASSWORD)" ] && export POSTGRES_PASSWORD="$(POSTGRES_PASSWORD)"; \
+	  [ -n "$(POSTGRES_DB)" ] && export POSTGRES_DB="$(POSTGRES_DB)"; \
+	  [ -n "$(POSTGRES_SSLMODE)" ] && export POSTGRES_SSLMODE="$(POSTGRES_SSLMODE)"; \
+	  missing=""; \
+	  for v in POSTGRES_HOST POSTGRES_PORT POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB POSTGRES_SSLMODE; do \
+	    if [ -z "$${!v-}" ]; then missing="$$missing $$v"; fi; \
+	  done; \
+	  if [ -n "$$missing" ]; then echo "error: missing required env:$$missing" >&2; exit 1; fi; \
+	  url="postgres://$${POSTGRES_USER}:$${POSTGRES_PASSWORD}@$${POSTGRES_HOST}:$${POSTGRES_PORT}/$${POSTGRES_DB}?sslmode=$${POSTGRES_SSLMODE}"; \
+	  go run github.com/pressly/goose/v3/cmd/goose@v3.24.1 -dir migrations postgres "$$url" $(1)'
+endef
 
 dev:
 	@echo "Run in separate terminals:"
@@ -10,10 +30,10 @@ dev:
 	@echo "  make server"
 
 server:
-	DATABASE_URL="$(DATABASE_URL)" go run ./cmd/server
+	go run ./cmd/server
 
 purge:
-	DATABASE_URL="$(DATABASE_URL)" go run ./cmd/purge
+	go run ./cmd/purge
 
 build:
 	go build -o bin/rubrical ./cmd/server
@@ -41,10 +61,10 @@ db-down:
 	docker compose down
 
 migrate-up:
-	go run github.com/pressly/goose/v3/cmd/goose@v3.24.1 -dir migrations postgres "$(DATABASE_URL)" up
+	$(call goose_postgres,up)
 
 migrate-down:
-	go run github.com/pressly/goose/v3/cmd/goose@v3.24.1 -dir migrations postgres "$(DATABASE_URL)" down
+	$(call goose_postgres,down)
 
 # Wipe public schema and re-apply 00001. Use after squashing migrations (goose version
 # can point at a deleted 00002, which breaks migrate-down).

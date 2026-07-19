@@ -111,10 +111,15 @@ sudo -u postgres psql -c "CREATE USER rubrical WITH PASSWORD 'rubrical' CREATEDB
 sudo -u postgres psql -c "CREATE DATABASE rubrical OWNER rubrical;"
 ```
 
-Run migrations with the same connection string:
+Run migrations with every `POSTGRES_*` piece set (or in `.env.local`):
 
 ```bash
-export DATABASE_URL='postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable'
+export POSTGRES_HOST=127.0.0.1
+export POSTGRES_PORT=5432
+export POSTGRES_USER=rubrical
+export POSTGRES_PASSWORD=rubrical
+export POSTGRES_DB=rubrical
+export POSTGRES_SSLMODE=disable
 make migrate-up
 make server
 ```
@@ -131,7 +136,7 @@ make server
 | Variable | Default |
 |----------|---------|
 | `RUBRICAL_HOST` / `RUBRICAL_PORT` | empty / `8787` (listen `:8787`) |
-| `DATABASE_URL` | `postgres://rubrical:rubrical@localhost:5432/rubrical?sslmode=disable` |
+| `POSTGRES_HOST` / `PORT` / `USER` / `PASSWORD` / `DB` / `SSLMODE` | required (see `.env.example`) |
 | `RUBRICAL_STRICT_EXTRACTION` | unset (fallbacks enabled); set `1` to disable extraction/display fallbacks |
 | `RUBRICAL_DATA_DIR` | `./data` — draft file bytes on disk |
 | `POST_DUE_DATE_RETENTION_TIME` | `168h` (1 week) — purge uploaded draft files this long after assignment `due_at`; set `0` to skip due-date rule |
