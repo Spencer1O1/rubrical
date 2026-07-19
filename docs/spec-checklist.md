@@ -91,7 +91,7 @@ Last reviewed: 2026-06-26
 
 - [x] Canvas A2 traditional view (primary)
 - [x] Classic rubric table fallback
-- [x] Strict extraction mode (`RUBRICAL_STRICT_EXTRACTION`)
+- [x] Strict extraction mode (`STRICT_EXTRACTION`)
 - [x] Structured rubric: header + rows + ratings (title, description, points)
 - [x] Store in `rubric_criteria.ratings_json` + `extracted_sources` header
 - [x] Display rubric table (dashboard full-width; embed collapsible)
@@ -178,7 +178,7 @@ Spec §5.5 and §5.4 require: when Canvas has no readable draft (file upload, ex
 | **Per-row re-upload indicator when file not readable** | ✅ |
 | **File-upload tab HTML fixtures** (`fixtures/`) | 🟡 capture in-progress + complete |
 | **Import with `draftFileRefs` (no re-upload)** | ✅ |
-| **Persist submission file bytes** (`RUBRICAL_DATA_DIR`) | ✅ |
+| **Persist submission file bytes** (`DATA_DIR`) | ✅ |
 | Manual file upload (assignment + embed) | ✅ |
 | Remove / replace stored submission file in UI | ✅ |
 | Text / File / Web URL tab switcher (mutually exclusive) | ✅ |

@@ -27,13 +27,13 @@ make templ-watch  # terminal 2
 make server       # terminal 3
 ```
 
-`make setup` runs `pnpm setup:secrets-key`, which creates `.env.local` (from `.env.example` if needed) and writes `RUBRICAL_SECRETS_ENCRYPTION_KEY`. The server requires this key to encrypt BYOK API keys at rest. Re-run `pnpm setup:secrets-key` only on a fresh machine — changing the key invalidates saved API keys.
+`make setup` runs `pnpm setup:secrets-key`, which creates `.env.local` (from `.env.example` if needed) and writes `SECRETS_ENCRYPTION_KEY`. `.env.local` is laptop-only — production uses `homeserver.yaml` / `/etc/homeserver/apps/rubrical.env`. Re-run `pnpm setup:secrets-key` only on a fresh machine — changing the key invalidates saved API keys.
 
 Open http://localhost:8787 — signed-in users see the dashboard; others are sent to `/onboarding`. Sign up at `/login?mode=signup` or click **Get started** on the onboarding page.
 
-For Google sign-in, set `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `RUBRICAL_PUBLIC_URL` in `.env.local`. Password reset emails use `EMAIL_DEV_LOG=1` in dev (logged to the server console) or Resend/SMTP in production.
+For Google sign-in, set `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `PUBLIC_URL` in `.env.local`. Password reset emails use `EMAIL_DEV_LOG=1` in dev (logged to the server console) or Resend/SMTP in production.
 
-The browser extension sends session cookies with API requests — sign in via the web app (same origin as `RUBRICAL_PUBLIC_URL` or localhost) before importing from Canvas.
+The browser extension sends session cookies with API requests — sign in via the web app (same origin as `PUBLIC_URL` or localhost) before importing from Canvas.
 
 Build the browser extension:
 
@@ -135,10 +135,10 @@ make server
 
 | Variable | Default |
 |----------|---------|
-| `RUBRICAL_HOST` / `RUBRICAL_PORT` | empty / `8787` (listen `:8787`) |
+| `RUBRICAL_HOST` / `RUBRICAL_PORT` | empty / `8787` (listen `:8787`; homeserver app-key names) |
 | `POSTGRES_HOST` / `PORT` / `USER` / `PASSWORD` / `DB` / `SSLMODE` | required (see `.env.example`) |
-| `RUBRICAL_STRICT_EXTRACTION` | unset (fallbacks enabled); set `1` to disable extraction/display fallbacks |
-| `RUBRICAL_DATA_DIR` | `./data` — draft file bytes on disk |
+| `STRICT_EXTRACTION` | unset (fallbacks enabled); set `1` to disable extraction/display fallbacks |
+| `DATA_DIR` | `./data` — draft file bytes on disk |
 | `POST_DUE_DATE_RETENTION_TIME` | `168h` (1 week) — purge uploaded draft files this long after assignment `due_at`; set `0` to skip due-date rule |
 | `POST_UPLOAD_RETENTION_TIME` | `720h` (30 days) — purge uploaded draft files this long after upload when assignment has no `due_at`; set `0` to skip |
 | `OPENAI_API_KEY` | — (Phase 7) |

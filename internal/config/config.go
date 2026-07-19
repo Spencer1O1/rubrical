@@ -49,16 +49,17 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 
+	// Listen host/port use homeserver app-key names in server.env (rubrical → RUBRICAL_*).
 	cfg := Config{
 		Host:                           strings.TrimSpace(envOrDefault("RUBRICAL_HOST", DefaultHost)),
 		Port:                           envInt("RUBRICAL_PORT", DefaultPort),
 		DatabaseURL:                    databaseURL,
-		DataDir:                        envOrDefault("RUBRICAL_DATA_DIR", DefaultDataDir),
-		SecretsEncryptionKey:           strings.TrimSpace(os.Getenv("RUBRICAL_SECRETS_ENCRYPTION_KEY")),
-		PublicURL:                      strings.TrimRight(strings.TrimSpace(envOrDefault("RUBRICAL_PUBLIC_URL", DefaultPublicURL)), "/"),
+		DataDir:                        envOrDefault("DATA_DIR", DefaultDataDir),
+		SecretsEncryptionKey:           strings.TrimSpace(os.Getenv("SECRETS_ENCRYPTION_KEY")),
+		PublicURL:                      strings.TrimRight(strings.TrimSpace(envOrDefault("PUBLIC_URL", DefaultPublicURL)), "/"),
 		GoogleOAuthClientID:            strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_ID")),
 		GoogleOAuthClientSecret:        strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET")),
-		ExtensionOrigins:               splitCSV(os.Getenv("RUBRICAL_EXTENSION_ORIGINS")),
+		ExtensionOrigins:               splitCSV(os.Getenv("EXTENSION_ORIGINS")),
 		EmailFrom:                      envOrDefault("EMAIL_FROM", DefaultEmailFrom),
 		ResendAPIKey:                   strings.TrimSpace(os.Getenv("RESEND_API_KEY")),
 		SMTPHost:                       strings.TrimSpace(os.Getenv("SMTP_HOST")),
@@ -74,8 +75,8 @@ func Load() (Config, error) {
 		AIMaxRunsPerDay:                envInt("AI_MAX_RUNS_PER_DAY", DefaultAIMaxRunsPerDay),
 		AIMinSecondsBetweenRuns:        envInt("AI_MIN_SECONDS_BETWEEN_RUNS", DefaultAIMinSecondsBetweenRuns),
 		AIEnforceRateLimits:            envBool("AI_ENFORCE_RATE_LIMITS"),
-		StrictExtraction:               envBool("RUBRICAL_STRICT_EXTRACTION"),
-		AllowLocalURLFetch:             envBool("RUBRICAL_ALLOW_LOCAL_URL_FETCH"),
+		StrictExtraction:               envBool("STRICT_EXTRACTION"),
+		AllowLocalURLFetch:             envBool("ALLOW_LOCAL_URL_FETCH"),
 	}
 
 	retention, err := envDuration("POST_DUE_DATE_RETENTION_TIME", DefaultPostDueDateRetention)

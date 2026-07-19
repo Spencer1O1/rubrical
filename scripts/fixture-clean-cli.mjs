@@ -18,9 +18,9 @@ export function parseCleanFixtureArgs(argv) {
   const options = {
     fixturesDir: join(process.cwd(), "fixtures"),
     files: [],
-    displayName: process.env.RUBRICAL_FIXTURE_DISPLAY_NAME?.trim() ?? "",
-    email: process.env.RUBRICAL_FIXTURE_EMAIL?.trim() ?? "",
-    instHosts: splitList(process.env.RUBRICAL_FIXTURE_INST_HOSTS ?? ""),
+    displayName: process.env.FIXTURE_DISPLAY_NAME?.trim() ?? "",
+    email: process.env.FIXTURE_EMAIL?.trim() ?? "",
+    instHosts: splitList(process.env.FIXTURE_INST_HOSTS ?? ""),
     skipPrompt: false,
   };
 
@@ -69,9 +69,9 @@ Options:
   -h, --help            Show this help
 
 Environment (non-interactive):
-  RUBRICAL_FIXTURE_DISPLAY_NAME
-  RUBRICAL_FIXTURE_EMAIL
-  RUBRICAL_FIXTURE_INST_HOSTS   comma-separated hosts
+  FIXTURE_DISPLAY_NAME
+  FIXTURE_EMAIL
+  FIXTURE_INST_HOSTS   comma-separated hosts
 
 When stdin is a TTY and values are still missing, the script prompts for them.
 `);

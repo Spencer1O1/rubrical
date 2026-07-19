@@ -1,0 +1,62 @@
+name: rubrical
+repo: /srv/repos/rubrical
+branch: main
+hook_port: 9011
+pnpm: true
+
+webhook:
+  zone: spencerls.dev
+  subdomain: rubrical
+
+databases:
+  rubrical:
+    user: rubrical
+
+apps:
+  rubrical:
+    type: go
+    port: 8787
+    binary: bin/rubrical
+    database: rubrical
+    zone: spencerls.dev
+    subdomain: rubrical
+
+jobs:
+  rubrical-purge:
+    schedule: daily
+    binary: bin/rubrical-purge
+    database: rubrical
+
+generated_keys:
+  - SECRETS_ENCRYPTION_KEY
+
+secrets:
+  - GOOGLE_OAUTH_CLIENT_SECRET
+  - RESEND_API_KEY
+
+env:
+  PUBLIC_URL: "https://rubrical.spencerls.dev"
+  EMAIL_FROM: "Rubrical <noreply@rubrical.spencerls.dev>"
+  EXTENSION_ORIGINS: "chrome-extension://mdjogmaimihfjhgobpajfpkbibgmecce"
+  DATA_DIR: "/srv/repos/rubrical/data"
+  GOOGLE_OAUTH_CLIENT_ID: "507988832466-nbffbvusl0kqppkhp1pp1j9amgs3vs66.apps.googleusercontent.com"
+
+  SESSION_TTL: "720h"
+  POST_DUE_DATE_RETENTION_TIME: "168h"
+  POST_UPLOAD_RETENTION_TIME: "720h"
+  DRAFT_MAX_UPLOAD_BYTES:
+  DRAFT_MAX_UPLOAD_SLOTS:
+  ANALYSIS_MAX_SUBMISSION_TEXT_CHARS:
+  ANALYSIS_MAX_TOTAL_BYTES:
+  AI_ENFORCE_RATE_LIMITS:
+  AI_MAX_RUNS_PER_HOUR:
+  AI_MAX_RUNS_PER_DAY:
+  AI_MIN_SECONDS_BETWEEN_RUNS:
+
+migrate:
+  - make migrate-up
+
+build:
+  - make templ css
+  - make build
+  - make extension-package

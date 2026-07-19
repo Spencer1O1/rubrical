@@ -399,7 +399,7 @@ The user should be able to paste a draft into Rubrical if the extension cannot e
 
 **Stored submission files (required):**
 
-Rubrical always persists the student’s submission **file bytes** when one is captured from Canvas or uploaded in the UI. Metadata lives on `submission_drafts`; bytes live in local object storage (`RUBRICAL_DATA_DIR`, default `./data`).
+Rubrical always persists the student’s submission **file bytes** when one is captured from Canvas or uploaded in the UI. Metadata lives on `submission_drafts`; bytes live in local object storage (`DATA_DIR`, default `./data`).
 
 * Original filename (`source_file_name`)
 * MIME type, byte size, upload timestamp
@@ -950,14 +950,14 @@ Fields:
 * id
 * submission_draft_id
 * source_file_name
-* file_storage_key — path relative to `RUBRICAL_DATA_DIR`
+* file_storage_key — path relative to `DATA_DIR`
 * file_mime_type
 * file_byte_size
 * uploaded_at
 * sort_order
 * created_at
 
-File bytes are **not** in Postgres; they live under `RUBRICAL_DATA_DIR` at `file_storage_key`.
+File bytes are **not** in Postgres; they live under `DATA_DIR` at `file_storage_key`.
 
 Possible `source_type` values:
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Ensure .env.local exists and contains RUBRICAL_SECRETS_ENCRYPTION_KEY.
+ * Ensure .env.local exists and contains SECRETS_ENCRYPTION_KEY.
  * Idempotent — skips when the key is already set to a non-empty value.
  *
  * Usage: pnpm setup:secrets-key
@@ -10,7 +10,7 @@ import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { join } from "node:path";
 
-const KEY = "RUBRICAL_SECRETS_ENCRYPTION_KEY";
+const KEY = "SECRETS_ENCRYPTION_KEY";
 const envLocal = join(process.cwd(), ".env.local");
 const envExample = join(process.cwd(), ".env.example");
 

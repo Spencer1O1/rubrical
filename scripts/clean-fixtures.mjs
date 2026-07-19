@@ -13,7 +13,7 @@
  * Usage:
  *   pnpm clean:fixtures [--name ...] [--email ...] [--inst-host ...] [fixtures-dir] [file.html ...]
  *
- * Pass redaction values via flags, env vars (RUBRICAL_FIXTURE_*), or prompts when run interactively.
+ * Pass redaction values via flags, env vars (FIXTURE_*), or prompts when run interactively.
  */
 
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";

@@ -2,8 +2,8 @@ package config
 
 import "time"
 
-// Server defaults (ENV: RUBRICAL_HOST, RUBRICAL_PORT, POSTGRES_*, RUBRICAL_DATA_DIR, POST_*_RETENTION_TIME).
-// Dev flags without constants here (ENV only, see config.Load): RUBRICAL_STRICT_EXTRACTION, RUBRICAL_ALLOW_LOCAL_URL_FETCH.
+// Server defaults (ENV: RUBRICAL_HOST/PORT from homeserver app key, POSTGRES_*, DATA_DIR, POST_*_RETENTION_TIME).
+// Dev flags without constants here (ENV only, see config.Load): STRICT_EXTRACTION, ALLOW_LOCAL_URL_FETCH.
 const (
 	DefaultHost                 = "" // empty host → listen on all interfaces (:PORT)
 	DefaultPort                 = 8787

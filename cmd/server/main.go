@@ -43,7 +43,7 @@ func main() {
 		log.Printf("stale analysis run cleanup: %v", err)
 	}
 	if cfg.StrictExtraction {
-		log.Printf("RUBRICAL_STRICT_EXTRACTION=1 — extraction/display fallbacks disabled")
+		log.Printf("STRICT_EXTRACTION=1 — extraction/display fallbacks disabled")
 	}
 
 	fileStore, err := draftfiles.NewStore(cfg.DataDir)

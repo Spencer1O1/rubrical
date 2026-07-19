@@ -10,13 +10,13 @@ func TestLoadEnvFiles(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(
 		filepath.Join(dir, ".env.local"),
-		[]byte("RUBRICAL_STRICT_EXTRACTION=1\n"),
+		[]byte("STRICT_EXTRACTION=1\n"),
 		0o600,
 	); err != nil {
 		t.Fatal(err)
 	}
 
-	_ = os.Unsetenv("RUBRICAL_STRICT_EXTRACTION")
+	_ = os.Unsetenv("STRICT_EXTRACTION")
 
 	origDir, err := os.Getwd()
 	if err != nil {
@@ -29,8 +29,8 @@ func TestLoadEnvFiles(t *testing.T) {
 
 	loadEnvFiles()
 
-	if got := os.Getenv("RUBRICAL_STRICT_EXTRACTION"); got != "1" {
-		t.Fatalf("expected RUBRICAL_STRICT_EXTRACTION=1, got %q", got)
+	if got := os.Getenv("STRICT_EXTRACTION"); got != "1" {
+		t.Fatalf("expected STRICT_EXTRACTION=1, got %q", got)
 	}
 }
 
@@ -38,13 +38,13 @@ func TestLoadEnvFiles_doesNotOverrideExisting(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(
 		filepath.Join(dir, ".env.local"),
-		[]byte("RUBRICAL_STRICT_EXTRACTION=1\n"),
+		[]byte("STRICT_EXTRACTION=1\n"),
 		0o600,
 	); err != nil {
 		t.Fatal(err)
 	}
 
-	t.Setenv("RUBRICAL_STRICT_EXTRACTION", "0")
+	t.Setenv("STRICT_EXTRACTION", "0")
 
 	origDir, err := os.Getwd()
 	if err != nil {
@@ -57,7 +57,7 @@ func TestLoadEnvFiles_doesNotOverrideExisting(t *testing.T) {
 
 	loadEnvFiles()
 
-	if got := os.Getenv("RUBRICAL_STRICT_EXTRACTION"); got != "0" {
+	if got := os.Getenv("STRICT_EXTRACTION"); got != "0" {
 		t.Fatalf("expected existing env to win, got %q", got)
 	}
 }
@@ -66,13 +66,13 @@ func TestLoad_readsStrictFromEnvFile(t *testing.T) {
 	dir := t.TempDir()
 	if err := os.WriteFile(
 		filepath.Join(dir, ".env.local"),
-		[]byte("RUBRICAL_STRICT_EXTRACTION=1\nPOSTGRES_HOST=127.0.0.1\nPOSTGRES_PORT=5432\nPOSTGRES_USER=rubrical\nPOSTGRES_PASSWORD=rubrical\nPOSTGRES_DB=rubrical\nPOSTGRES_SSLMODE=disable\n"),
+		[]byte("STRICT_EXTRACTION=1\nPOSTGRES_HOST=127.0.0.1\nPOSTGRES_PORT=5432\nPOSTGRES_USER=rubrical\nPOSTGRES_PASSWORD=rubrical\nPOSTGRES_DB=rubrical\nPOSTGRES_SSLMODE=disable\n"),
 		0o600,
 	); err != nil {
 		t.Fatal(err)
 	}
 
-	_ = os.Unsetenv("RUBRICAL_STRICT_EXTRACTION")
+	_ = os.Unsetenv("STRICT_EXTRACTION")
 	for _, key := range []string{
 		"POSTGRES_HOST", "POSTGRES_PORT", "POSTGRES_USER",
 		"POSTGRES_PASSWORD", "POSTGRES_DB", "POSTGRES_SSLMODE",

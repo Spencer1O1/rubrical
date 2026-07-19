@@ -58,7 +58,7 @@ When cleaning live Canvas captures, pass your PII via flags, env vars, or prompt
 ```bash
 pnpm clean:fixtures -- --name "Your Name" --email "you@school.edu" --inst-host "school.instructure.com"
 # or
-RUBRICAL_FIXTURE_DISPLAY_NAME="..." RUBRICAL_FIXTURE_EMAIL="..." pnpm clean:fixtures
+FIXTURE_DISPLAY_NAME="..." FIXTURE_EMAIL="..." pnpm clean:fixtures
 ```
 
 **Adding a fixture:** save a live Canvas snapshot to `fixtures/my-case.html`, add `fixtures/expectations/my-case.json` (copy a similar case), run `pnpm clean:fixtures`, then `pnpm test:fixtures` and fix expectations until green. Without expectations yet, `clean:fixtures` keeps every `[data-testid]` subtree.

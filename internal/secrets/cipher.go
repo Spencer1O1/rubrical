@@ -20,7 +20,7 @@ const (
 
 var (
 	ErrInvalidKey  = errors.New("secrets encryption key must decode to 32 bytes")
-	ErrMissingKey  = errors.New("RUBRICAL_SECRETS_ENCRYPTION_KEY is required")
+	ErrMissingKey  = errors.New("SECRETS_ENCRYPTION_KEY is required")
 	ErrNotEncrypted = errors.New("secret value is not encrypted")
 )
 
