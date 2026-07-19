@@ -6,6 +6,9 @@
 # Go
 /vendor/
 
+# Templ generated files
+*_templ.go
+
 # Node
 node_modules/
 package-lock.json
