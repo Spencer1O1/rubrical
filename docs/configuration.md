@@ -85,6 +85,8 @@ When a file is skipped, a note is included in the prompt so the model knows it w
 
 Override defaults at deploy time. See [`.env.example`](../.env.example).
 
+Naming (`RUBRICAL_*` vs `POSTGRES_*` / `MINIO_*` / `STORAGE_*`) is a homeserver rule — see WorkForce `docs/HOMESERVER.md` §8 (shared across all apps on the server).
+
 | Variable | Default (in code) | Purpose |
 |----------|-------------------|---------|
 | `RUBRICAL_HOST` | empty (all interfaces) | HTTP listen host; production: `127.0.0.1` in `/etc/homeserver/server.env` |
