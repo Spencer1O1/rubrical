@@ -136,10 +136,13 @@ Use this layout for predictable operations:
   server.env
   cloudflare-ddns.env
   cloudflare-ddns.records
+  minio.env
   apps/
     <APP_NAME>.env
   deploy-hooks/
     <APP_NAME>.env
+
+/var/lib/minio/
 
 /etc/caddy/
   Caddyfile
@@ -166,6 +169,7 @@ sudo chown -R root:root /etc/homeserver
 sudo chmod 755 /etc/homeserver /etc/homeserver/apps /etc/homeserver/deploy-hooks
 sudo chmod 600 /etc/homeserver/*.env
 sudo chmod 600 /etc/homeserver/deploy-hooks/*.env
+# After creating minio.env (section 8), keep it mode 640 or 600 like other secrets.
 ```
 
 The records file does not contain secrets, but it is still server configuration:
@@ -740,6 +744,14 @@ SPENCERLS_HOOK_PORT=9001
 
 WORKFORCE_HOOK_HOST=127.0.0.1
 WORKFORCE_HOOK_PORT=9002
+
+# Shared Postgres (host/port only; credentials stay in apps/*.env)
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+
+# Shared MinIO (host/port only; root creds in minio.env, app keys in apps/*.env)
+MINIO_HOST=127.0.0.1
+MINIO_PORT=9100
 ```
 
 ## Make Caddy load the shared env file
@@ -858,7 +870,220 @@ HTTP/2 200
 
 ---
 
-# 8. App service pattern
+# 8. Shared data services (Postgres + MinIO)
+
+## Env naming (all apps)
+
+This is a **homeserver** contract — every product follows it (WorkForce, Rubrical, later apps).
+
+| Kind               | Names                                                                       | Where                                                                            |
+| ------------------ | --------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Product settings   | `<PRODUCT>_…` (e.g. `WORKFORCE_*`, `RUBRICAL_*`)                            | `server.env` for listen host/port; `apps/<app>.env` for product secrets/settings |
+| Shared infra       | `POSTGRES_*`, `MINIO_*`, `STORAGE_*` — **no** product prefix                | Host/port in `server.env`; per-app role/keys in `apps/<app>.env`                 |
+| Vendor / framework | Their required names (`STRIPE_*`, `NEXT_PUBLIC_*`, `GOOGLE_*`, `SMTP_*`, …) | Usually `apps/<app>.env`                                                         |
+
+Examples that are correct: `POSTGRES_USER`, `STORAGE_ACCESS_KEY`, `WORKFORCE_PUBLIC_WEB_URL`, `RUBRICAL_DATA_DIR`.  
+Wrong: `WORKFORCE_POSTGRES_USER`, `WORKFORCE_STORAGE_*`, `RUBRICAL_POSTGRES_*`, baking `POSTGRES_HOST` into app env.
+
+`STORAGE_*` is the per-app MinIO user/bucket (same idea as `POSTGRES_USER` / `POSTGRES_DB`). Listen address is only `MINIO_HOST` / `MINIO_PORT` / `MINIO_CONSOLE_PORT`.
+
+## Postgres host/port
+
+One apt Postgres for the server. **Host and port belong in `server.env`**, not hardcoded inside each app’s secrets file:
+
+```env
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+```
+
+Per-app `/etc/homeserver/apps/<APP_NAME>.env` holds only the role secrets and database name, for example:
+
+```env
+POSTGRES_USER=<app>
+POSTGRES_PASSWORD=CHANGE_ME
+POSTGRES_DB=<app>
+POSTGRES_SSLMODE=disable
+```
+
+Apps assemble the connection string from `POSTGRES_HOST` / `POSTGRES_PORT` (server.env) plus user/password/db (app env). Never bake host/port into the app env.
+
+Each app still gets its own Postgres **role + database** on that shared instance.
+
+## Object storage (MinIO)
+
+One MinIO instance for the whole server — same idea as one Postgres.
+
+Apps do **not** each run their own MinIO. Each app gets:
+
+- its own **MinIO user** (access key + secret) — same idea as a Postgres role
+- its own **bucket**
+- those credentials in `/etc/homeserver/apps/<APP_NAME>.env` as `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_BUCKET`, `STORAGE_PUBLIC_ENDPOINT` (optional `STORAGE_ENDPOINT` override)
+
+`MINIO_ROOT_*` in `minio.env` is admin-only (create users/buckets). Do **not** put root into app env.
+
+One public hostname for browser/presigned access (all apps):
+
+```text
+Internet
+  ↓
+Caddy → storage.<ZONE_NAME>
+  ↓
+127.0.0.1:9100  →  minio.service  →  /var/lib/minio
+```
+
+Do not expose `9100` / `9101` on the WAN. Console stays on loopback (`127.0.0.1:9101`).
+
+## Install binaries (once)
+
+Server (`minio`) plus optional admin CLI (`mc`) — same pattern as installing `psql` tools for Postgres:
+
+```bash
+curl -fsSL https://dl.min.io/server/minio/release/linux-amd64/minio -o /tmp/minio
+chmod +x /tmp/minio
+sudo mv /tmp/minio /usr/local/bin/minio
+
+curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/mc
+chmod +x /tmp/mc
+sudo mv /tmp/mc /usr/local/bin/mc
+
+minio --version
+mc --version
+```
+
+`mc` is only for operator tasks (create users/buckets). Runtime apps talk to MinIO over the S3 API and do not need `mc`.
+
+## Data directory
+
+```bash
+sudo mkdir -p /var/lib/minio
+sudo chown <LINUX_USER>:<LINUX_USER> /var/lib/minio
+```
+
+## Env file
+
+```bash
+sudo nano /etc/homeserver/minio.env
+sudo chown root:<LINUX_USER> /etc/homeserver/minio.env
+sudo chmod 640 /etc/homeserver/minio.env
+```
+
+```env
+MINIO_ROOT_USER=minio
+MINIO_ROOT_PASSWORD=CHANGE_ME
+MINIO_VOLUMES=/var/lib/minio
+```
+
+`MINIO_ROOT_*` are server admin credentials only. Create a per-app MinIO user and put that access key/secret in the app env (never the root pair). Do **not** put listen addresses in `minio.env` — those live only in `server.env`.
+
+## server.env host/port (single source of truth)
+
+Same pattern as Postgres. Caddy, apps, and `minio.service` all read these — there is no second bind address in `minio.env`:
+
+```env
+MINIO_HOST=127.0.0.1
+MINIO_PORT=9100
+MINIO_CONSOLE_PORT=9101
+```
+
+## systemd unit
+
+```bash
+sudo nano /etc/systemd/system/minio.service
+```
+
+```ini
+[Unit]
+Description=MinIO object storage
+Documentation=https://docs.min.io
+Wants=network-online.target
+After=network-online.target
+AssertFileIsExecutable=/usr/local/bin/minio
+
+[Service]
+Type=simple
+User=<LINUX_USER>
+Group=<LINUX_USER>
+ProtectProc=invisible
+EnvironmentFile=/etc/homeserver/server.env
+EnvironmentFile=/etc/homeserver/minio.env
+ExecStartPre=/bin/bash -c "test -n \"${MINIO_HOST}\" && test -n \"${MINIO_PORT}\" && test -n \"${MINIO_CONSOLE_PORT}\" && test -n \"${MINIO_VOLUMES}\" || { echo 'MINIO_HOST/PORT/CONSOLE_PORT (server.env) and MINIO_VOLUMES (minio.env) required' >&2; exit 1; }"
+ExecStart=/usr/local/bin/minio server --address ${MINIO_HOST}:${MINIO_PORT} --console-address ${MINIO_HOST}:${MINIO_CONSOLE_PORT} ${MINIO_VOLUMES}
+Restart=always
+RestartSec=5
+LimitNOFILE=65536
+TasksMax=infinity
+TimeoutStopSec=infinity
+SendSIGKILL=no
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now minio
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:9100/minio/health/live
+# expect 200
+```
+
+## Public Caddy hostname (once)
+
+Add DNS for `storage.<ZONE_NAME>` and one Caddy site:
+
+```caddy
+storage.example.dev {
+	reverse_proxy {$MINIO_HOST}:{$MINIO_PORT}
+}
+```
+
+Apps set their storage **public** endpoint to `https://storage.<ZONE_NAME>` and use separate buckets. Do not invent `app-storage.` hostnames per product.
+
+Store the app’s MinIO access key/secret/bucket in `/etc/homeserver/apps/<APP_NAME>.env` first (generate the secret with `openssl rand -base64 32`). That file is the single source of truth — `mc` and the app both load it.
+
+```bash
+# example for WorkForce — STORAGE_* already in apps/workforce.env
+set -a
+source /etc/homeserver/server.env
+source /etc/homeserver/minio.env
+source /etc/homeserver/apps/workforce.env
+set +a
+
+mc alias set local "http://${MINIO_HOST}:${MINIO_PORT}" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
+mc admin info local
+mc admin user add local "$STORAGE_ACCESS_KEY" "$STORAGE_SECRET_KEY"
+mc mb -p "local/${STORAGE_BUCKET}"
+
+# Bucket-scoped policy only — policy name = bucket name. Never attach built-in `readwrite`.
+cat >"/tmp/${STORAGE_BUCKET}.json" <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["s3:*"],
+      "Resource": [
+        "arn:aws:s3:::${STORAGE_BUCKET}",
+        "arn:aws:s3:::${STORAGE_BUCKET}/*"
+      ]
+    }
+  ]
+}
+EOF
+mc admin policy create local "$STORAGE_BUCKET" "/tmp/${STORAGE_BUCKET}.json"
+mc admin policy attach local "$STORAGE_BUCKET" --user "$STORAGE_ACCESS_KEY"
+```
+
+The app may also ensure its bucket exists on boot.
+
+## Adding another app that needs storage
+
+1. Put public URL / access key / secret / bucket in that app’s env (generate secret once into the file).
+2. Source envs; create user + bucket + **bucket-scoped** policy (above). Never `readwrite`.
+3. Do **not** install another MinIO or another storage hostname.
+
+---
+
+# 9. App service pattern
 
 Every long-running app should have a systemd service.
 
@@ -900,7 +1125,7 @@ A single repo deploy script may restart multiple services.
 
 ---
 
-# 9. Next.js app service template
+# 10. Next.js app service template
 
 Use this for a normal self-hosted Next.js app.
 
@@ -982,7 +1207,7 @@ curl -I http://127.0.0.1:<APP_PORT>
 
 ---
 
-# 10. Go app service template
+# 11. Go app service template
 
 For a Go app, build a binary and run it through systemd.
 
@@ -1056,7 +1281,7 @@ curl -I http://127.0.0.1:<APP_PORT>
 
 ---
 
-# 11. Static site service pattern
+# 12. Static site service pattern
 
 For a truly static site, no app service is needed.
 
@@ -1088,7 +1313,7 @@ Use it only for static builds.
 
 ---
 
-# 12. GitHub deploy automation pattern
+# 13. GitHub deploy automation pattern
 
 There are three pieces:
 
@@ -1186,7 +1411,7 @@ Do not give broad passwordless sudo.
 
 ---
 
-# 13. Deploy-hook generic contract
+# 14. Deploy-hook generic contract
 
 The reusable deploy-hook binary should support these env vars:
 
@@ -1250,7 +1475,7 @@ sudo chmod 600 /etc/homeserver/deploy-hooks/<APP_NAME>.env
 
 ---
 
-# 14. Deploy-hook service template
+# 15. Deploy-hook service template
 
 Create:
 
@@ -1319,7 +1544,7 @@ Expected:
 
 ---
 
-# 15. GitHub webhook setup
+# 16. GitHub webhook setup
 
 In GitHub:
 
@@ -1364,7 +1589,7 @@ deploy finished
 
 ---
 
-# 16. Cloning repos
+# 17. Cloning repos
 
 Repos should live under:
 
@@ -1424,7 +1649,7 @@ git fetch origin
 
 ---
 
-# 17. Adding a new app from an existing monorepo
+# 18. Adding a new app from an existing monorepo
 
 Use this when the repo is already cloned and the new app is another package/app inside it.
 
@@ -1478,7 +1703,7 @@ CHEQUE_HOOK_PORT=9003
 
 ---
 
-# 18. Adding a new app from a totally different repo/domain
+# 19. Adding a new app from a totally different repo/domain
 
 Example values:
 
@@ -1535,7 +1760,7 @@ EXAMPLE_APP_HOOK_PORT=9010
 
 ---
 
-# 19. Generic checklist for any new public app
+# 20. Generic checklist for any new public app
 
 ## Inputs
 
@@ -1583,6 +1808,17 @@ HOST/PORT values added
 Caddy restarted if env changed
 ```
 
+## Shared data (section 8)
+
+```text
+POSTGRES_HOST / POSTGRES_PORT in server.env
+MINIO_HOST / MINIO_PORT in server.env
+App env has POSTGRES_USER / PASSWORD / DB / SSLMODE (host/port only in server.env)
+Shared minio.service already running (bind from server.env MINIO_*; minio.env = root + volume only)
+storage.<ZONE> Caddy site → {$MINIO_HOST}:{$MINIO_PORT}
+Per-app MinIO user + bucket + public URL https://storage.<ZONE> (keys in apps/<app>.env, not root)
+```
+
 ## App service
 
 ```text
@@ -1626,7 +1862,7 @@ push deploy works
 
 ---
 
-# 20. Testing commands
+# 21. Testing commands
 
 Test app directly:
 
@@ -1697,7 +1933,7 @@ dig +short <DOMAIN> @1.1.1.1
 
 ---
 
-# 21. Reboot survival checklist
+# 22. Reboot survival checklist
 
 These services should be enabled:
 
@@ -1738,7 +1974,7 @@ systemctl list-timers cloudflare-ddns.timer
 
 ---
 
-# 22. SSH and admin access
+# 23. SSH and admin access
 
 Use Tailscale for remote SSH.
 
@@ -1772,7 +2008,7 @@ Do not publicly forward SSH unless there is a very specific reason.
 
 ---
 
-# 23. Troubleshooting
+# 24. Troubleshooting
 
 ## Caddy returns 502
 
@@ -2013,7 +2249,7 @@ Only re-enable proxied mode after the DNS-only setup is healthy.
 
 ---
 
-# 24. Future automation ideas
+# 25. Future automation ideas
 
 The repeated pieces should eventually become scripts.
 
@@ -2062,7 +2298,7 @@ It should:
 
 ---
 
-# 25. Final rule
+# 26. Final rule
 
 A hosted app is not considered done until all of these work:
 
