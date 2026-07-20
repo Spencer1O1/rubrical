@@ -36,7 +36,7 @@ secrets:
 
 env:
   PUBLIC_URL: "https://rubrical.spencerls.dev"
-  EMAIL_FROM: "Rubrical <noreply@rubrical.spencerls.dev>"
+  EMAIL_FROM: "Rubrical <rubrical@spencerls.dev>"
   EXTENSION_ORIGINS: "chrome-extension://mdjogmaimihfjhgobpajfpkbibgmecce"
   DATA_DIR: "/srv/repos/rubrical/data"
   GOOGLE_OAUTH_CLIENT_ID: "507988832466-nbffbvusl0kqppkhp1pp1j9amgs3vs66.apps.googleusercontent.com"

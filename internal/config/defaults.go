@@ -12,7 +12,7 @@ const (
 	DefaultPostUploadRetention  = 720 * time.Hour
 	DefaultPublicURL            = "http://localhost:8787"
 	DefaultSessionTTL           = 30 * 24 * time.Hour
-	DefaultEmailFrom            = "Rubrical <noreply@rubrical.spencerls.dev>"
+	DefaultEmailFrom            = "Rubrical <rubrical@spencerls.dev>"
 	DefaultSMTPPort             = "587"
 )
 
