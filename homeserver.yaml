@@ -16,7 +16,6 @@ apps:
   rubrical:
     type: go
     port: 8787
-    binary: bin/rubrical
     database: rubrical
     zone: spencerls.dev
     subdomain: rubrical
@@ -24,7 +23,6 @@ apps:
 jobs:
   rubrical-purge:
     schedule: daily
-    binary: bin/rubrical-purge
     database: rubrical
 
 generated_keys:
