@@ -47,8 +47,8 @@ func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
 	if strings.Contains(req.SystemPrompt, "- Discussion main topic reply") {
 		t.Fatal("draft context value should not be a bullet")
 	}
-	if !strings.Contains(req.SystemPrompt, "Judging the criterion uses evidence from this Draft context") {
-		t.Fatalf("expected draft-context locus in rule:\n%s", req.SystemPrompt)
+	if !strings.Contains(req.SystemPrompt, "The evidence needed to judge the criterion would be in that draft") {
+		t.Fatalf("expected would-be-in-draft locus in rule:\n%s", req.SystemPrompt)
 	}
 	if !strings.Contains(req.UserPrompt, "Classmate Reply") || !strings.Contains(req.UserPrompt, "id=classmate-reply") {
 		t.Fatalf("expected criterion id+name in prompt:\n%s", req.UserPrompt)
@@ -136,8 +136,11 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 	if strings.Contains(sys, "Missing expected") || strings.Contains(sys, "score it poorly") {
 		t.Fatal("system prompt must not describe pass-2 scoring of missing evidence")
 	}
-	if !strings.Contains(sys, "Judging the criterion uses evidence from this Draft context") {
-		t.Fatal("system prompt missing draft-context locus in rule")
+	if !strings.Contains(sys, "The evidence needed to judge the criterion would be in that draft") {
+		t.Fatal("system prompt missing would-be-in-draft locus in rule")
+	}
+	if !strings.Contains(sys, "pre-submission feedback on one student draft") {
+		t.Fatal("system prompt must state Rubrical checks one student draft")
 	}
 	if strings.Contains(sys, "possible channels") || strings.Contains(sys, "this request lists") || strings.Contains(sys, "# Allowed channels") {
 		t.Fatal("assignment channels are inlined in the rule")

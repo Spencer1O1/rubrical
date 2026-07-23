@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"rubrical/internal/draftfiles"
 	"rubrical/internal/draftmode"
+	"rubrical/internal/drafttext"
 	"rubrical/internal/importpayload"
 	"rubrical/internal/web/pages"
 )
@@ -605,7 +606,7 @@ func (h *Handlers) upsertLatestDraft(ctx context.Context, assignmentID int64, op
 		return nil
 	}
 
-	wordCount := pages.DraftWordCount(next.Body)
+	wordCount := drafttext.WordCount(next.Body)
 
 	if existing == nil {
 		err = h.db.Pool.QueryRow(ctx, `

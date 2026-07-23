@@ -38,8 +38,21 @@ func TestBuildSubmission_textModeExcludesFiles(t *testing.T) {
 	if !contains(got, "hello") {
 		t.Fatal("expected draft text")
 	}
+	if !contains(got, "Word count: 1") {
+		t.Fatalf("expected computed word count:\n%s", got)
+	}
 	if contains(got, "secret.txt") {
 		t.Fatal("text mode must not include file context")
+	}
+}
+
+func TestBuildSubmission_textModeWordCountFromHTML(t *testing.T) {
+	got := BuildSubmission(Input{
+		DraftMode: "text",
+		DraftText: `<p>one two three</p>`,
+	}, 1000)
+	if !contains(got, "Word count: 3") {
+		t.Fatalf("expected HTML word count:\n%s", got)
 	}
 }
 

@@ -8,10 +8,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 )
 
-var (
-	ugcHTMLPolicy    = bluemonday.UGCPolicy()
-	strictHTMLPolicy = bluemonday.StrictPolicy()
-)
+var ugcHTMLPolicy = bluemonday.UGCPolicy()
 
 var instructionTablePattern = regexp.MustCompile(`(?is)(<table\b[^>]*>.*?</table>)`)
 
@@ -40,19 +37,6 @@ func SanitizedInstructionsHTML(raw string) string {
 // SanitizedDraftHTML prepares draft body HTML for storage and rich-text display.
 func SanitizedDraftHTML(raw string) string {
 	return SanitizeUGCHTML(raw)
-}
-
-// DraftPlainText strips tags for emptiness checks and word counts.
-func DraftPlainText(raw string) string {
-	if strings.TrimSpace(raw) == "" {
-		return ""
-	}
-	return strings.TrimSpace(strictHTMLPolicy.Sanitize(decodeHTMLEntities(raw)))
-}
-
-// DraftWordCount counts words in the visible text of draft HTML/plain body.
-func DraftWordCount(raw string) int {
-	return len(strings.Fields(DraftPlainText(raw)))
 }
 
 func wrapInstructionTables(html string) string {

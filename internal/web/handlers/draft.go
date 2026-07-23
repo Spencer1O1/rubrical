@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"rubrical/internal/analysispipeline"
 	"rubrical/internal/draftmode"
+	"rubrical/internal/drafttext"
 	"rubrical/internal/drafturl"
 	"rubrical/internal/submissiontypes"
 	"rubrical/internal/urlfetch"
@@ -33,7 +34,7 @@ func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body := pages.SanitizedDraftHTML(r.FormValue("draft"))
-	if pages.DraftPlainText(body) == "" {
+	if drafttext.PlainText(body) == "" {
 		if err := h.clearDraftTextBody(r.Context(), id); err != nil {
 			if renderHTMXDraftStatusError(w, r, id, "failed to clear draft") {
 				return
@@ -62,7 +63,7 @@ func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		pages.DraftSaved(pages.DraftSavedMessage(pages.DraftWordCount(body), "")).Render(r.Context(), w)
+		pages.DraftSaved(pages.DraftSavedMessage(drafttext.WordCount(body), "")).Render(r.Context(), w)
 		return
 	}
 
@@ -428,7 +429,7 @@ func (h *Handlers) persistDraftFromAnalyzeForm(ctx context.Context, assignmentID
 			return nil
 		}
 		body := pages.SanitizedDraftHTML(r.FormValue("draft"))
-		if pages.DraftPlainText(body) == "" {
+		if drafttext.PlainText(body) == "" {
 			return h.clearDraftTextBody(ctx, assignmentID)
 		}
 		return h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{

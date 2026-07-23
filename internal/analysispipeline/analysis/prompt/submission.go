@@ -3,6 +3,8 @@ package prompt
 import (
 	"fmt"
 	"strings"
+
+	"rubrical/internal/drafttext"
 )
 
 func BuildSubmission(input Input, maxSubmissionTextChars int) string {
@@ -49,12 +51,16 @@ func writeFileSubmission(b *strings.Builder, input Input, budget *textBudget) {
 
 func writeTextSubmission(b *strings.Builder, input Input, budget *textBudget) {
 	b.WriteString("text\n")
+	words := drafttext.WordCount(input.DraftText)
 	draft := budget.take(input.DraftText)
 	if draft == "" && !hasFileContext(input.Files) {
 		b.WriteString("(empty)\n")
 	} else if draft != "" {
 		b.WriteString(draft)
 		b.WriteByte('\n')
+	}
+	if words > 0 {
+		fmt.Fprintf(b, "Word count: %d\n", words)
 	}
 }
 
