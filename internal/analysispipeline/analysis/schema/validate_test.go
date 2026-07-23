@@ -121,6 +121,35 @@ func TestValidateProviderResponse_rejectsInvalidConfidence(t *testing.T) {
 	}
 }
 
+func TestValidateProviderResponse_dropsFulfilledOverlappingUnfulfilled(t *testing.T) {
+	criterion := sampleCriterion()
+	dup := "Offers a deep, thoughtful reflection on intellectual and emotional responses."
+	criterion.FulfilledRequirements = []FulfilledRequirement{{
+		Requirement: dup,
+		Evidence:    "Questions whether the story reflects the concluding message.",
+	}}
+	criterion.UnfulfilledRequirements = []UnfulfilledRequirement{{
+		Requirement: dup,
+		Severity:    "medium",
+		Explanation: "The emotional response could be more fully developed.",
+		Suggestion:  "Expand on how the piece made you feel.",
+	}}
+	out := ProviderResponse{
+		OverallSummary: "Partial reflection.",
+		Confidence:     "medium",
+		Criteria:       []CriterionAssessment{criterion},
+	}
+	if err := ValidateProviderResponse(&out); err != nil {
+		t.Fatal(err)
+	}
+	if len(out.Criteria[0].FulfilledRequirements) != 0 {
+		t.Fatalf("expected overlapping fulfilled dropped, got %+v", out.Criteria[0].FulfilledRequirements)
+	}
+	if len(out.Criteria[0].UnfulfilledRequirements) != 1 {
+		t.Fatalf("expected gap kept, got %+v", out.Criteria[0].UnfulfilledRequirements)
+	}
+}
+
 func TestValidateProviderResponse_acceptsEmptyRequirementArrays(t *testing.T) {
 	out := ProviderResponse{
 		OverallSummary: "Summary",

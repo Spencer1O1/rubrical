@@ -102,6 +102,7 @@ func ValidateScoredAnalysis(out *ScoredAnalysis) error {
 		if err := validateUnfulfilledRequirements(i, &c.UnfulfilledRequirements); err != nil {
 			return err
 		}
+		dropFulfilledOverlappingUnfulfilled(&c.FulfilledRequirements, c.UnfulfilledRequirements)
 	}
 
 	out.Strengths = trimStrings(out.Strengths)
@@ -132,7 +133,11 @@ func validateCriterionAssessment(index int, c *CriterionAssessment) error {
 	if err := validateFulfilledRequirements(index, &c.FulfilledRequirements); err != nil {
 		return err
 	}
-	return validateUnfulfilledRequirements(index, &c.UnfulfilledRequirements)
+	if err := validateUnfulfilledRequirements(index, &c.UnfulfilledRequirements); err != nil {
+		return err
+	}
+	dropFulfilledOverlappingUnfulfilled(&c.FulfilledRequirements, c.UnfulfilledRequirements)
+	return nil
 }
 
 func validateFulfilledRequirements(index int, items *[]FulfilledRequirement) error {
@@ -174,6 +179,30 @@ func validateUnfulfilledRequirements(index int, items *[]UnfulfilledRequirement)
 		}
 	}
 	return nil
+}
+
+// dropFulfilledOverlappingUnfulfilled removes fulfilled rows whose requirement text
+// also appears under unfulfilled — a requirement cannot be both met and a gap.
+func dropFulfilledOverlappingUnfulfilled(fulfilled *[]FulfilledRequirement, unfulfilled []UnfulfilledRequirement) {
+	if fulfilled == nil || len(*fulfilled) == 0 || len(unfulfilled) == 0 {
+		return
+	}
+	gaps := make(map[string]struct{}, len(unfulfilled))
+	for _, item := range unfulfilled {
+		gaps[normalizeRequirementKey(item.Requirement)] = struct{}{}
+	}
+	kept := (*fulfilled)[:0]
+	for _, item := range *fulfilled {
+		if _, hit := gaps[normalizeRequirementKey(item.Requirement)]; hit {
+			continue
+		}
+		kept = append(kept, item)
+	}
+	*fulfilled = kept
+}
+
+func normalizeRequirementKey(s string) string {
+	return strings.ToLower(strings.Join(strings.Fields(s), " "))
 }
 
 func SeverityForStatus(status string) string {

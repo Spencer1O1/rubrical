@@ -44,11 +44,12 @@ Pick a specific value in the fitting range. Do not always use range boundaries (
 Why this rating fits, and whether the draft sits low/mid/high within it. Cite key fulfilled and unfulfilled requirements.
 
 ### fulfilledRequirements
-Requirements met for this criterion (instructions + rubric). Each item needs a requirement and evidence from the draft.
+Fully met requirements only. Each item needs a requirement and evidence from the draft.
 Empty list only if nothing is clearly met.
 
 ### unfulfilledRequirements
-Missing, weak, partial, or incomplete requirements. Partial belongs here, not under fulfilled.
+Missing, weak, partial, or incomplete requirements. Never also listed under fulfilled.
+If only part of a rubric phrase is met, split it into distinct requirements — met part under fulfilled, unmet part here.
 Each item needs a requirement, severity, explanation, and suggestion.
 - severity low — polish / stretch
 - medium — noticeable gap

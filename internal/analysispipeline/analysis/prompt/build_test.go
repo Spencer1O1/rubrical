@@ -8,6 +8,8 @@ func TestBuildSystem_scoringGuidance(t *testing.T) {
 		"scoreRationale",
 		"fulfilledRequirements",
 		"unfulfilledRequirements",
+		"Fully met only",
+		"Never also listed under fulfilled",
 		"bandPosition",
 		"guidance",
 		"Exactly one object per **analyzable** rubric criterion",
