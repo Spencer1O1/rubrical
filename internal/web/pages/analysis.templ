@@ -83,16 +83,24 @@ templ criterionResultCard(item AnalysisFeedbackView) {
 						{ criterionStatusLabel(item.CriterionStatus) }
 					</span>
 				}
-				if item.PointsLabel != "" {
+				if item.PointsLabel != "" && item.CriterionStatus != "not_analyzable" {
 					<span class="tabular-nums font-medium text-stone-700">{ item.PointsLabel } pts</span>
 				}
 			</div>
 		</div>
 
-		@CriterionScale(item.Scale)
-
+		if item.ShowScale {
+			@CriterionScale(item.Scale)
+		}
 		if item.ScoreRationale != "" {
-			<p class="mt-3 text-sm text-stone-700"><span class="font-medium text-stone-800">Score rationale:</span> { item.ScoreRationale }</p>
+			if item.CriterionStatus == "not_analyzable" {
+				<p class="mt-3 text-sm text-stone-700"><span class="font-medium text-stone-800">Why we can’t check this:</span> { item.ScoreRationale }</p>
+			} else {
+				<p class="mt-3 text-sm text-stone-700"><span class="font-medium text-stone-800">Score rationale:</span> { item.ScoreRationale }</p>
+			}
+		}
+		if item.HowToEarnPoints != "" {
+			<p class="mt-3 text-sm text-stone-700"><span class="font-medium text-stone-800">How to earn these points:</span> { item.HowToEarnPoints }</p>
 		}
 		if len(item.FulfilledRequirements) > 0 {
 			<div class="mt-3 text-sm text-stone-700">

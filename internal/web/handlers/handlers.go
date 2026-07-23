@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"rubrical/internal/aisettings"
-	"rubrical/internal/analysis"
+	"rubrical/internal/analysispipeline"
+	"rubrical/internal/analysispipeline/analysis"
 	"rubrical/internal/auth"
 	"rubrical/internal/config"
 	"rubrical/internal/db"
@@ -24,7 +25,7 @@ type Handlers struct {
 	authSecure       bool
 	embedSecret      string
 	strictExtraction bool
-	analysis         *analysis.Service
+	analysis         *analysispipeline.Service
 	aiSettings       *aisettings.Store
 	importLimits     importpayload.Limits
 }
@@ -34,14 +35,14 @@ func New(
 	files *draftfiles.Store,
 	authSvc *auth.Service,
 	cfg config.Config,
-	analysisSvc *analysis.Service,
+	analysisSvc *analysispipeline.Service,
 	aiSettings *aisettings.Store,
 	mailer email.Sender,
 ) *Handlers {
 	return &Handlers{
-		db:               database,
-		files:            files,
-		auth:             authSvc,
+		db:    database,
+		files: files,
+		auth:  authSvc,
 		google: auth.GoogleConfig{
 			ClientID:     cfg.GoogleOAuthClientID,
 			ClientSecret: cfg.GoogleOAuthClientSecret,
@@ -65,7 +66,7 @@ func (h *Handlers) maxDraftUploadBytes() int {
 	return h.importLimits.MaxUploadBytes
 }
 
-func (h *Handlers) analysisResultsView(ctx context.Context, assignmentID int64, result *analysis.Result) pages.AnalysisResultsView {
+func (h *Handlers) analysisResultsView(ctx context.Context, assignmentID int64, result *analysispipeline.Result) pages.AnalysisResultsView {
 	rubric := analysis.RubricContext{}
 	if h.analysis != nil {
 		if loaded, err := h.analysis.LoadRubricContext(ctx, assignmentID); err == nil {

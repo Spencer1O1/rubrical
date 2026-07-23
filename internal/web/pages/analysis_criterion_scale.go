@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"rubrical/internal/analysis"
-	"rubrical/internal/analysis/schema"
+	"rubrical/internal/analysispipeline"
+	"rubrical/internal/analysispipeline/analysis"
+	"rubrical/internal/analysispipeline/analysis/schema"
 )
 
 type RatingCellView struct {
@@ -39,34 +40,43 @@ type AnalysisFeedbackView struct {
 	Title                   string
 	Explanation             string
 	ScoreRationale          string
+	HowToEarnPoints         string
 	FulfilledRequirements   []FulfilledRequirementView
 	UnfulfilledRequirements []UnfulfilledRequirementView
 	CriterionStatus         string
 	SelectedRating          string
 	PointsLabel             string
 	Scale                   CriterionScaleView
+	ShowScale               bool
 }
 
 type AnalysisResultsView struct {
-	HasResults          bool
-	OverallSummary      string
-	ScoreLabel          string
-	ConfidenceLabel     string
-	CompletedAtLabel    string
-	Criteria            []AnalysisFeedbackView
-	Strengths           []AnalysisFeedbackView
-	Guidance            []AnalysisFeedbackView
+	HasResults       bool
+	OverallSummary   string
+	ScoreLabel       string
+	ConfidenceLabel  string
+	CompletedAtLabel string
+	Criteria         []AnalysisFeedbackView
+	Strengths        []AnalysisFeedbackView
+	Guidance         []AnalysisFeedbackView
 }
 
-func AnalysisResultsFromResult(result *analysis.Result, rubric analysis.RubricContext) AnalysisResultsView {
+func AnalysisResultsFromResult(result *analysispipeline.Result, rubric analysis.RubricContext) AnalysisResultsView {
 	if result == nil {
 		return AnalysisResultsView{}
+	}
+
+	unchecked := 0
+	for _, item := range result.Feedback {
+		if item.Category == "criterion" && item.CriterionStatus == "not_analyzable" {
+			unchecked++
+		}
 	}
 
 	view := AnalysisResultsView{
 		HasResults:       true,
 		OverallSummary:   result.OverallSummary,
-		ScoreLabel:       formatScoreLabel(result.PredictedScore, result.PredictedScoreMax),
+		ScoreLabel:       formatScoreLabel(result.PredictedScore, result.PredictedScoreMax, unchecked),
 		ConfidenceLabel:  formatConfidenceLabel(result.Confidence),
 		CompletedAtLabel: formatAnalysisTime(result.CompletedAt),
 	}
@@ -79,15 +89,21 @@ func AnalysisResultsFromResult(result *analysis.Result, rubric analysis.RubricCo
 			Title:                   item.Title,
 			Explanation:             item.Explanation,
 			ScoreRationale:          item.ScoreRationale,
+			HowToEarnPoints:         item.HowToEarnPoints,
 			FulfilledRequirements:   mapFulfilledRequirements(item.FulfilledRequirements),
 			UnfulfilledRequirements: mapUnfulfilledRequirements(item.UnfulfilledRequirements),
 			CriterionStatus:         item.CriterionStatus,
 			SelectedRating:          item.SelectedRating,
-			PointsLabel:             formatPointsLabel(item.PredictedPoints, item.MaxPoints),
+			ShowScale:               item.CriterionStatus != "not_analyzable",
+		}
+		if item.CriterionStatus != "not_analyzable" {
+			feedback.PointsLabel = formatPointsLabel(item.PredictedPoints, item.MaxPoints)
 		}
 		switch item.Category {
 		case "criterion":
-			feedback.Scale = buildCriterionScale(rubric, item)
+			if feedback.ShowScale {
+				feedback.Scale = buildCriterionScale(rubric, item)
+			}
 			view.Criteria = append(view.Criteria, feedback)
 		case "strength":
 			view.Strengths = append(view.Strengths, feedback)
@@ -123,7 +139,7 @@ func mapUnfulfilledRequirements(items []schema.UnfulfilledRequirement) []Unfulfi
 	return out
 }
 
-func buildCriterionScale(rubric analysis.RubricContext, item analysis.FeedbackItem) CriterionScaleView {
+func buildCriterionScale(rubric analysis.RubricContext, item analysispipeline.FeedbackItem) CriterionScaleView {
 	row, ok := analysis.MatchRubricRow(rubric, item.Title)
 	if !ok {
 		return fallbackScale(item)
@@ -147,13 +163,13 @@ func buildCriterionScale(rubric analysis.RubricContext, item analysis.FeedbackIt
 		}
 	}
 
-	want := normalizeLabel(item.SelectedRating)
+	want := strings.TrimSpace(item.SelectedRating)
 	cells := make([]RatingCellView, len(bands))
 	for i, band := range bands {
 		cells[i] = RatingCellView{
 			Label:       formatRatingLabel(band.Title, formatBandPoints(band.Points)),
 			Description: strings.TrimSpace(band.Description),
-			Selected:    normalizeLabel(band.Title) == want,
+			Selected:    strings.TrimSpace(band.Title) == want,
 		}
 	}
 
@@ -164,7 +180,7 @@ func buildCriterionScale(rubric analysis.RubricContext, item analysis.FeedbackIt
 	}
 }
 
-func fallbackScale(item analysis.FeedbackItem) CriterionScaleView {
+func fallbackScale(item analysispipeline.FeedbackItem) CriterionScaleView {
 	score := 0.0
 	if item.CriterionScore != nil {
 		score = *item.CriterionScore
@@ -210,8 +226,4 @@ func formatPointsOnly(predicted, max *float64) string {
 		return fmt.Sprintf("%.1f", *predicted)
 	}
 	return ""
-}
-
-func normalizeLabel(s string) string {
-	return analysis.NormalizeCriterionLabel(s)
 }

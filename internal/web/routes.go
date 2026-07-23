@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"rubrical/internal/aisettings"
-	"rubrical/internal/analysis"
+	"rubrical/internal/analysispipeline"
 	"rubrical/internal/auth"
 	"rubrical/internal/config"
 	"rubrical/internal/db"
@@ -20,7 +20,7 @@ func NewRouter(
 	database *db.DB,
 	fileStore *draftfiles.Store,
 	cfg config.Config,
-	analysisSvc *analysis.Service,
+	analysisSvc *analysispipeline.Service,
 	aiSettings *aisettings.Store,
 	authSvc *auth.Service,
 	mailer email.Sender,

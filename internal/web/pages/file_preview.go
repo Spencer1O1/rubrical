@@ -1,6 +1,6 @@
 package pages
 
-import "rubrical/internal/analysis/files"
+import "rubrical/internal/analysispipeline/files"
 
 type FilePreviewView struct {
 	HasPreview    bool

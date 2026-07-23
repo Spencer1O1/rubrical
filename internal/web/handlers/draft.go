@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"rubrical/internal/analysis"
+	"rubrical/internal/analysispipeline"
 	"rubrical/internal/draftmode"
 	"rubrical/internal/drafturl"
 	"rubrical/internal/submissiontypes"
@@ -409,7 +409,7 @@ func (h *Handlers) AnalyzeDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.analysis == nil {
-		h.renderAnalysisError(w, r, analysis.ErrNotConfigured)
+		h.renderAnalysisError(w, r, analysispipeline.ErrNotConfigured)
 		return
 	}
 
@@ -468,23 +468,23 @@ func (h *Handlers) renderAnalysisError(w http.ResponseWriter, r *http.Request, e
 	message := "Analysis failed. Try again in a moment."
 	settingsURL := ""
 	switch {
-	case h.analysis == nil || errors.Is(err, analysis.ErrNotConfigured):
+	case h.analysis == nil || errors.Is(err, analysispipeline.ErrNotConfigured):
 		message = "Configure AI before analyzing: choose a provider, model, and API key."
 		settingsURL = pages.SettingsURL(embed, assignmentID)
-	case errors.Is(err, analysis.ErrNothingToAnalyze):
+	case errors.Is(err, analysispipeline.ErrNothingToAnalyze):
 		message = "Add draft text, upload a file, or enter a submission URL before analyzing."
-	case errors.Is(err, analysis.ErrNoAnalyzableContent):
+	case errors.Is(err, analysispipeline.ErrNoAnalyzableContent):
 		message = "No analyzable submission content. Upload supported files or add draft text."
 	case errors.Is(err, urlfetch.ErrNonHTMLContent):
 		message = "The submission URL must point to an HTML page."
-	case errors.Is(err, analysis.ErrURLFetchFailed):
+	case errors.Is(err, analysispipeline.ErrURLFetchFailed):
 		message = "Could not fetch content from the submission URL. Check the link and try again."
-	case errors.Is(err, analysis.ErrAnalysisInFlight):
+	case errors.Is(err, analysispipeline.ErrAnalysisInFlight):
 		message = "An analysis is already running for this assignment. Wait for it to finish."
-	case errors.Is(err, analysis.ErrFeedbackPersistFailed):
+	case errors.Is(err, analysispipeline.ErrFeedbackPersistFailed):
 		message = "Analysis finished but feedback could not be saved. Try again in a moment."
 	default:
-		if errors.Is(err, analysis.ErrRateLimited) {
+		if errors.Is(err, analysispipeline.ErrRateLimited) {
 			message = err.Error()
 		} else if trimmed := strings.TrimSpace(err.Error()); trimmed != "" {
 			lower := strings.ToLower(trimmed)

@@ -6,17 +6,25 @@ import (
 	"time"
 )
 
-func formatScoreLabel(score, max *float64) string {
+func formatScoreLabel(score, max *float64, unchecked int) string {
 	if score == nil && max == nil {
 		return ""
 	}
+	suffix := ""
+	if unchecked > 0 {
+		if unchecked == 1 {
+			suffix = " checkable (1 criterion couldn’t be checked)"
+		} else {
+			suffix = fmt.Sprintf(" checkable (%d criteria couldn’t be checked)", unchecked)
+		}
+	}
 	if score != nil && max != nil {
-		return fmt.Sprintf("Predicted score: %.1f / %.1f", *score, *max)
+		return fmt.Sprintf("Predicted score: %.1f / %.1f%s", *score, *max, suffix)
 	}
 	if score != nil {
-		return fmt.Sprintf("Predicted score: %.1f", *score)
+		return fmt.Sprintf("Predicted score: %.1f%s", *score, suffix)
 	}
-	return fmt.Sprintf("Out of %.1f pts", *max)
+	return fmt.Sprintf("Out of %.1f pts%s", *max, suffix)
 }
 
 func formatPointsLabel(predicted, max *float64) string {
@@ -60,6 +68,8 @@ func criterionStatusLabel(status string) string {
 		return "Partial"
 	case "not_met":
 		return "Not met"
+	case "not_analyzable":
+		return "Not analyzable"
 	default:
 		return status
 	}
@@ -73,6 +83,8 @@ func criterionStatusClass(status string) string {
 		return "bg-amber-100 text-amber-900"
 	case "not_met":
 		return "bg-red-100 text-red-800"
+	case "not_analyzable":
+		return "bg-stone-100 text-stone-600"
 	default:
 		return "bg-stone-100 text-stone-700"
 	}

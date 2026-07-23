@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"rubrical/internal/aisettings"
-	"rubrical/internal/analysis"
+	"rubrical/internal/analysispipeline"
 	"rubrical/internal/auth"
 	"rubrical/internal/config"
 	"rubrical/internal/db"
@@ -39,7 +39,7 @@ func main() {
 		log.Printf("session cleanup: %v", err)
 	}
 
-	if err := analysis.FailAllStaleRuns(bootstrap, database.Pool, analysis.DefaultStaleRunTTL); err != nil {
+	if err := analysispipeline.FailAllStaleRuns(bootstrap, database.Pool, analysispipeline.DefaultStaleRunTTL); err != nil {
 		log.Printf("stale analysis run cleanup: %v", err)
 	}
 	if cfg.StrictExtraction {
@@ -57,18 +57,18 @@ func main() {
 	}
 
 	aiSettingsStore := aisettings.NewStore(database.Pool, secretsCipher)
-	analysisSvc := analysis.NewService(
+	analysisSvc := analysispipeline.NewService(
 		database.Pool,
 		fileStore,
 		aiSettingsStore,
-		analysis.NewLimiter(database.Pool, analysis.NewRateLimits(
+		analysispipeline.NewLimiter(database.Pool, analysispipeline.NewRateLimits(
 			cfg.AIMaxRunsPerHour,
 			cfg.AIMaxRunsPerDay,
 			cfg.AIMinSecondsBetweenRuns,
 		)),
 		cfg.AIEnforceRateLimits,
 		cfg.AllowLocalURLFetch,
-		analysis.OptionsFromConfig(cfg),
+		analysispipeline.OptionsFromConfig(cfg),
 	)
 	if cfg.AIEnforceRateLimits {
 		log.Printf("ai analysis rate limits enabled: %d/hr %d/day min_gap=%ds",
