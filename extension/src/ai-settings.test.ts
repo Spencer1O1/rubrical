@@ -8,7 +8,7 @@ import {
 } from "./ai-settings";
 
 describe("normalizeAISettings", () => {
-  it("defaults to openai gpt-4o-mini", () => {
+  it("defaults to openai gpt-5.6-luna", () => {
     expect(normalizeAISettings(undefined)).toEqual(DEFAULT_AI_SETTINGS);
   });
 
@@ -30,7 +30,7 @@ describe("normalizeAISettings", () => {
     expect(
       normalizeAISettings({
         provider: "anthropic",
-        model: "gpt-4o-mini",
+        model: "gpt-5.6-luna",
       }).model,
     ).toBe(defaultModelForProvider("anthropic"));
   });

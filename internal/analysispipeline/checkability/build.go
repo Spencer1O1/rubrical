@@ -1,4 +1,4 @@
-package analyzability
+package checkability
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ type Input struct {
 	Criteria        []criterion.Ref
 }
 
-// Criterion is one row from the analyzability response.
+// Criterion is one row from the checkability response.
 type Criterion struct {
 	CriterionID        string `json:"criterionId"`
 	CriterionName      string `json:"-"` // resolved from CriterionID
@@ -41,7 +41,7 @@ func BuildRequest(input Input, providerName string) llm.Request {
 	return llm.Request{
 		SystemPrompt: SystemPrompt(providerName, input.PageType, input.AllowedChannels),
 		UserPrompt:   buildUserPrompt(input),
-		SchemaName:   "analyzability",
+		SchemaName:   "checkability",
 		Schema:       JSONSchema(input.Criteria, providerName),
 	}
 }

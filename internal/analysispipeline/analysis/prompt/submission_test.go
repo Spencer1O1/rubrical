@@ -51,7 +51,7 @@ func TestBuildSubmission_textModeWordCountFromHTML(t *testing.T) {
 		DraftMode: "text",
 		DraftText: `<p>one two three</p>`,
 	}, 1000)
-	label := "Draft word count (computed by Rubrical, not student text): 3"
+	label := "Draft word count (computed by Rubrical): 3"
 	body := "<p>one two three</p>"
 	li := indexSubstring(got, label)
 	bi := indexSubstring(got, body)

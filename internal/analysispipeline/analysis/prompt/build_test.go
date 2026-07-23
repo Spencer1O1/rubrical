@@ -18,7 +18,7 @@ func TestBuildSystem_scoringGuidance(t *testing.T) {
 		"Barely in this rating",
 		"one student draft in Canvas",
 		"guidance",
-		"Exactly one object per **analyzable** rubric criterion",
+		"Exactly one object per **checkable** rubric criterion",
 		"choose the best-fitting rubric rating",
 		"Which rating on this criterion",
 		"criterionId",

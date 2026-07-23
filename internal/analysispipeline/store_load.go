@@ -108,7 +108,7 @@ func loadFeedbackItems(ctx context.Context, pool *pgxpool.Pool, runID int64) ([]
 				return nil, fmt.Errorf("decode fulfilled requirements: %w", err)
 			}
 		}
-		if item.CriterionStatus == "not_analyzable" {
+		if item.CriterionStatus == "not_checkable" {
 			item.HowToEarnPoints = item.Explanation
 		}
 		if len(unfulfilledJSON) > 0 {

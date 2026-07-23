@@ -12,7 +12,7 @@ import (
 	"rubrical/internal/aisettings"
 	"rubrical/internal/analysispipeline/analysis"
 	analysisschema "rubrical/internal/analysispipeline/analysis/schema"
-	"rubrical/internal/analysispipeline/analyzability"
+	"rubrical/internal/analysispipeline/checkability"
 	"rubrical/internal/analysispipeline/files"
 	"rubrical/internal/draftfiles"
 	"rubrical/internal/draftmode"
@@ -24,7 +24,7 @@ import (
 var (
 	ErrNotConfigured       = errors.New("ai analysis is not configured")
 	ErrNothingToAnalyze    = errors.New("add draft text, a file, or a submission url before analyzing")
-	ErrNoAnalyzableContent = files.ErrNoAnalyzableContent
+	ErrNoCheckableContent = files.ErrNoCheckableContent
 	ErrURLFetchFailed      = errors.New("could not fetch submission url content")
 )
 
@@ -86,7 +86,7 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 	if err != nil {
 		return Result{}, err
 	}
-	if err := validateAnalyzable(input); err != nil {
+	if err := validateCheckable(input); err != nil {
 		return Result{}, err
 	}
 
@@ -99,7 +99,7 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 	}
 
 	refs := input.Rubric.AssignCriterionIDs()
-	pass1Req := analyzability.BuildRequest(analyzability.Input{
+	pass1Req := checkability.BuildRequest(checkability.Input{
 		PageType:        input.PageType,
 		Instructions:    input.Instructions,
 		AllowedChannels: input.AllowedChannels,
@@ -124,17 +124,17 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 		_ = s.markRunFailed(ctx, runHandle, err)
 		return Result{}, err
 	}
-	class, err := analyzability.ParseResponse(pass1Raw, refs)
+	class, err := checkability.ParseResponse(pass1Raw, refs)
 	if err != nil {
 		_ = s.markRunFailed(ctx, runHandle, err)
-		return Result{}, fmt.Errorf("analyzability: %w", err)
+		return Result{}, fmt.Errorf("checkability: %w", err)
 	}
 
-	analyzableRubric := filterRubric(input.Rubric, class)
+	checkableRubric := filterRubric(input.Rubric, class)
 	var scored *analysisschema.ScoredAnalysis
 
-	if len(analyzableRubric.Rows) > 0 {
-		pass2Req := analysis.BuildAnalysisRequest(toDraftInput(input), fileResult, s.opts.MaxSubmissionTextChars, provider.Name(), analyzableRubric)
+	if len(checkableRubric.Rows) > 0 {
+		pass2Req := analysis.BuildAnalysisRequest(toDraftInput(input), fileResult, s.opts.MaxSubmissionTextChars, provider.Name(), checkableRubric)
 		if err := ValidateLLMRequest(pass2Req); err != nil {
 			_ = s.markRunFailed(ctx, runHandle, err)
 			return Result{}, err
@@ -164,7 +164,7 @@ func (s *Service) Run(ctx context.Context, assignmentID, userID int64) (Result, 
 			return Result{}, err
 		}
 
-		scored, err = analysis.ApplyRubricScoring(&providerResp, analyzableRubric)
+		scored, err = analysis.ApplyRubricScoring(&providerResp, checkableRubric)
 		if err != nil {
 			_ = s.markRunFailed(ctx, runHandle, err)
 			return Result{}, fmt.Errorf("rubric scoring: %w", err)
@@ -229,7 +229,7 @@ func validateProcessedContent(input Input, result files.ProcessResult) error {
 	if draftmode.Normalize(input.DraftMode) == draftmode.URL && strings.TrimSpace(input.DraftURL) != "" {
 		return nil
 	}
-	return files.ErrNoAnalyzableContent
+	return files.ErrNoCheckableContent
 }
 
 func (s *Service) LoadLatestResult(ctx context.Context, assignmentID int64) (*Result, error) {
@@ -240,7 +240,7 @@ func (s *Service) LoadRubricContext(ctx context.Context, assignmentID int64) (an
 	return loadRubricContext(ctx, s.pool, assignmentID)
 }
 
-func validateAnalyzable(input Input) error {
+func validateCheckable(input Input) error {
 	switch draftmode.Normalize(input.DraftMode) {
 	case draftmode.URL:
 		if strings.TrimSpace(input.DraftURL) != "" || strings.TrimSpace(input.DraftText) != "" {

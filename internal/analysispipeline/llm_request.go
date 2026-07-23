@@ -15,7 +15,7 @@ type PromptLog struct {
 
 // PipelinePromptLog stores every LLM pass sent for a run.
 type PipelinePromptLog struct {
-	Analyzability PromptLog  `json:"analyzability"`
+	Checkability PromptLog  `json:"checkability"`
 	Analysis      *PromptLog `json:"analysis,omitempty"`
 }
 
@@ -63,7 +63,7 @@ func EncodePromptLog(req llm.Request) ([]byte, error) {
 
 // EncodePipelinePromptLog encodes pass 1 and optional pass 2 for raw_model_input.
 func EncodePipelinePromptLog(pass1 llm.Request, pass2 *llm.Request) ([]byte, error) {
-	out := PipelinePromptLog{Analyzability: promptLogFromRequest(pass1)}
+	out := PipelinePromptLog{Checkability: promptLogFromRequest(pass1)}
 	if pass2 != nil {
 		log := promptLogFromRequest(*pass2)
 		out.Analysis = &log

@@ -186,7 +186,7 @@ func TestValidateProviderResponse_acceptsEmptyRequirementArrays(t *testing.T) {
 	}
 }
 
-func TestValidateScoredAnalysis_notAnalyzable(t *testing.T) {
+func TestValidateScoredAnalysis_notCheckable(t *testing.T) {
 	pts := 0.0
 	max := 1.0
 	out := ScoredAnalysis{
@@ -196,7 +196,7 @@ func TestValidateScoredAnalysis_notAnalyzable(t *testing.T) {
 		Guidance:       []string{},
 		Criteria: []ScoredCriterion{{
 			CriterionName:   "Participation",
-			Status:          "not_analyzable",
+			Status:          "not_checkable",
 			ScoreRationale:  "Requires in-class observation.",
 			HowToEarnPoints: "Participate in class as required.",
 			MaxPoints:       &max,

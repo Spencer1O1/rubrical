@@ -473,8 +473,8 @@ func (h *Handlers) renderAnalysisError(w http.ResponseWriter, r *http.Request, e
 		settingsURL = pages.SettingsURL(embed, assignmentID)
 	case errors.Is(err, analysispipeline.ErrNothingToAnalyze):
 		message = "Add draft text, upload a file, or enter a submission URL before analyzing."
-	case errors.Is(err, analysispipeline.ErrNoAnalyzableContent):
-		message = "No analyzable submission content. Upload supported files or add draft text."
+	case errors.Is(err, analysispipeline.ErrNoCheckableContent):
+		message = "No checkable submission content. Upload supported files or add draft text."
 	case errors.Is(err, urlfetch.ErrNonHTMLContent):
 		message = "The submission URL must point to an HTML page."
 	case errors.Is(err, analysispipeline.ErrURLFetchFailed):

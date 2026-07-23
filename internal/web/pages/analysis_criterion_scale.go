@@ -68,7 +68,7 @@ func AnalysisResultsFromResult(result *analysispipeline.Result, rubric analysis.
 
 	unchecked := 0
 	for _, item := range result.Feedback {
-		if item.Category == "criterion" && item.CriterionStatus == "not_analyzable" {
+		if item.Category == "criterion" && item.CriterionStatus == "not_checkable" {
 			unchecked++
 		}
 	}
@@ -94,9 +94,9 @@ func AnalysisResultsFromResult(result *analysispipeline.Result, rubric analysis.
 			UnfulfilledRequirements: mapUnfulfilledRequirements(item.UnfulfilledRequirements),
 			CriterionStatus:         item.CriterionStatus,
 			SelectedRating:          item.SelectedRating,
-			ShowScale:               item.CriterionStatus != "not_analyzable",
+			ShowScale:               item.CriterionStatus != "not_checkable",
 		}
-		if item.CriterionStatus != "not_analyzable" {
+		if item.CriterionStatus != "not_checkable" {
 			feedback.PointsLabel = formatPointsLabel(item.PredictedPoints, item.MaxPoints)
 		}
 		switch item.Category {

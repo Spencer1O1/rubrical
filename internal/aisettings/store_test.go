@@ -37,7 +37,7 @@ func TestStore_encryptDecryptKey(t *testing.T) {
 func TestSettingsPublic_omitsRawKeys(t *testing.T) {
 	public := Settings{
 		Provider:        "openai",
-		Model:           "gpt-4o-mini",
+		Model:           "gpt-5.6-luna",
 		OpenAIAPIKey:    "sk-secret",
 		AnthropicAPIKey: "",
 	}.Public()
@@ -53,7 +53,7 @@ func TestSettingsPublic_omitsRawKeys(t *testing.T) {
 func TestMerge_keepsExistingKeysWhenBlank(t *testing.T) {
 	current := Settings{
 		Provider:        "openai",
-		Model:           "gpt-4o-mini",
+		Model:           "gpt-5.6-luna",
 		OpenAIAPIKey:    "sk-existing",
 		AnthropicAPIKey: "sk-ant-existing",
 	}
@@ -72,7 +72,7 @@ func TestMerge_keepsExistingKeysWhenBlank(t *testing.T) {
 func TestValidateSave_requiresActiveProviderKey(t *testing.T) {
 	err := validateSave(Settings{
 		Provider: "openai",
-		Model:    "gpt-4o-mini",
+		Model:    "gpt-5.6-luna",
 	})
 	if err == nil {
 		t.Fatal("expected error")

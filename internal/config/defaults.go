@@ -49,7 +49,7 @@ const (
 // Per-user AI defaults (stored in user_ai_settings when empty; not ENV).
 const (
 	DefaultAIProvider     = "openai"
-	DefaultOpenAIModel    = "gpt-4o-mini"
+	DefaultOpenAIModel    = "gpt-5.6-luna"
 	DefaultAnthropicModel = "claude-sonnet-5"
 )
 

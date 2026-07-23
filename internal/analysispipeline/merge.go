@@ -6,18 +6,18 @@ import (
 
 	"rubrical/internal/analysispipeline/analysis"
 	analysisschema "rubrical/internal/analysispipeline/analysis/schema"
-	"rubrical/internal/analysispipeline/analyzability"
+	"rubrical/internal/analysispipeline/checkability"
 )
 
 // MergeAnalysis combines pass-1 classifications with pass-2 scored rows.
-// fullRubric must be the complete rubric; scored may be nil when nothing was analyzable.
+// fullRubric must be the complete rubric; scored may be nil when nothing was checkable.
 func MergeAnalysis(
-	class *analyzability.Response,
+	class *checkability.Response,
 	scored *analysisschema.ScoredAnalysis,
 	fullRubric analysis.RubricContext,
 ) (*analysisschema.ScoredAnalysis, error) {
 	if class == nil {
-		return nil, fmt.Errorf("analyzability response is nil")
+		return nil, fmt.Errorf("checkability response is nil")
 	}
 	if len(fullRubric.Rows) == 0 {
 		if scored != nil {
@@ -26,7 +26,7 @@ func MergeAnalysis(
 		return nil, fmt.Errorf("empty rubric")
 	}
 	refs := fullRubric.AssignCriterionIDs()
-	if err := analyzability.ValidateResponse(class, refs); err != nil {
+	if err := checkability.ValidateResponse(class, refs); err != nil {
 		return nil, err
 	}
 	if scored != nil {
@@ -74,7 +74,7 @@ func MergeAnalysis(
 				CriterionScore:  0,
 				ScoreRationale:  cls.Reason,
 				HowToEarnPoints: cls.HowToEarnPoints,
-				Status:          "not_analyzable",
+				Status:          "not_checkable",
 				MaxPoints:       analysis.FloatPtr(maxPts),
 			}
 			continue
@@ -96,7 +96,7 @@ func MergeAnalysis(
 	}
 
 	if scored == nil {
-		out.OverallSummary = notAnalyzableOnlySummary(unchecked, len(fullRubric.Rows))
+		out.OverallSummary = notCheckableOnlySummary(unchecked, len(fullRubric.Rows))
 		out.Confidence = "medium"
 		if out.Guidance == nil {
 			out.Guidance = []string{}
@@ -118,7 +118,7 @@ func MergeAnalysis(
 	return out, nil
 }
 
-func notAnalyzableOnlySummary(unchecked, total int) string {
+func notCheckableOnlySummary(unchecked, total int) string {
 	if total == 1 {
 		return "Rubrical couldn’t check this rubric criterion from this draft. See the guidance below so you can still earn those points."
 	}
@@ -128,7 +128,7 @@ func notAnalyzableOnlySummary(unchecked, total int) string {
 	)
 }
 
-func filterRubric(rubric analysis.RubricContext, class *analyzability.Response) analysis.RubricContext {
+func filterRubric(rubric analysis.RubricContext, class *checkability.Response) analysis.RubricContext {
 	if class == nil {
 		return rubric
 	}

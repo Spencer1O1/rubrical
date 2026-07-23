@@ -12,7 +12,7 @@ func TestAssignCriterionIDs_preservesFilteredDuplicateSlugs(t *testing.T) {
 		t.Fatalf("full ids = %q %q", full.Rows[0].ID, full.Rows[1].ID)
 	}
 
-	// Pass 2 often sees only a subset (e.g. first row not analyzable).
+	// Pass 2 often sees only a subset (e.g. first row not checkable).
 	filtered := RubricContext{Rows: []RubricRow{full.Rows[1]}}
 	filtered.AssignCriterionIDs()
 	if filtered.Rows[0].ID != "content-2" {

@@ -5,16 +5,16 @@ import (
 
 	"rubrical/internal/analysispipeline/analysis"
 	analysisschema "rubrical/internal/analysispipeline/analysis/schema"
-	"rubrical/internal/analysispipeline/analyzability"
+	"rubrical/internal/analysispipeline/checkability"
 )
 
-func TestMergeAnalysis_classmateNotAnalyzable(t *testing.T) {
+func TestMergeAnalysis_classmateNotCheckable(t *testing.T) {
 	rubric := analysis.RubricContext{Rows: []analysis.RubricRow{
 		{Criterion: "Topic Response", Ratings: []analysis.RubricRating{{Title: "Full", Points: "1"}, {Title: "None", Points: "0"}}},
 		{Criterion: "Classmate Reply", Ratings: []analysis.RubricRating{{Title: "Full", Points: "1"}, {Title: "None", Points: "0"}}},
 	}}
 	refs := rubric.AssignCriterionIDs()
-	class := &analyzability.Response{Criteria: []analyzability.Criterion{
+	class := &checkability.Response{Criteria: []checkability.Criterion{
 		{CriterionID: refs[0].ID, EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "text draft"},
 		{CriterionID: refs[1].ID, EvidenceProvidable: false, EvidenceAnalyzable: false, Reason: "peer reply not in this draft", HowToEarnPoints: "Write a thoughtful classmate reply in Canvas."},
 	}}
@@ -47,7 +47,7 @@ func TestMergeAnalysis_classmateNotAnalyzable(t *testing.T) {
 	if len(merged.Criteria) != 2 {
 		t.Fatalf("criteria = %d", len(merged.Criteria))
 	}
-	if merged.Criteria[1].Status != "not_analyzable" {
+	if merged.Criteria[1].Status != "not_checkable" {
 		t.Fatalf("status = %q", merged.Criteria[1].Status)
 	}
 	if merged.Criteria[1].HowToEarnPoints == "" {
@@ -58,12 +58,12 @@ func TestMergeAnalysis_classmateNotAnalyzable(t *testing.T) {
 	}
 }
 
-func TestMergeAnalysis_missingPhotoStillAnalyzableViaScoring(t *testing.T) {
+func TestMergeAnalysis_missingPhotoStillCheckableViaScoring(t *testing.T) {
 	rubric := analysis.RubricContext{Rows: []analysis.RubricRow{
 		{Criterion: "Photo Evidence", Ratings: []analysis.RubricRating{{Title: "Full", Points: "2"}, {Title: "None", Points: "0"}}},
 	}}
 	refs := rubric.AssignCriterionIDs()
-	class := &analyzability.Response{Criteria: []analyzability.Criterion{
+	class := &checkability.Response{Criteria: []checkability.Criterion{
 		{CriterionID: refs[0].ID, EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "image upload expected"},
 	}}
 	scored := &analysisschema.ScoredAnalysis{
@@ -93,12 +93,12 @@ func TestMergeAnalysis_missingPhotoStillAnalyzableViaScoring(t *testing.T) {
 	}
 }
 
-func TestFilterRubric_dropsNotAnalyzable(t *testing.T) {
+func TestFilterRubric_dropsNotCheckable(t *testing.T) {
 	rubric := analysis.RubricContext{Rows: []analysis.RubricRow{
 		{Criterion: "A"},
 		{Criterion: "B"},
 	}}
-	class := &analyzability.Response{Criteria: []analyzability.Criterion{
+	class := &checkability.Response{Criteria: []checkability.Criterion{
 		{CriterionID: "a", EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "ok"},
 		{CriterionID: "b", EvidenceProvidable: false, EvidenceAnalyzable: false, Reason: "live", HowToEarnPoints: "Attend."},
 	}}
@@ -114,7 +114,7 @@ func TestMergeAnalysis_preservesIdsThroughFilteredPass2(t *testing.T) {
 		{Criterion: "Content", Ratings: []analysis.RubricRating{{Title: "Full", Points: "1"}, {Title: "None", Points: "0"}}},
 	}}
 	refs := rubric.AssignCriterionIDs()
-	class := &analyzability.Response{Criteria: []analyzability.Criterion{
+	class := &checkability.Response{Criteria: []checkability.Criterion{
 		{CriterionID: refs[0].ID, EvidenceProvidable: false, EvidenceAnalyzable: false, Reason: "skip", HowToEarnPoints: "N/A"},
 		{CriterionID: refs[1].ID, EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "ok"},
 	}}
@@ -145,12 +145,12 @@ func TestMergeAnalysis_preservesIdsThroughFilteredPass2(t *testing.T) {
 	}
 }
 
-func TestMergeAnalysis_allNotAnalyzableSkipsPass2(t *testing.T) {
+func TestMergeAnalysis_allNotCheckableSkipsPass2(t *testing.T) {
 	rubric := analysis.RubricContext{Rows: []analysis.RubricRow{
 		{Criterion: "Participation", Ratings: []analysis.RubricRating{{Title: "Full", Points: "1"}, {Title: "None", Points: "0"}}},
 	}}
 	refs := rubric.AssignCriterionIDs()
-	class := &analyzability.Response{Criteria: []analyzability.Criterion{
+	class := &checkability.Response{Criteria: []checkability.Criterion{
 		{CriterionID: refs[0].ID, EvidenceProvidable: false, EvidenceAnalyzable: false, Reason: "in class", HowToEarnPoints: "Participate in class."},
 	}}
 	merged, err := MergeAnalysis(class, nil, rubric)
@@ -160,7 +160,7 @@ func TestMergeAnalysis_allNotAnalyzableSkipsPass2(t *testing.T) {
 	if err := analysisschema.ValidateScoredAnalysis(merged); err != nil {
 		t.Fatal(err)
 	}
-	if merged.Criteria[0].Status != "not_analyzable" {
+	if merged.Criteria[0].Status != "not_checkable" {
 		t.Fatal(merged.Criteria[0].Status)
 	}
 }

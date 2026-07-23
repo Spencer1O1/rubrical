@@ -1,16 +1,16 @@
-package analyzability_test
+package checkability_test
 
 import (
 	"strings"
 	"testing"
 
-	"rubrical/internal/analysispipeline/analyzability"
+	"rubrical/internal/analysispipeline/checkability"
 	"rubrical/internal/analysispipeline/criterion"
 )
 
 func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
 	refs := criterion.Index([]string{"Topic Response", "Classmate Reply"})
-	req := analyzability.BuildRequest(analyzability.Input{
+	req := checkability.BuildRequest(checkability.Input{
 		PageType:        "discussion",
 		Instructions:    "Reply to the prompt and respond to a classmate.",
 		AllowedChannels: []string{"text"},
@@ -70,7 +70,7 @@ func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
 func TestBuildRequest_includesCriterionDescriptions(t *testing.T) {
 	refs := criterion.Index([]string{"Integration of Article or Video"})
 	refs[0].Description = "Skillfully integrates a quote and insightfully connects it to the artwork."
-	req := analyzability.BuildRequest(analyzability.Input{
+	req := checkability.BuildRequest(checkability.Input{
 		PageType:        "discussion",
 		AllowedChannels: []string{"text"},
 		Criteria:        refs,
@@ -81,7 +81,7 @@ func TestBuildRequest_includesCriterionDescriptions(t *testing.T) {
 }
 
 func TestBuildRequest_assignmentDraftContext(t *testing.T) {
-	req := analyzability.BuildRequest(analyzability.Input{
+	req := checkability.BuildRequest(checkability.Input{
 		PageType:        "assignment",
 		AllowedChannels: []string{"text"},
 		Criteria:        criterion.Index([]string{"Essay"}),
@@ -95,7 +95,7 @@ func TestBuildRequest_assignmentDraftContext(t *testing.T) {
 }
 
 func TestBuildRequest_injectsAnthropicCapabilities(t *testing.T) {
-	req := analyzability.BuildRequest(analyzability.Input{
+	req := checkability.BuildRequest(checkability.Input{
 		AllowedChannels: []string{"file"},
 		Criteria:        criterion.Index([]string{"Upload"}),
 	}, "anthropic")
@@ -124,7 +124,7 @@ func TestBuildRequest_injectsAnthropicCapabilities(t *testing.T) {
 }
 
 func TestSystemPrompt_isFieldSpec(t *testing.T) {
-	sys := analyzability.SystemPrompt("openai", "assignment", []string{"text", "file"})
+	sys := checkability.SystemPrompt("openai", "assignment", []string{"text", "file"})
 	for _, want := range []string{
 		"criterionId", "evidenceProvidable", "evidenceAnalyzable", "reason", "howToEarnPoints", "Can:",
 		"via text, files)",
@@ -162,15 +162,15 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 
 func TestValidateResponse_requiresHowToEarnPoints(t *testing.T) {
 	refs := criterion.Index([]string{"Classmate Reply", "Word Count"})
-	resp := &analyzability.Response{Criteria: []analyzability.Criterion{
+	resp := &checkability.Response{Criteria: []checkability.Criterion{
 		{CriterionID: refs[0].ID, EvidenceProvidable: false, Reason: "peer reply", HowToEarnPoints: ""},
 		{CriterionID: refs[1].ID, EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "text", HowToEarnPoints: ""},
 	}}
-	if err := analyzability.ValidateResponse(resp, refs); err == nil {
+	if err := checkability.ValidateResponse(resp, refs); err == nil {
 		t.Fatal("expected error for missing howToEarnPoints")
 	}
 	resp.Criteria[0].HowToEarnPoints = "Complete the classmate reply in Canvas before submitting."
-	if err := analyzability.ValidateResponse(resp, refs); err != nil {
+	if err := checkability.ValidateResponse(resp, refs); err != nil {
 		t.Fatal(err)
 	}
 	if resp.Criteria[0].CriterionName != "Classmate Reply" {
@@ -186,7 +186,7 @@ func TestParseResponse_ordersByRubric(t *testing.T) {
 			{"criterionId":"a","evidenceProvidable":false,"evidenceAnalyzable":false,"reason":"live","howToEarnPoints":"Attend class."}
 		]
 	}`)
-	resp, err := analyzability.ParseResponse(raw, refs)
+	resp, err := checkability.ParseResponse(raw, refs)
 	if err != nil {
 		t.Fatal(err)
 	}

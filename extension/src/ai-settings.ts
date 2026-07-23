@@ -11,13 +11,13 @@ export type AISettings = {
 
 export const PROVIDER_MODELS: Record<AIProviderId, readonly { id: string; label: string }[]> = {
   openai: [
-    { id: "gpt-4o-mini", label: "GPT-4o mini (recommended)" },
-    { id: "gpt-5.6-luna", label: "GPT-5.6 Luna" },
+    { id: "gpt-5.6-luna", label: "GPT-5.6 Luna (recommended)" },
     { id: "gpt-5.6-terra", label: "GPT-5.6 Terra" },
     { id: "gpt-5.6-sol", label: "GPT-5.6 Sol" },
     { id: "gpt-4.1", label: "GPT-4.1" },
     { id: "gpt-4.1-mini", label: "GPT-4.1 mini" },
     { id: "gpt-4o", label: "GPT-4o" },
+    { id: "gpt-4o-mini", label: "GPT-4o mini" },
   ],
   anthropic: [
     { id: "claude-sonnet-5", label: "Claude Sonnet 5" },

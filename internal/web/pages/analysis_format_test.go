@@ -16,7 +16,7 @@ func TestFormatScoreLabel_checkableOnly(t *testing.T) {
 	}
 }
 
-func TestAnalysisResultsFromResult_notAnalyzable(t *testing.T) {
+func TestAnalysisResultsFromResult_notCheckable(t *testing.T) {
 	result := &analysispipeline.Result{
 		OverallSummary:    "Mixed.",
 		Confidence:        "high",
@@ -35,7 +35,7 @@ func TestAnalysisResultsFromResult_notAnalyzable(t *testing.T) {
 			{
 				Category:        "criterion",
 				Title:           "Classmate Reply",
-				CriterionStatus: "not_analyzable",
+				CriterionStatus: "not_checkable",
 				ScoreRationale:  "Peer reply not in this draft.",
 				HowToEarnPoints: "Reply to a classmate in Canvas.",
 				Explanation:     "Reply to a classmate in Canvas.",
@@ -52,13 +52,13 @@ func TestAnalysisResultsFromResult_notAnalyzable(t *testing.T) {
 	}
 	na := view.Criteria[1]
 	if na.ShowScale || na.PointsLabel != "" {
-		t.Fatalf("not analyzable card should hide scale/points: %+v", na)
+		t.Fatalf("not checkable card should hide scale/points: %+v", na)
 	}
 	if na.HowToEarnPoints == "" {
 		t.Fatal("expected howToEarnPoints")
 	}
-	if criterionStatusLabel("not_analyzable") != "Not analyzable" {
-		t.Fatal(criterionStatusLabel("not_analyzable"))
+	if criterionStatusLabel("not_checkable") != "Not checkable" {
+		t.Fatal(criterionStatusLabel("not_checkable"))
 	}
 }
 

@@ -83,7 +83,7 @@ templ criterionResultCard(item AnalysisFeedbackView) {
 						{ criterionStatusLabel(item.CriterionStatus) }
 					</span>
 				}
-				if item.PointsLabel != "" && item.CriterionStatus != "not_analyzable" {
+				if item.PointsLabel != "" && item.CriterionStatus != "not_checkable" {
 					<span class="tabular-nums font-medium text-stone-700">{ item.PointsLabel } pts</span>
 				}
 			</div>
@@ -93,7 +93,7 @@ templ criterionResultCard(item AnalysisFeedbackView) {
 			@CriterionScale(item.Scale)
 		}
 		if item.ScoreRationale != "" {
-			if item.CriterionStatus == "not_analyzable" {
+			if item.CriterionStatus == "not_checkable" {
 				<p class="mt-3 text-sm text-stone-700"><span class="font-medium text-stone-800">Why we can’t check this:</span> { item.ScoreRationale }</p>
 			} else {
 				<p class="mt-3 text-sm text-stone-700"><span class="font-medium text-stone-800">Score rationale:</span> { item.ScoreRationale }</p>

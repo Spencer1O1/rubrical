@@ -1,4 +1,4 @@
-package analyzability
+package checkability
 
 import (
 	_ "embed"

@@ -75,9 +75,9 @@ func ValidateScoredAnalysis(out *ScoredAnalysis) error {
 			return fmt.Errorf("criteria[%d].scoreRationale is required", i)
 		}
 
-		if c.Status == "not_analyzable" {
+		if c.Status == "not_checkable" {
 			if c.HowToEarnPoints == "" {
-				return fmt.Errorf("criteria[%d].howToEarnPoints is required when not analyzable", i)
+				return fmt.Errorf("criteria[%d].howToEarnPoints is required when not checkable", i)
 			}
 			c.CriterionScore = 0
 			c.PredictedPoints = nil
@@ -228,7 +228,7 @@ func SeverityForStatus(status string) string {
 		return "warning"
 	case "not_met":
 		return "critical"
-	case "not_analyzable":
+	case "not_checkable":
 		return "info"
 	default:
 		return "info"
@@ -246,7 +246,7 @@ func normalizeConfidence(raw string) string {
 
 func normalizeCriterionStatus(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "met", "partially_met", "not_met", "not_analyzable":
+	case "met", "partially_met", "not_met", "not_checkable":
 		return strings.ToLower(strings.TrimSpace(raw))
 	default:
 		return ""

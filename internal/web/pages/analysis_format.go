@@ -68,8 +68,8 @@ func criterionStatusLabel(status string) string {
 		return "Partial"
 	case "not_met":
 		return "Not met"
-	case "not_analyzable":
-		return "Not analyzable"
+	case "not_checkable":
+		return "Not checkable"
 	default:
 		return status
 	}
@@ -83,7 +83,7 @@ func criterionStatusClass(status string) string {
 		return "bg-amber-100 text-amber-900"
 	case "not_met":
 		return "bg-red-100 text-red-800"
-	case "not_analyzable":
+	case "not_checkable":
 		return "bg-stone-100 text-stone-600"
 	default:
 		return "bg-stone-100 text-stone-700"

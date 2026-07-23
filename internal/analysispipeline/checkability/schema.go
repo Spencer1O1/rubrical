@@ -1,4 +1,4 @@
-package analyzability
+package checkability
 
 import (
 	"encoding/json"
@@ -58,7 +58,7 @@ func criterionJSONSchema(fixedID string) map[string]any {
 // ValidateResponse checks coverage and howToEarnPoints; resolves CriterionName from ids.
 func ValidateResponse(resp *Response, refs []criterion.Ref) error {
 	if resp == nil {
-		return fmt.Errorf("analyzability response is nil")
+		return fmt.Errorf("checkability response is nil")
 	}
 	if len(refs) == 0 {
 		return nil
@@ -118,7 +118,7 @@ func ValidateResponse(resp *Response, refs []criterion.Ref) error {
 func ParseResponse(raw []byte, refs []criterion.Ref) (*Response, error) {
 	var resp Response
 	if err := json.Unmarshal(raw, &resp); err != nil {
-		return nil, fmt.Errorf("decode analyzability response: %w", err)
+		return nil, fmt.Errorf("decode checkability response: %w", err)
 	}
 	if err := ValidateResponse(&resp, refs); err != nil {
 		return nil, err

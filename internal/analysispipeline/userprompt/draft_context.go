@@ -2,7 +2,7 @@ package userprompt
 
 import "strings"
 
-// Draft context labels — shared by analyzability (pass 1) and analysis (pass 2).
+// Draft context labels — shared by checkability (pass 1) and analysis (pass 2).
 const (
 	DraftContextAssignment          = "Assignment submission"
 	DraftContextDiscussionMainTopic = "Discussion main topic reply"

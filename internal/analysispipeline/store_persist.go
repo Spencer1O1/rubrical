@@ -101,7 +101,7 @@ func (s *Service) persistSuccess(ctx context.Context, handle RunHandle, assignme
 
 	for i, criterion := range out.Criteria {
 		explanation := criterionStatusLabel(criterion.Status)
-		if criterion.Status == "not_analyzable" && criterion.HowToEarnPoints != "" {
+		if criterion.Status == "not_checkable" && criterion.HowToEarnPoints != "" {
 			explanation = criterion.HowToEarnPoints
 		}
 		item := FeedbackItem{

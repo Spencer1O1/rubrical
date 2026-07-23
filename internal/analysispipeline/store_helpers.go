@@ -16,7 +16,7 @@ func criterionStatusLabel(status string) string {
 		return "This criterion is partially met."
 	case "not_met":
 		return "This criterion does not appear to be met."
-	case "not_analyzable":
+	case "not_checkable":
 		return "This criterion can’t be checked from this draft."
 	default:
 		return ""

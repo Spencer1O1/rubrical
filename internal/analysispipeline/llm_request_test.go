@@ -49,7 +49,7 @@ func TestEncodePipelinePromptLog_includesBothPasses(t *testing.T) {
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatal(err)
 	}
-	if decoded.Analyzability.System != "sys1" || decoded.Analysis == nil || decoded.Analysis.System != "sys2" {
+	if decoded.Checkability.System != "sys1" || decoded.Analysis == nil || decoded.Analysis.System != "sys2" {
 		t.Fatalf("unexpected pipeline log: %+v", decoded)
 	}
 }

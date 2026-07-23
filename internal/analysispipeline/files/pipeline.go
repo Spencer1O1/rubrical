@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-var ErrNoAnalyzableContent = fmt.Errorf("no analyzable submission content")
+var ErrNoCheckableContent = fmt.Errorf("no checkable submission content")
 
 func Process(provider string, submissionFiles []SubmissionInput, limits Limits) (ProcessResult, error) {
 	limits = limits.withDefaults()
