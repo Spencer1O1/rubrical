@@ -52,15 +52,17 @@ func writeFileSubmission(b *strings.Builder, input Input, budget *textBudget) {
 func writeTextSubmission(b *strings.Builder, input Input, budget *textBudget) {
 	b.WriteString("text\n")
 	words := drafttext.WordCount(input.DraftText)
+	if words > 0 {
+		fmt.Fprintf(b, "Draft word count (computed by Rubrical): %d\n", words)
+	}
 	draft := budget.take(input.DraftText)
 	if draft == "" && !hasFileContext(input.Files) {
 		b.WriteString("(empty)\n")
-	} else if draft != "" {
+		return
+	}
+	if draft != "" {
 		b.WriteString(draft)
 		b.WriteByte('\n')
-	}
-	if words > 0 {
-		fmt.Fprintf(b, "Word count: %d\n", words)
 	}
 }
 

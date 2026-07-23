@@ -38,7 +38,7 @@ func TestBuildSubmission_textModeExcludesFiles(t *testing.T) {
 	if !contains(got, "hello") {
 		t.Fatal("expected draft text")
 	}
-	if !contains(got, "Word count: 1") {
+	if !contains(got, "Draft word count (computed by Rubrical): 1") {
 		t.Fatalf("expected computed word count:\n%s", got)
 	}
 	if contains(got, "secret.txt") {
@@ -51,8 +51,15 @@ func TestBuildSubmission_textModeWordCountFromHTML(t *testing.T) {
 		DraftMode: "text",
 		DraftText: `<p>one two three</p>`,
 	}, 1000)
-	if !contains(got, "Word count: 3") {
+	label := "Draft word count (computed by Rubrical, not student text): 3"
+	body := "<p>one two three</p>"
+	li := indexSubstring(got, label)
+	bi := indexSubstring(got, body)
+	if li < 0 {
 		t.Fatalf("expected HTML word count:\n%s", got)
+	}
+	if bi < 0 || li > bi {
+		t.Fatalf("computed word count should precede draft body:\n%s", got)
 	}
 }
 
