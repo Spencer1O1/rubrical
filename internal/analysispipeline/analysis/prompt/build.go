@@ -1,14 +1,21 @@
 package prompt
 
-import "strings"
+import (
+	"strings"
+
+	"rubrical/internal/analysispipeline/userprompt"
+)
 
 func Build(input Input, maxSubmissionTextChars int) (system string, user string) {
-	system = BuildSystem()
+	system = BuildSystem(input.PageType)
 
 	var b strings.Builder
 	b.WriteString(BuildContext(input))
-	b.WriteString(BuildInstructions(input.Instructions))
+	b.WriteByte('\n')
+	b.WriteString(userprompt.Instructions(input.Instructions))
+	b.WriteByte('\n')
 	b.WriteString(BuildRubric(input.Rubric))
+	b.WriteByte('\n')
 	b.WriteString(BuildSubmission(input, maxSubmissionTextChars))
 
 	user = b.String()

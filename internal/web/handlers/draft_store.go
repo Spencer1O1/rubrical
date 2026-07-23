@@ -13,6 +13,7 @@ import (
 	"rubrical/internal/draftfiles"
 	"rubrical/internal/draftmode"
 	"rubrical/internal/importpayload"
+	"rubrical/internal/web/pages"
 )
 
 type draftStoredFile struct {
@@ -108,7 +109,7 @@ func (h *Handlers) saveDraftFromImport(ctx context.Context, assignmentID int64, 
 		if text != "" {
 			return h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
 				Mode:       draftmode.Text,
-				Body:       text,
+				Body:       pages.SanitizedDraftHTML(text),
 				SourceType: canvasDraftSourceType(payload),
 				FromCanvas: true,
 			})
@@ -135,7 +136,7 @@ func (h *Handlers) saveDiscussionDraftFromImport(ctx context.Context, assignment
 
 	if err := h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
 		Mode:       draftmode.Text,
-		Body:       text,
+		Body:       pages.SanitizedDraftHTML(text),
 		SourceType: "canvas_discussion_reply",
 		FromCanvas: true,
 	}); err != nil {
@@ -604,7 +605,7 @@ func (h *Handlers) upsertLatestDraft(ctx context.Context, assignmentID int64, op
 		return nil
 	}
 
-	wordCount := len(strings.Fields(next.Body))
+	wordCount := pages.DraftWordCount(next.Body)
 
 	if existing == nil {
 		err = h.db.Pool.QueryRow(ctx, `

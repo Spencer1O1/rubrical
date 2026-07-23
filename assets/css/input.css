@@ -48,3 +48,25 @@
 .assignment-instructions :where(a) {
   @apply text-indigo-600 underline;
 }
+
+.draft-editor :where(ul, ol) {
+  @apply my-2 list-inside list-disc space-y-1 pl-2;
+}
+
+.draft-editor :where(ol) {
+  @apply list-decimal;
+}
+
+.draft-editor :where(p) {
+  @apply my-2;
+}
+
+.draft-editor :where(a) {
+  @apply text-indigo-600 underline;
+}
+
+.draft-editor:empty:before,
+.draft-editor[data-empty="true"]:before {
+  content: attr(data-placeholder);
+  @apply pointer-events-none text-stone-400;
+}

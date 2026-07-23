@@ -145,10 +145,6 @@ func DraftPanelBodyID(id int64) string {
 
 const DraftAutoSaveDelayMs = 750
 
-func DraftAutoSaveTrigger() string {
-	return fmt.Sprintf("blur, input changed delay:%dms", DraftAutoSaveDelayMs)
-}
-
 func DraftURLSaveTrigger() string {
 	return fmt.Sprintf("blur, input changed delay:%dms, keyup[keyEnter] delay:%dms", DraftAutoSaveDelayMs, DraftAutoSaveDelayMs)
 }
@@ -216,6 +212,10 @@ func DraftDiscussionFileInputID(id int64) string {
 
 func DraftTextareaID(id int64) string {
 	return fmt.Sprintf("draft-text-%d", id)
+}
+
+func DraftEditorID(id int64) string {
+	return fmt.Sprintf("draft-editor-%d", id)
 }
 
 func DraftURLInputID(id int64) string {

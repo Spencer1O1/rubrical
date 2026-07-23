@@ -129,7 +129,43 @@ templ appClientScripts() {
 			const banner = document.getElementById("htmx-error-banner");
 			if (banner) banner.classList.add("hidden");
 		}
+		function syncDraftEditor(editor) {
+			if (!editor) return;
+			const inputId = editor.getAttribute("data-draft-input");
+			const input = inputId ? document.getElementById(inputId) : null;
+			if (input) input.value = editor.innerHTML;
+			const text = (editor.textContent || "").replace(/\u00a0/g, " ").trim();
+			editor.dataset.empty = text ? "false" : "true";
+		}
+		document.addEventListener(
+			"input",
+			function (event) {
+				const editor = event.target?.closest?.("[data-draft-editor]");
+				if (!editor) return;
+				syncDraftEditor(editor);
+			},
+			true,
+		);
+		document.addEventListener("click", function (event) {
+			const button = event.target?.closest?.("[data-draft-cmd]");
+			if (!button) return;
+			event.preventDefault();
+			const root = button.closest("[data-draft-editor-root]");
+			const editor = root?.querySelector?.("[data-draft-editor]");
+			if (!editor) return;
+			editor.focus();
+			document.execCommand(button.getAttribute("data-draft-cmd"), false);
+			syncDraftEditor(editor);
+			editor.dispatchEvent(new Event("input", { bubbles: true }));
+		});
+		document.addEventListener("DOMContentLoaded", function () {
+			document.querySelectorAll("[data-draft-editor]").forEach(syncDraftEditor);
+		});
+		document.body.addEventListener("htmx:afterSwap", function () {
+			document.querySelectorAll("[data-draft-editor]").forEach(syncDraftEditor);
+		});
 		document.body.addEventListener("htmx:beforeRequest", function (event) {
+			document.querySelectorAll("[data-draft-editor]").forEach(syncDraftEditor);
 			hideHTMXErrorBanner();
 			const path = requestPath(event);
 			if (!path.includes("/analyze")) return;

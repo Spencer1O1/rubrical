@@ -3,11 +3,14 @@ package prompt
 import (
 	_ "embed"
 	"strings"
+
+	"rubrical/internal/analysispipeline/userprompt"
 )
 
 //go:embed system.md
-var systemPrompt string
+var systemPromptTemplate string
 
-func BuildSystem() string {
-	return strings.TrimSpace(systemPrompt)
+func BuildSystem(pageType string) string {
+	s := strings.TrimSpace(systemPromptTemplate)
+	return strings.ReplaceAll(s, "{{DRAFT_CONTEXT}}", userprompt.DraftContextLabel(pageType))
 }

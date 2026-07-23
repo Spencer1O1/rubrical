@@ -9,7 +9,7 @@ func BuildSubmission(input Input, maxSubmissionTextChars int) string {
 	budget := newTextBudget(maxSubmissionTextChars)
 	manifestCap := newManifestBudget(0)
 	var b strings.Builder
-	b.WriteString("\n\n## Student submission\n")
+	b.WriteString("## Student submission\n")
 
 	switch strings.TrimSpace(input.DraftMode) {
 	case "url":

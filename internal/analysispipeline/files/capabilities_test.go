@@ -72,7 +72,7 @@ func TestClassify_csvIsTextNotSpreadsheet(t *testing.T) {
 
 func TestFormatPromptCapabilities(t *testing.T) {
 	s := files.FormatPromptCapabilities("anthropic")
-	if !strings.Contains(s, "Can inspect:") || !strings.Contains(s, "Cannot inspect:") {
+	if !strings.Contains(s, "Can:") || !strings.Contains(s, "Cannot:") {
 		t.Fatalf("bad format: %s", s)
 	}
 	if strings.Contains(s, "live/in-person") {

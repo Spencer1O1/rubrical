@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"rubrical/internal/analysispipeline/criterionname"
-	"rubrical/internal/draftmode"
+	"rubrical/internal/analysispipeline/userprompt"
 	"rubrical/internal/llm"
 )
 
@@ -13,7 +13,7 @@ import (
 type Input struct {
 	PageType        string
 	Instructions    string
-	AllowedChannels []string // text, file, url
+	AllowedChannels []string // text, file, url — assignment-allowed; injected into system prompt
 	Criteria        []criterionname.Ref
 }
 
@@ -33,7 +33,7 @@ type Response struct {
 
 func BuildRequest(input Input, providerName string) llm.Request {
 	return llm.Request{
-		SystemPrompt: SystemPrompt(providerName),
+		SystemPrompt: SystemPrompt(providerName, input.PageType, input.AllowedChannels),
 		UserPrompt:   buildUserPrompt(input),
 		SchemaName:   "analyzability",
 		Schema:       JSONSchema(input.Criteria, providerName),
@@ -42,36 +42,11 @@ func BuildRequest(input Input, providerName string) llm.Request {
 
 func buildUserPrompt(input Input) string {
 	var b strings.Builder
-
-	pageType := strings.TrimSpace(input.PageType)
-	if pageType == "" {
-		pageType = "assignment"
-	}
-	b.WriteString("Page type: ")
-	b.WriteString(pageType)
-	b.WriteString("\n")
-	if pageType == "discussion" {
-		b.WriteString("Draft context: main topic reply (not a classmate thread reply).\n")
-	}
-	b.WriteString("Allowed channels: ")
-	b.WriteString(formatChannels(input.AllowedChannels))
-	b.WriteString("\n\n")
-
-	b.WriteString("## Instructions\n")
-	instructions := strings.TrimSpace(input.Instructions)
-	if instructions == "" {
-		instructions = "(none)"
-	}
-	b.WriteString(instructions)
-	b.WriteString("\n\n")
-
+	b.WriteString(userprompt.Instructions(input.Instructions))
+	b.WriteByte('\n')
 	b.WriteString("## Criteria\n")
 	for i, ref := range input.Criteria {
 		b.WriteString(fmt.Sprintf("%d. id=%s — %s\n", i+1, ref.ID, ref.Name))
 	}
 	return b.String()
-}
-
-func formatChannels(channels []string) string {
-	return strings.Join(draftmode.PromptLabels(channels), ", ")
 }

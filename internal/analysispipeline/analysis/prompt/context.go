@@ -18,13 +18,6 @@ func BuildContext(input Input) string {
 		fmt.Fprintf(&b, "Course: %s\n", course)
 	}
 
-	switch input.PageType {
-	case "discussion":
-		b.WriteString("Page type: discussion (evaluate the student's reply against the discussion prompt and rubric)\n")
-	default:
-		b.WriteString("Page type: assignment\n")
-	}
-
 	if input.PointsPossible != nil {
 		fmt.Fprintf(&b, "Points possible: %.2f\n", *input.PointsPossible)
 	}

@@ -51,9 +51,10 @@ func capabilitySupported(provider, name string, kinds []FileKind) bool {
 	return false
 }
 
-// FormatPromptCapabilities renders Can/Cannot inspect lines for system prompts.
+// FormatPromptCapabilities renders Can/Cannot lines for system prompts
+// (under a "# Capabilities" heading — heading already implies inspect).
 func FormatPromptCapabilities(provider string) string {
 	can, cannot := PromptCapabilities(provider)
-	return "Can inspect: " + strings.Join(can, "; ") + ".\n" +
-		"Cannot inspect: " + strings.Join(cannot, "; ") + "."
+	return "Can: " + strings.Join(can, "; ") + ".\n" +
+		"Cannot: " + strings.Join(cannot, "; ") + "."
 }

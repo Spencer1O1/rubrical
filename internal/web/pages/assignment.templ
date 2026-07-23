@@ -450,24 +450,51 @@ templ draftModeButton(view AssignmentView, mode string) {
 }
 
 templ draftTextPanel(view AssignmentView) {
-	<div id={ DraftModePanelID(view.ID, "text") } role="tabpanel" aria-labelledby={ DraftModeTabID(view.ID, "text") } class="space-y-3">
-		<label class="block text-sm font-medium text-stone-900" for={ DraftTextareaID(view.ID) }>
+	<div id={ DraftModePanelID(view.ID, "text") } role="tabpanel" aria-labelledby={ DraftModeTabID(view.ID, "text") } class="space-y-3" data-draft-editor-root>
+		<label class="block text-sm font-medium text-stone-900" for={ DraftEditorID(view.ID) }>
 			Draft text
 		</label>
 		<form class="contents">
 			@embedHiddenInput(view.Embed)
-			<textarea
+			<div class="overflow-hidden rounded-lg border border-stone-300 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20">
+				<div class="flex items-center gap-0.5 border-b border-stone-200 bg-stone-50 px-1.5 py-1" role="toolbar" aria-label="Formatting">
+					<button type="button" data-draft-cmd="bold" class="inline-flex h-8 w-8 items-center justify-center rounded text-stone-600 hover:bg-stone-200 hover:text-stone-900" title="Bold" aria-label="Bold">
+						<span class="material-symbols-outlined text-lg leading-none">format_bold</span>
+					</button>
+					<button type="button" data-draft-cmd="italic" class="inline-flex h-8 w-8 items-center justify-center rounded text-stone-600 hover:bg-stone-200 hover:text-stone-900" title="Italic" aria-label="Italic">
+						<span class="material-symbols-outlined text-lg leading-none">format_italic</span>
+					</button>
+					<button type="button" data-draft-cmd="insertUnorderedList" class="inline-flex h-8 w-8 items-center justify-center rounded text-stone-600 hover:bg-stone-200 hover:text-stone-900" title="Bulleted list" aria-label="Bulleted list">
+						<span class="material-symbols-outlined text-lg leading-none">format_list_bulleted</span>
+					</button>
+					<button type="button" data-draft-cmd="insertOrderedList" class="inline-flex h-8 w-8 items-center justify-center rounded text-stone-600 hover:bg-stone-200 hover:text-stone-900" title="Numbered list" aria-label="Numbered list">
+						<span class="material-symbols-outlined text-lg leading-none">format_list_numbered</span>
+					</button>
+				</div>
+				<div
+					id={ DraftEditorID(view.ID) }
+					class="draft-editor min-h-[12rem] w-full px-3 py-2 text-sm leading-relaxed text-stone-900 outline-none"
+					contenteditable="true"
+					role="textbox"
+					aria-multiline="true"
+					data-draft-editor
+					data-draft-input={ DraftTextareaID(view.ID) }
+					data-placeholder="Paste or edit your draft text."
+				>
+					@templ.Raw(SanitizedDraftHTML(view.DraftBody))
+				</div>
+			</div>
+			<input
+				type="hidden"
 				id={ DraftTextareaID(view.ID) }
 				name="draft"
-				rows="8"
+				value={ SanitizedDraftHTML(view.DraftBody) }
 				hx-post={ view.DraftTextSaveURL }
-				hx-trigger={ DraftAutoSaveTrigger() }
+				hx-trigger={ fmt.Sprintf("input changed delay:%dms from:#%s, blur from:#%s", DraftAutoSaveDelayMs, DraftEditorID(view.ID), DraftEditorID(view.ID)) }
 				hx-target={ fmt.Sprintf("#%s", DraftStatusID(view.ID)) }
 				hx-swap="innerHTML"
 				hx-include="closest form"
-				class="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm leading-relaxed focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-				placeholder="Paste or edit your draft text."
-			>{ view.DraftBody }</textarea>
+			/>
 		</form>
 		<p class="text-xs text-stone-500">Saves automatically when you edit.</p>
 	</div>

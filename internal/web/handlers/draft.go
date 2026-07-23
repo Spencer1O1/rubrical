@@ -32,8 +32,8 @@ func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body := strings.TrimSpace(r.FormValue("draft"))
-	if body == "" {
+	body := pages.SanitizedDraftHTML(r.FormValue("draft"))
+	if pages.DraftPlainText(body) == "" {
 		if err := h.clearDraftTextBody(r.Context(), id); err != nil {
 			if renderHTMXDraftStatusError(w, r, id, "failed to clear draft") {
 				return
@@ -62,8 +62,7 @@ func (h *Handlers) SaveDraft(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("HX-Request") == "true" {
-		wordCount := len(strings.Fields(body))
-		pages.DraftSaved(pages.DraftSavedMessage(wordCount, "")).Render(r.Context(), w)
+		pages.DraftSaved(pages.DraftSavedMessage(pages.DraftWordCount(body), "")).Render(r.Context(), w)
 		return
 	}
 
@@ -428,8 +427,8 @@ func (h *Handlers) persistDraftFromAnalyzeForm(ctx context.Context, assignmentID
 		if _, ok := r.PostForm["draft"]; !ok {
 			return nil
 		}
-		body := strings.TrimSpace(r.FormValue("draft"))
-		if body == "" {
+		body := pages.SanitizedDraftHTML(r.FormValue("draft"))
+		if pages.DraftPlainText(body) == "" {
 			return h.clearDraftTextBody(ctx, assignmentID)
 		}
 		return h.upsertLatestDraft(ctx, assignmentID, draftUpsertOptions{
