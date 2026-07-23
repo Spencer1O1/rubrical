@@ -31,12 +31,12 @@ Strength inside the chosen selectedRatingId only — not across the whole rubric
 
 | Range | Meaning |
 |------:|---------|
-| 0–10 | Barely in this rating |
+| 0–10 | Barely reaches this rating (worse end)|
 | 11–30 | Low in this rating |
 | 31–50 | Lower-middle |
 | 51–70 | Solid / mid-high |
 | 71–90 | High in this rating |
-| 91–100 | Near the top of this rating |
+| 91–100 | Near the top of this rating (better end)|
 
 Pick a specific value in the fitting range. Do not always use range boundaries (0, 10, 50, 100, …).
 
