@@ -47,8 +47,17 @@ func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
 	if strings.Contains(req.SystemPrompt, "- Discussion main topic reply") {
 		t.Fatal("draft context value should not be a bullet")
 	}
-	if !strings.Contains(req.SystemPrompt, "The evidence needed to judge the criterion would be in the draft named under Draft context") {
-		t.Fatalf("expected would-be-in-draft locus in rule:\n%s", req.SystemPrompt)
+	if !strings.Contains(req.SystemPrompt, "evidence needed to judge the criterion would be in this Draft context") {
+		t.Fatalf("expected evidenceProvidable locus rule:\n%s", req.SystemPrompt)
+	}
+	if !strings.Contains(req.SystemPrompt, "via text)") {
+		t.Fatalf("channels should be inlined in evidenceProvidable:\n%s", req.SystemPrompt)
+	}
+	if !strings.Contains(req.SystemPrompt, "separate post or reply") {
+		t.Fatalf("expected short outside-draft examples:\n%s", req.SystemPrompt)
+	}
+	if strings.Contains(req.SystemPrompt, "[TODO]") {
+		t.Fatal("system prompt still has [TODO] placeholder")
 	}
 	if !strings.Contains(req.UserPrompt, "Classmate Reply") || !strings.Contains(req.UserPrompt, "id=classmate-reply") {
 		t.Fatalf("expected criterion id+name in prompt:\n%s", req.UserPrompt)
@@ -117,11 +126,15 @@ func TestBuildRequest_injectsAnthropicCapabilities(t *testing.T) {
 func TestSystemPrompt_isFieldSpec(t *testing.T) {
 	sys := analyzability.SystemPrompt("openai", "assignment", []string{"text", "file"})
 	for _, want := range []string{
-		"criterionId", "analyzable", "reason", "howToEarnPoints", "Can:",
+		"criterionId", "evidenceProvidable", "evidenceAnalyzable", "reason", "howToEarnPoints", "Can:",
 		"via text, files)",
 		"listed under Can in Capabilities",
 		"# Draft context",
 		"Assignment submission",
+		"evidence needed to judge the criterion would be in this Draft context",
+		"separate post or reply",
+		"live/in-person",
+		"You do not receive the draft",
 	} {
 		if !strings.Contains(sys, want) {
 			t.Fatalf("system prompt missing %q", want)
@@ -130,17 +143,17 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 	if strings.Contains(sys, "{{") {
 		t.Fatal("unreplaced template placeholders")
 	}
+	if strings.Contains(sys, "[TODO]") {
+		t.Fatal("system prompt still has [TODO] placeholder")
+	}
 	if strings.Contains(sys, "Outside locus (analyzable: false):") {
 		t.Fatal("system prompt still has verbose locus essay")
 	}
 	if strings.Contains(sys, "Missing expected") || strings.Contains(sys, "score it poorly") {
 		t.Fatal("system prompt must not describe pass-2 scoring of missing evidence")
 	}
-	if !strings.Contains(sys, "The evidence needed to judge the criterion would be in the draft named under Draft context") {
-		t.Fatal("system prompt missing would-be-in-draft locus in rule")
-	}
-	if !strings.Contains(sys, "pre-submission feedback on one student draft") {
-		t.Fatal("system prompt must state Rubrical checks one student draft")
+	if strings.Contains(sys, "If (1) is false") || strings.Contains(sys, "set this false too") {
+		t.Fatal("no need to instruct analyzable=false when providable=false")
 	}
 	if strings.Contains(sys, "possible channels") || strings.Contains(sys, "this request lists") || strings.Contains(sys, "# Allowed channels") {
 		t.Fatal("assignment channels are inlined in the rule")
@@ -150,8 +163,8 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 func TestValidateResponse_requiresHowToEarnPoints(t *testing.T) {
 	refs := criterion.Index([]string{"Classmate Reply", "Word Count"})
 	resp := &analyzability.Response{Criteria: []analyzability.Criterion{
-		{CriterionID: refs[0].ID, Analyzable: false, Reason: "peer reply", HowToEarnPoints: ""},
-		{CriterionID: refs[1].ID, Analyzable: true, Reason: "text", HowToEarnPoints: ""},
+		{CriterionID: refs[0].ID, EvidenceProvidable: false, Reason: "peer reply", HowToEarnPoints: ""},
+		{CriterionID: refs[1].ID, EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "text", HowToEarnPoints: ""},
 	}}
 	if err := analyzability.ValidateResponse(resp, refs); err == nil {
 		t.Fatal("expected error for missing howToEarnPoints")
@@ -169,8 +182,8 @@ func TestParseResponse_ordersByRubric(t *testing.T) {
 	refs := criterion.Index([]string{"A", "B"})
 	raw := []byte(`{
 		"criteria": [
-			{"criterionId":"b","analyzable":true,"reason":"text","howToEarnPoints":""},
-			{"criterionId":"a","analyzable":false,"reason":"live","howToEarnPoints":"Attend class."}
+			{"criterionId":"b","evidenceProvidable":true,"evidenceAnalyzable":true,"reason":"text","howToEarnPoints":""},
+			{"criterionId":"a","evidenceProvidable":false,"evidenceAnalyzable":false,"reason":"live","howToEarnPoints":"Attend class."}
 		]
 	}`)
 	resp, err := analyzability.ParseResponse(raw, refs)

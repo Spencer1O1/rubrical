@@ -103,6 +103,9 @@ func ValidateScoredAnalysis(out *ScoredAnalysis) error {
 			return err
 		}
 		dropFulfilledOverlappingUnfulfilled(&c.FulfilledRequirements, c.UnfulfilledRequirements)
+		if err := requireGapsWhenNotFullyMet(i, c.Status, c.UnfulfilledRequirements); err != nil {
+			return err
+		}
 	}
 
 	out.Strengths = trimStrings(out.Strengths)
@@ -203,6 +206,18 @@ func dropFulfilledOverlappingUnfulfilled(fulfilled *[]FulfilledRequirement, unfu
 
 func normalizeRequirementKey(s string) string {
 	return strings.ToLower(strings.Join(strings.Fields(s), " "))
+}
+
+// requireGapsWhenNotFullyMet rejects partial/not-met rows with an empty gap list —
+// Below Standard (or worse) cannot list only met requirements.
+func requireGapsWhenNotFullyMet(index int, status string, gaps []UnfulfilledRequirement) error {
+	switch status {
+	case "partially_met", "not_met":
+		if len(gaps) == 0 {
+			return fmt.Errorf("criteria[%d] status %s requires at least one unfulfilledRequirement", index, status)
+		}
+	}
+	return nil
 }
 
 func SeverityForStatus(status string) string {

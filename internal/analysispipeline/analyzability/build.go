@@ -19,11 +19,17 @@ type Input struct {
 
 // Criterion is one row from the analyzability response.
 type Criterion struct {
-	CriterionID     string `json:"criterionId"`
-	CriterionName   string `json:"-"` // resolved from CriterionID
-	Analyzable      bool   `json:"analyzable"`
-	Reason          string `json:"reason"`
-	HowToEarnPoints string `json:"howToEarnPoints"`
+	CriterionID        string `json:"criterionId"`
+	CriterionName      string `json:"-"` // resolved from CriterionID
+	EvidenceProvidable bool   `json:"evidenceProvidable"`
+	EvidenceAnalyzable bool   `json:"evidenceAnalyzable"`
+	Reason             string `json:"reason"`
+	HowToEarnPoints    string `json:"howToEarnPoints"`
+}
+
+// Checkable is true when evidence can be provided here and Rubrical can inspect it.
+func (c Criterion) Checkable() bool {
+	return c.EvidenceProvidable && c.EvidenceAnalyzable
 }
 
 // Response is the pass-1 model output.

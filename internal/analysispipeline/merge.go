@@ -66,7 +66,7 @@ func MergeAnalysis(
 		cls := class.Criteria[i]
 		maxPts, _ := analysis.CriterionMaxPoints(row)
 
-		if !cls.Analyzable {
+		if !cls.Checkable() {
 			unchecked++
 			out.Criteria[i] = analysisschema.ScoredCriterion{
 				CriterionID:     row.ID,
@@ -134,7 +134,7 @@ func filterRubric(rubric analysis.RubricContext, class *analyzability.Response) 
 	}
 	var rows []analysis.RubricRow
 	for i, row := range rubric.Rows {
-		if i < len(class.Criteria) && class.Criteria[i].Analyzable {
+		if i < len(class.Criteria) && class.Criteria[i].Checkable() {
 			rows = append(rows, row)
 		}
 	}

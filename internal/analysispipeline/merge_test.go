@@ -15,8 +15,8 @@ func TestMergeAnalysis_classmateNotAnalyzable(t *testing.T) {
 	}}
 	refs := rubric.AssignCriterionIDs()
 	class := &analyzability.Response{Criteria: []analyzability.Criterion{
-		{CriterionID: refs[0].ID, Analyzable: true, Reason: "text draft"},
-		{CriterionID: refs[1].ID, Analyzable: false, Reason: "peer reply not in this draft", HowToEarnPoints: "Write a thoughtful classmate reply in Canvas."},
+		{CriterionID: refs[0].ID, EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "text draft"},
+		{CriterionID: refs[1].ID, EvidenceProvidable: false, EvidenceAnalyzable: false, Reason: "peer reply not in this draft", HowToEarnPoints: "Write a thoughtful classmate reply in Canvas."},
 	}}
 	scored := &analysisschema.ScoredAnalysis{
 		OverallSummary: "Solid topic post.",
@@ -64,7 +64,7 @@ func TestMergeAnalysis_missingPhotoStillAnalyzableViaScoring(t *testing.T) {
 	}}
 	refs := rubric.AssignCriterionIDs()
 	class := &analyzability.Response{Criteria: []analyzability.Criterion{
-		{CriterionID: refs[0].ID, Analyzable: true, Reason: "image upload expected"},
+		{CriterionID: refs[0].ID, EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "image upload expected"},
 	}}
 	scored := &analysisschema.ScoredAnalysis{
 		OverallSummary: "Missing photo.",
@@ -99,8 +99,8 @@ func TestFilterRubric_dropsNotAnalyzable(t *testing.T) {
 		{Criterion: "B"},
 	}}
 	class := &analyzability.Response{Criteria: []analyzability.Criterion{
-		{CriterionID: "a", Analyzable: true, Reason: "ok"},
-		{CriterionID: "b", Analyzable: false, Reason: "live", HowToEarnPoints: "Attend."},
+		{CriterionID: "a", EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "ok"},
+		{CriterionID: "b", EvidenceProvidable: false, EvidenceAnalyzable: false, Reason: "live", HowToEarnPoints: "Attend."},
 	}}
 	filtered := filterRubric(rubric, class)
 	if len(filtered.Rows) != 1 || filtered.Rows[0].Criterion != "A" {
@@ -115,8 +115,8 @@ func TestMergeAnalysis_preservesIdsThroughFilteredPass2(t *testing.T) {
 	}}
 	refs := rubric.AssignCriterionIDs()
 	class := &analyzability.Response{Criteria: []analyzability.Criterion{
-		{CriterionID: refs[0].ID, Analyzable: false, Reason: "skip", HowToEarnPoints: "N/A"},
-		{CriterionID: refs[1].ID, Analyzable: true, Reason: "ok"},
+		{CriterionID: refs[0].ID, EvidenceProvidable: false, EvidenceAnalyzable: false, Reason: "skip", HowToEarnPoints: "N/A"},
+		{CriterionID: refs[1].ID, EvidenceProvidable: true, EvidenceAnalyzable: true, Reason: "ok"},
 	}}
 	filtered := filterRubric(rubric, class)
 	filtered.AssignCriterionIDs() // must not rewrite content-2 → content
@@ -151,7 +151,7 @@ func TestMergeAnalysis_allNotAnalyzableSkipsPass2(t *testing.T) {
 	}}
 	refs := rubric.AssignCriterionIDs()
 	class := &analyzability.Response{Criteria: []analyzability.Criterion{
-		{CriterionID: refs[0].ID, Analyzable: false, Reason: "in class", HowToEarnPoints: "Participate in class."},
+		{CriterionID: refs[0].ID, EvidenceProvidable: false, EvidenceAnalyzable: false, Reason: "in class", HowToEarnPoints: "Participate in class."},
 	}}
 	merged, err := MergeAnalysis(class, nil, rubric)
 	if err != nil {

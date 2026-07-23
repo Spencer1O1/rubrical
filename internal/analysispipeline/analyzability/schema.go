@@ -45,12 +45,13 @@ func criterionJSONSchema(fixedID string) map[string]any {
 		"type":                 "object",
 		"additionalProperties": false,
 		"properties": map[string]any{
-			"criterionId":     criterionID,
-			"analyzable":      map[string]any{"type": "boolean"},
-			"reason":          map[string]any{"type": "string"},
-			"howToEarnPoints": map[string]any{"type": "string"},
+			"criterionId":        criterionID,
+			"evidenceProvidable": map[string]any{"type": "boolean"},
+			"evidenceAnalyzable": map[string]any{"type": "boolean"},
+			"reason":             map[string]any{"type": "string"},
+			"howToEarnPoints":    map[string]any{"type": "string"},
 		},
-		"required": []any{"criterionId", "analyzable", "reason", "howToEarnPoints"},
+		"required": []any{"criterionId", "evidenceProvidable", "evidenceAnalyzable", "reason", "howToEarnPoints"},
 	}
 }
 
@@ -87,10 +88,10 @@ func ValidateResponse(resp *Response, refs []criterion.Ref) error {
 		if c.Reason == "" {
 			return fmt.Errorf("criteria[%d].reason is required", i)
 		}
-		if !c.Analyzable && c.HowToEarnPoints == "" {
-			return fmt.Errorf("criteria[%d].howToEarnPoints is required when not analyzable", i)
+		if !c.Checkable() && c.HowToEarnPoints == "" {
+			return fmt.Errorf("criteria[%d].howToEarnPoints is required when evidence is not checkable", i)
 		}
-		if c.Analyzable {
+		if c.Checkable() {
 			c.HowToEarnPoints = ""
 		}
 	}

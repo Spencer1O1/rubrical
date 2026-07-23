@@ -51,6 +51,24 @@ func TestValidateScoredAnalysis_requiresStatus(t *testing.T) {
 	}
 }
 
+func TestValidateScoredAnalysis_rejectsPartialWithoutGaps(t *testing.T) {
+	out := ScoredAnalysis{
+		OverallSummary: "Summary",
+		Confidence:     "medium",
+		Criteria: []ScoredCriterion{{
+			CriterionName:         "Integration",
+			CriterionScore:        0.5,
+			Status:                "partially_met",
+			ScoreRationale:        "Below standard but only met listed.",
+			FulfilledRequirements: []FulfilledRequirement{{Requirement: "Uses a quote", Evidence: "Cited Mirzoeff."}},
+			UnfulfilledRequirements: []UnfulfilledRequirement{},
+		}},
+	}
+	if err := ValidateScoredAnalysis(&out); err == nil {
+		t.Fatal("expected error when partially_met has no unfulfilledRequirements")
+	}
+}
+
 func TestValidateScoredAnalysis(t *testing.T) {
 	criterion := sampleCriterion()
 	out := ScoredAnalysis{
