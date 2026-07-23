@@ -12,14 +12,18 @@ export type AISettings = {
 export const PROVIDER_MODELS: Record<AIProviderId, readonly { id: string; label: string }[]> = {
   openai: [
     { id: "gpt-4o-mini", label: "GPT-4o mini (recommended)" },
-    { id: "gpt-4o", label: "GPT-4o" },
-    { id: "gpt-4.1-mini", label: "GPT-4.1 mini" },
+    { id: "gpt-5.6-luna", label: "GPT-5.6 Luna" },
+    { id: "gpt-5.6-terra", label: "GPT-5.6 Terra" },
+    { id: "gpt-5.6-sol", label: "GPT-5.6 Sol" },
     { id: "gpt-4.1", label: "GPT-4.1" },
+    { id: "gpt-4.1-mini", label: "GPT-4.1 mini" },
+    { id: "gpt-4o", label: "GPT-4o" },
   ],
   anthropic: [
-    { id: "claude-sonnet-4-20250514", label: "Claude Sonnet 4" },
-    { id: "claude-3-7-sonnet-20250219", label: "Claude 3.7 Sonnet" },
-    { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku" },
+    { id: "claude-sonnet-5", label: "Claude Sonnet 5" },
+    { id: "claude-opus-4-8", label: "Claude Opus 4.8" },
+    { id: "claude-haiku-4-5", label: "Claude Haiku 4.5" },
+    { id: "claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
   ],
 };
 

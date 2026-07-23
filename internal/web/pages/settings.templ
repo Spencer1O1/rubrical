@@ -20,18 +20,22 @@ var OpenAIModelOptions = []struct {
 	Label string
 }{
 	{ID: "gpt-4o-mini", Label: "GPT-4o mini (recommended)"},
-	{ID: "gpt-4o", Label: "GPT-4o"},
-	{ID: "gpt-4.1-mini", Label: "GPT-4.1 mini"},
+	{ID: "gpt-5.6-luna", Label: "GPT-5.6 Luna"},
+	{ID: "gpt-5.6-terra", Label: "GPT-5.6 Terra"},
+	{ID: "gpt-5.6-sol", Label: "GPT-5.6 Sol"},
 	{ID: "gpt-4.1", Label: "GPT-4.1"},
+	{ID: "gpt-4.1-mini", Label: "GPT-4.1 mini"},
+	{ID: "gpt-4o", Label: "GPT-4o"},
 }
 
 var AnthropicModelOptions = []struct {
 	ID    string
 	Label string
 }{
-	{ID: "claude-sonnet-4-20250514", Label: "Claude Sonnet 4"},
-	{ID: "claude-3-7-sonnet-20250219", Label: "Claude 3.7 Sonnet"},
-	{ID: "claude-3-5-haiku-20241022", Label: "Claude 3.5 Haiku"},
+	{ID: "claude-sonnet-5", Label: "Claude Sonnet 5"},
+	{ID: "claude-opus-4-8", Label: "Claude Opus 4.8"},
+	{ID: "claude-haiku-4-5", Label: "Claude Haiku 4.5"},
+	{ID: "claude-sonnet-4-6", Label: "Claude Sonnet 4.6"},
 }
 
 templ SettingsPage(settings aisettings.Settings, user components.LayoutUser, errorMessage string, saved bool) {
@@ -168,14 +172,18 @@ templ settingsForm(settings aisettings.Settings, errorMessage string, saved bool
 			if (!provider || !model) return;
 			const openai = [
 				["gpt-4o-mini", "GPT-4o mini (recommended)"],
-				["gpt-4o", "GPT-4o"],
-				["gpt-4.1-mini", "GPT-4.1 mini"],
+				["gpt-5.6-luna", "GPT-5.6 Luna"],
+				["gpt-5.6-terra", "GPT-5.6 Terra"],
+				["gpt-5.6-sol", "GPT-5.6 Sol"],
 				["gpt-4.1", "GPT-4.1"],
+				["gpt-4.1-mini", "GPT-4.1 mini"],
+				["gpt-4o", "GPT-4o"],
 			];
 			const anthropic = [
-				["claude-sonnet-4-20250514", "Claude Sonnet 4"],
-				["claude-3-7-sonnet-20250219", "Claude 3.7 Sonnet"],
-				["claude-3-5-haiku-20241022", "Claude 3.5 Haiku"],
+				["claude-sonnet-5", "Claude Sonnet 5"],
+				["claude-opus-4-8", "Claude Opus 4.8"],
+				["claude-haiku-4-5", "Claude Haiku 4.5"],
+				["claude-sonnet-4-6", "Claude Sonnet 4.6"],
 			];
 			const modelsByProvider = {};
 			for (const option of provider.options) {

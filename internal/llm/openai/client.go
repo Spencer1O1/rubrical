@@ -70,7 +70,6 @@ func (c *Client) CompleteJSON(ctx context.Context, req request.Request) ([]byte,
 		Instructions: req.SystemPrompt,
 		Input:        buildResponsesInput(req),
 		Store:        false,
-		Temperature:  config.DefaultOpenAITemperature,
 		Text: responsesTextConfig{
 			Format: responsesJSONSchemaFormat{
 				Type:   "json_schema",
@@ -79,6 +78,10 @@ func (c *Client) CompleteJSON(ctx context.Context, req request.Request) ([]byte,
 				Schema: req.Schema,
 			},
 		},
+	}
+	if modelSupportsTemperature(c.Model()) {
+		temp := config.DefaultOpenAITemperature
+		payload.Temperature = &temp
 	}
 
 	body, err := json.Marshal(payload)
@@ -199,12 +202,25 @@ func truncateErrorBody(body []byte) string {
 	return text
 }
 
+// modelSupportsTemperature is false for GPT-5.x / o-series (they reject the parameter).
+func modelSupportsTemperature(model string) bool {
+	m := strings.ToLower(strings.TrimSpace(model))
+	switch {
+	case strings.HasPrefix(m, "gpt-5"):
+		return false
+	case strings.HasPrefix(m, "o1"), strings.HasPrefix(m, "o3"), strings.HasPrefix(m, "o4"):
+		return false
+	default:
+		return true
+	}
+}
+
 type responsesRequest struct {
 	Model        string              `json:"model"`
 	Instructions string              `json:"instructions,omitempty"`
 	Input        any                 `json:"input"`
 	Store        bool                `json:"store"`
-	Temperature  float64             `json:"temperature,omitempty"`
+	Temperature  *float64            `json:"temperature,omitempty"`
 	Text         responsesTextConfig `json:"text"`
 }
 

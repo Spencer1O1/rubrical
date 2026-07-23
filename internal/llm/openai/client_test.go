@@ -30,3 +30,17 @@ func TestBuildResponsesInput_providerFile(t *testing.T) {
 		t.Fatalf("part = %+v", parts[1])
 	}
 }
+
+func TestModelSupportsTemperature(t *testing.T) {
+	if !modelSupportsTemperature("gpt-4o-mini") {
+		t.Fatal("gpt-4o-mini should support temperature")
+	}
+	if !modelSupportsTemperature("gpt-4.1") {
+		t.Fatal("gpt-4.1 should support temperature")
+	}
+	for _, model := range []string{"gpt-5.6-luna", "gpt-5.6-terra", "gpt-5.6-sol", "o3-mini"} {
+		if modelSupportsTemperature(model) {
+			t.Fatalf("%s should not support temperature", model)
+		}
+	}
+}

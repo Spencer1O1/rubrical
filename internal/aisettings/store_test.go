@@ -59,7 +59,7 @@ func TestMerge_keepsExistingKeysWhenBlank(t *testing.T) {
 	}
 	next := Merge(current, Settings{
 		Provider: "anthropic",
-		Model:    "claude-sonnet-4-20250514",
+		Model:    "claude-sonnet-5",
 	})
 	if next.OpenAIAPIKey != "sk-existing" {
 		t.Fatalf("openai key = %q", next.OpenAIAPIKey)

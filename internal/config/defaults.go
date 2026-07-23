@@ -50,7 +50,7 @@ const (
 const (
 	DefaultAIProvider     = "openai"
 	DefaultOpenAIModel    = "gpt-4o-mini"
-	DefaultAnthropicModel = "claude-sonnet-4-20250514"
+	DefaultAnthropicModel = "claude-sonnet-5"
 )
 
 // Import payload caps (hardcoded — protect server from huge JSON; not ENV).

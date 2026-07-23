@@ -16,12 +16,12 @@ describe("normalizeAISettings", () => {
     expect(
       normalizeAISettings({
         provider: "anthropic",
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-haiku-4-5",
         anthropicApiKey: "sk-ant-test",
       }),
     ).toMatchObject({
       provider: "anthropic",
-      model: "claude-3-5-haiku-20241022",
+      model: "claude-haiku-4-5",
       anthropicApiKey: "sk-ant-test",
     });
   });

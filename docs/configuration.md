@@ -21,7 +21,7 @@ pnpm setup:secrets-key   # writes SECRETS_ENCRYPTION_KEY to .env.local
 # prod: generated_keys in homeserver.yaml
 ```
 
-Default provider/model when empty: `openai` / `gpt-4o-mini` (Anthropic: `claude-sonnet-4-20250514`).
+Default provider/model when empty: `openai` / `gpt-4o-mini` (Anthropic: `claude-sonnet-5`).
 
 ## Auth + email
 
