@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"rubrical/internal/analysispipeline/analysis/schema"
-	"rubrical/internal/analysispipeline/criterionname"
+	"rubrical/internal/analysispipeline/criterion"
 	"rubrical/internal/importmeta"
 )
 
@@ -170,7 +170,7 @@ func matchRatingBandByID(row RubricRow, id string) (int, scoredBand, error) {
 	bands := parseRatingBands(row.Ratings)
 	id = strings.TrimSpace(id)
 	for i, b := range bands {
-		if criterionname.RatingID(i) == id {
+		if criterion.RatingID(i) == id {
 			return i, b, nil
 		}
 	}

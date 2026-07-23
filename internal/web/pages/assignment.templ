@@ -450,7 +450,7 @@ templ draftModeButton(view AssignmentView, mode string) {
 }
 
 templ draftTextPanel(view AssignmentView) {
-	<div id={ DraftModePanelID(view.ID, "text") } role="tabpanel" aria-labelledby={ DraftModeTabID(view.ID, "text") } class="space-y-3" data-draft-editor-root>
+	<div id={ DraftModePanelID(view.ID, "text") } role="tabpanel" aria-labelledby={ DraftModeTabID(view.ID, "text") } class="flex flex-col gap-3" data-draft-editor-root>
 		<label class="block text-sm font-medium text-stone-900" for={ DraftEditorID(view.ID) }>
 			Draft text
 		</label>

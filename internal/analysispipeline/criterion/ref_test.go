@@ -1,13 +1,13 @@
-package criterionname_test
+package criterion_test
 
 import (
 	"testing"
 
-	"rubrical/internal/analysispipeline/criterionname"
+	"rubrical/internal/analysispipeline/criterion"
 )
 
 func TestIndex_uniqueSlugs(t *testing.T) {
-	refs := criterionname.Index([]string{"Word Count", "Word Count", "Classmate Reply!"})
+	refs := criterion.Index([]string{"Word Count", "Word Count", "Classmate Reply!"})
 	if refs[0].ID != "word-count" || refs[1].ID != "word-count-2" {
 		t.Fatalf("ids = %q %q", refs[0].ID, refs[1].ID)
 	}
@@ -20,15 +20,15 @@ func TestIndex_uniqueSlugs(t *testing.T) {
 }
 
 func TestLookup(t *testing.T) {
-	refs := criterionname.Index([]string{"A", "B"})
-	got, ok := criterionname.Lookup(refs, refs[1].ID)
+	refs := criterion.Index([]string{"A", "B"})
+	got, ok := criterion.Lookup(refs, refs[1].ID)
 	if !ok || got.Name != "B" {
 		t.Fatalf("lookup = %+v ok=%v", got, ok)
 	}
 }
 
 func TestRatingID(t *testing.T) {
-	if criterionname.RatingID(0) != "r0" || criterionname.RatingID(2) != "r2" {
+	if criterion.RatingID(0) != "r0" || criterion.RatingID(2) != "r2" {
 		t.Fatal("rating ids")
 	}
 }

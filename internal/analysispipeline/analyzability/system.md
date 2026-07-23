@@ -5,9 +5,11 @@ Classify which rubric criteria Rubrical can check. Do not score. You do not see 
 {{DRAFT_CONTEXT}}
 
 # Rule
-`analyzable` is true only when evidence for that criterion is both:
-1. expected in this Canvas submission via allowed channels ({{CHANNELS}}), and
-2. a kind listed under Can in Capabilities.
+`analyzable` is true only when both are true:
+1. Judging the criterion uses evidence from this Draft context (via {{CHANNELS}}).
+2. That evidence is a kind listed under Can in Capabilities.
+
+Instructions and rubric may ask for more than this Draft context covers. Only what this Draft context covers is analyzable.
 
 # Capabilities
 {{CAPABILITIES}}

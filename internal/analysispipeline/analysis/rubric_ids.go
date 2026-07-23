@@ -3,13 +3,13 @@ package analysis
 import (
 	"strings"
 
-	"rubrical/internal/analysispipeline/criterionname"
+	"rubrical/internal/analysispipeline/criterion"
 )
 
 // AssignCriterionIDs sets stable slug ids on each row (rubric order).
 // If every row already has an id, those ids are kept — required so filterRubric
 // subsets retain full-rubric slugs (duplicate names must not re-index as r0-only).
-func (r *RubricContext) AssignCriterionIDs() []criterionname.Ref {
+func (r *RubricContext) AssignCriterionIDs() []criterion.Ref {
 	if r == nil {
 		return nil
 	}
@@ -29,18 +29,23 @@ func (r *RubricContext) AssignCriterionIDs() []criterionname.Ref {
 	for i, row := range r.Rows {
 		names[i] = row.Criterion
 	}
-	refs := criterionname.Index(names)
+	refs := criterion.Index(names)
 	for i := range r.Rows {
 		r.Rows[i].ID = refs[i].ID
+		refs[i].Description = r.Rows[i].CriterionLongDescription
 	}
 	return refs
 }
 
-// CriterionRefs returns id/name pairs (IDs must already be assigned).
-func (r RubricContext) CriterionRefs() []criterionname.Ref {
-	out := make([]criterionname.Ref, len(r.Rows))
+// CriterionRefs returns id/name/description pairs (IDs must already be assigned).
+func (r RubricContext) CriterionRefs() []criterion.Ref {
+	out := make([]criterion.Ref, len(r.Rows))
 	for i, row := range r.Rows {
-		out[i] = criterionname.Ref{ID: row.ID, Name: row.Criterion}
+		out[i] = criterion.Ref{
+			ID:          row.ID,
+			Name:        row.Criterion,
+			Description: row.CriterionLongDescription,
+		}
 	}
 	return out
 }

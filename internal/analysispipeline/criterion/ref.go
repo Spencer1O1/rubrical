@@ -1,4 +1,4 @@
-package criterionname
+package criterion
 
 import (
 	"fmt"
@@ -6,10 +6,11 @@ import (
 	"unicode"
 )
 
-// Ref is a stable id for one rubric criterion plus its Canvas display name.
+// Ref is one rubric criterion for prompts/schemas: stable id, display name, optional long description.
 type Ref struct {
-	ID   string
-	Name string
+	ID          string
+	Name        string
+	Description string
 }
 
 // Index builds unique slug ids for rubric criterion names (rubric order).

@@ -46,7 +46,7 @@ After changing extension code, rebuild and click **Reload** on the Rubrical card
 
 ### WSL + browser on Windows
 
-The Go server runs in WSL, but Edge/Chrome usually runs on Windows. Local dev builds of the extension talk to `http://localhost:8787` (see `make extension-build`).
+The Go server runs in WSL, but Edge/Chrome usually runs on Windows. Extension builds bake `PUBLIC_URL` from env (default `http://localhost:8787`; see `make extension-build` / `make extension-package`). On the prod host, homeserver sets `PUBLIC_URL=https://rubrical.spencerls.dev`, so the `/install` zip points at production.
 
 From **Windows** PowerShell, verify the server is reachable:
 
@@ -54,9 +54,7 @@ From **Windows** PowerShell, verify the server is reachable:
 curl http://localhost:8787/auth/config -UseBasicParsing
 ```
 
-You should get `{"status":"ok"}`. On WSL2, **`localhost` usually works from Windows but `127.0.0.1` often does not** — the dev extension uses `localhost`.
-
-For a production build (`make extension-build-prod`), the extension talks to `https://rubrical.spencerls.dev` only.
+You should get `{"status":"ok"}`. On WSL2, **`localhost` usually works from Windows but `127.0.0.1` often does not** — the local extension default uses `localhost`.
 
 If both fail while `make server` is running in WSL, restart WSL (`wsl --shutdown` in PowerShell, then reopen) or check Docker Desktop WSL integration.
 
@@ -159,9 +157,8 @@ make server
 | `make css` | Build Tailwind → `static/css/app.css` (gitignored; required before serving UI) |
 | `make css-watch` | Watch Tailwind CSS |
 | `make templ-watch` | Watch templ templates |
-| `make extension-build` | Build extension for local dev (`http://localhost:8787`) |
-| `make extension-build-prod` | Build extension for production (`https://rubrical.spencerls.dev`) |
-| `make extension-package` | Prod build + zip at `static/downloads/rubrical-extension.zip` (`/install`) |
+| `make extension-build` | Build extension using `PUBLIC_URL` from env (default `http://localhost:8787`) |
+| `make extension-package` | Same as `extension-build`, then zip to `static/downloads/rubrical-extension.zip` for `/install` |
 | `make test` | Run Go tests |
 
 ## templ IDE errors

@@ -3,8 +3,7 @@
   "private": true,
   "scripts": {
     "build": "node build.mjs",
-    "build:dev": "node build.mjs --dev",
-    "watch": "node build.mjs --dev --watch",
+    "watch": "node build.mjs --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:fixtures": "vitest run src/canvas/fixtures.test.ts"

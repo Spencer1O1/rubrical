@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"rubrical/internal/analysispipeline/analyzability"
-	"rubrical/internal/analysispipeline/criterionname"
+	"rubrical/internal/analysispipeline/criterion"
 )
 
 func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
-	refs := criterionname.Index([]string{"Topic Response", "Classmate Reply"})
+	refs := criterion.Index([]string{"Topic Response", "Classmate Reply"})
 	req := analyzability.BuildRequest(analyzability.Input{
 		PageType:        "discussion",
 		Instructions:    "Reply to the prompt and respond to a classmate.",
@@ -32,7 +32,7 @@ func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
 	if !strings.Contains(req.SystemPrompt, "Office (pptx") {
 		t.Fatal("openai system prompt should include Office in can-inspect")
 	}
-	if !strings.Contains(req.SystemPrompt, "via allowed channels (text)") {
+	if !strings.Contains(req.SystemPrompt, "via text)") {
 		t.Fatalf("expected assignment channels inlined in the rule:\n%s", req.SystemPrompt)
 	}
 	if strings.Contains(req.SystemPrompt, "# Allowed channels") {
@@ -47,6 +47,9 @@ func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
 	if strings.Contains(req.SystemPrompt, "- Discussion main topic reply") {
 		t.Fatal("draft context value should not be a bullet")
 	}
+	if !strings.Contains(req.SystemPrompt, "Judging the criterion uses evidence from this Draft context") {
+		t.Fatalf("expected draft-context locus in rule:\n%s", req.SystemPrompt)
+	}
 	if !strings.Contains(req.UserPrompt, "Classmate Reply") || !strings.Contains(req.UserPrompt, "id=classmate-reply") {
 		t.Fatalf("expected criterion id+name in prompt:\n%s", req.UserPrompt)
 	}
@@ -55,11 +58,24 @@ func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
 	}
 }
 
+func TestBuildRequest_includesCriterionDescriptions(t *testing.T) {
+	refs := criterion.Index([]string{"Integration of Article or Video"})
+	refs[0].Description = "Skillfully integrates a quote and insightfully connects it to the artwork."
+	req := analyzability.BuildRequest(analyzability.Input{
+		PageType:        "discussion",
+		AllowedChannels: []string{"text"},
+		Criteria:        refs,
+	}, "openai")
+	if !strings.Contains(req.UserPrompt, "Skillfully integrates a quote") {
+		t.Fatalf("expected long description in user prompt:\n%s", req.UserPrompt)
+	}
+}
+
 func TestBuildRequest_assignmentDraftContext(t *testing.T) {
 	req := analyzability.BuildRequest(analyzability.Input{
 		PageType:        "assignment",
 		AllowedChannels: []string{"text"},
-		Criteria:        criterionname.Index([]string{"Essay"}),
+		Criteria:        criterion.Index([]string{"Essay"}),
 	}, "openai")
 	if !strings.Contains(req.SystemPrompt, "# Draft context") || !strings.Contains(req.SystemPrompt, "Assignment submission") {
 		t.Fatalf("expected assignment draft context in system:\n%s", req.SystemPrompt)
@@ -72,7 +88,7 @@ func TestBuildRequest_assignmentDraftContext(t *testing.T) {
 func TestBuildRequest_injectsAnthropicCapabilities(t *testing.T) {
 	req := analyzability.BuildRequest(analyzability.Input{
 		AllowedChannels: []string{"file"},
-		Criteria:        criterionname.Index([]string{"Upload"}),
+		Criteria:        criterion.Index([]string{"Upload"}),
 	}, "anthropic")
 	canIdx := strings.Index(req.SystemPrompt, "Can:")
 	cannotIdx := strings.Index(req.SystemPrompt, "Cannot:")
@@ -87,7 +103,7 @@ func TestBuildRequest_injectsAnthropicCapabilities(t *testing.T) {
 	if !strings.Contains(cannotBlock, "Office (pptx") {
 		t.Fatal("anthropic should list Office under Cannot")
 	}
-	if !strings.Contains(req.SystemPrompt, "via allowed channels (files)") {
+	if !strings.Contains(req.SystemPrompt, "via files)") {
 		t.Fatalf("file channel should be inlined in the rule as files:\n%s", req.SystemPrompt)
 	}
 	if strings.Contains(req.UserPrompt, "Allowed channels:") {
@@ -102,7 +118,7 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 	sys := analyzability.SystemPrompt("openai", "assignment", []string{"text", "file"})
 	for _, want := range []string{
 		"criterionId", "analyzable", "reason", "howToEarnPoints", "Can:",
-		"via allowed channels (text, files)",
+		"via text, files)",
 		"listed under Can in Capabilities",
 		"# Draft context",
 		"Assignment submission",
@@ -120,8 +136,8 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 	if strings.Contains(sys, "Missing expected") || strings.Contains(sys, "score it poorly") {
 		t.Fatal("system prompt must not describe pass-2 scoring of missing evidence")
 	}
-	if strings.Contains(sys, "False when the locus") {
-		t.Fatal("system prompt must not negative-rephrase the channel rule")
+	if !strings.Contains(sys, "Judging the criterion uses evidence from this Draft context") {
+		t.Fatal("system prompt missing draft-context locus in rule")
 	}
 	if strings.Contains(sys, "possible channels") || strings.Contains(sys, "this request lists") || strings.Contains(sys, "# Allowed channels") {
 		t.Fatal("assignment channels are inlined in the rule")
@@ -129,7 +145,7 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 }
 
 func TestValidateResponse_requiresHowToEarnPoints(t *testing.T) {
-	refs := criterionname.Index([]string{"Classmate Reply", "Word Count"})
+	refs := criterion.Index([]string{"Classmate Reply", "Word Count"})
 	resp := &analyzability.Response{Criteria: []analyzability.Criterion{
 		{CriterionID: refs[0].ID, Analyzable: false, Reason: "peer reply", HowToEarnPoints: ""},
 		{CriterionID: refs[1].ID, Analyzable: true, Reason: "text", HowToEarnPoints: ""},
@@ -147,7 +163,7 @@ func TestValidateResponse_requiresHowToEarnPoints(t *testing.T) {
 }
 
 func TestParseResponse_ordersByRubric(t *testing.T) {
-	refs := criterionname.Index([]string{"A", "B"})
+	refs := criterion.Index([]string{"A", "B"})
 	raw := []byte(`{
 		"criteria": [
 			{"criterionId":"b","analyzable":true,"reason":"text","howToEarnPoints":""},

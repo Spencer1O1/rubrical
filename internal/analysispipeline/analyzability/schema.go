@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"rubrical/internal/analysispipeline/criterionname"
+	"rubrical/internal/analysispipeline/criterion"
 	"rubrical/internal/analysispipeline/jsonschemautil"
 )
 
 // JSONSchema builds structured-output schema for pass 1.
-func JSONSchema(refs []criterionname.Ref, providerName string) map[string]any {
+func JSONSchema(refs []criterion.Ref, providerName string) map[string]any {
 	return map[string]any{
 		"type":                 "object",
 		"additionalProperties": false,
@@ -21,7 +21,7 @@ func JSONSchema(refs []criterionname.Ref, providerName string) map[string]any {
 	}
 }
 
-func criteriaArraySchema(refs []criterionname.Ref, enforceCount bool) map[string]any {
+func criteriaArraySchema(refs []criterion.Ref, enforceCount bool) map[string]any {
 	n := len(refs)
 	if n == 0 {
 		return map[string]any{
@@ -55,7 +55,7 @@ func criterionJSONSchema(fixedID string) map[string]any {
 }
 
 // ValidateResponse checks coverage and howToEarnPoints; resolves CriterionName from ids.
-func ValidateResponse(resp *Response, refs []criterionname.Ref) error {
+func ValidateResponse(resp *Response, refs []criterion.Ref) error {
 	if resp == nil {
 		return fmt.Errorf("analyzability response is nil")
 	}
@@ -75,7 +75,7 @@ func ValidateResponse(resp *Response, refs []criterionname.Ref) error {
 		if c.CriterionID == "" {
 			return fmt.Errorf("criteria[%d].criterionId is required", i)
 		}
-		ref, ok := criterionname.Lookup(refs, c.CriterionID)
+		ref, ok := criterion.Lookup(refs, c.CriterionID)
 		if !ok {
 			return fmt.Errorf("criteria[%d] criterionId %q not in rubric", i, c.CriterionID)
 		}
@@ -114,7 +114,7 @@ func ValidateResponse(resp *Response, refs []criterionname.Ref) error {
 }
 
 // ParseResponse unmarshals and validates the pass-1 JSON.
-func ParseResponse(raw []byte, refs []criterionname.Ref) (*Response, error) {
+func ParseResponse(raw []byte, refs []criterion.Ref) (*Response, error) {
 	var resp Response
 	if err := json.Unmarshal(raw, &resp); err != nil {
 		return nil, fmt.Errorf("decode analyzability response: %w", err)

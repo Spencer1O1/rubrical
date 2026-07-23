@@ -22,7 +22,7 @@ def main() -> None:
     for name in DIST_FILES:
         path = dist / name
         if not path.is_file():
-            raise SystemExit(f"missing {path} — run make extension-build-prod first")
+            raise SystemExit(f"missing {path} — run make extension-package (or build dist/) first")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     if OUT.exists():

@@ -5,7 +5,7 @@ import (
 
 	"rubrical/internal/analysispipeline/analysis/prompt"
 	"rubrical/internal/analysispipeline/analysis/schema"
-	"rubrical/internal/analysispipeline/criterionname"
+	"rubrical/internal/analysispipeline/criterion"
 	"rubrical/internal/analysispipeline/files"
 	"rubrical/internal/llm"
 )
@@ -43,7 +43,7 @@ func promptRubricFrom(rubric RubricContext) prompt.Rubric {
 		ratings := make([]prompt.RubricRating, len(bands))
 		for j, band := range bands {
 			ratings[j] = prompt.RubricRating{
-				ID:          criterionname.RatingID(j),
+				ID:          criterion.RatingID(j),
 				Title:       band.rating.Title,
 				Description: band.rating.Description,
 				Points:      band.rating.Points,
@@ -94,7 +94,7 @@ func ratingIDsForSchema(row RubricRow) []string {
 	}
 	ids := make([]string, len(bands))
 	for i := range bands {
-		ids[i] = criterionname.RatingID(i)
+		ids[i] = criterion.RatingID(i)
 	}
 	return ids
 }

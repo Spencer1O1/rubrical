@@ -227,6 +227,24 @@ func (c Config) CookieSecure() bool {
 	return strings.HasPrefix(strings.ToLower(c.PublicURL), "https://")
 }
 
+// AllowsEmbedHandoff is true when CHIPS embed cookies can work for PublicURL.
+// HTTPS always; http://localhost and http://127.0.0.1 are allowed because
+// Chromium treats them as secure contexts (Secure cookies over HTTP).
+func (c Config) AllowsEmbedHandoff() bool {
+	if c.CookieSecure() {
+		return true
+	}
+	return isLoopbackHTTPPublicURL(c.PublicURL)
+}
+
+func isLoopbackHTTPPublicURL(raw string) bool {
+	u := strings.TrimSpace(strings.ToLower(raw))
+	return strings.HasPrefix(u, "http://localhost:") ||
+		u == "http://localhost" ||
+		strings.HasPrefix(u, "http://127.0.0.1:") ||
+		u == "http://127.0.0.1"
+}
+
 func (c Config) GoogleOAuthRedirectURL() string {
 	return strings.TrimRight(c.PublicURL, "/") + "/auth/google/callback"
 }

@@ -6,7 +6,7 @@ import "strings"
 const (
 	DraftContextAssignment          = "Assignment submission"
 	DraftContextDiscussionMainTopic = "Discussion main topic reply"
-	DraftContextDiscussionClassmate = "Discussion classmate thread reply" // reserved; not emitted yet
+	DraftContextDiscussionClassmate = "Discussion classmate thread reply" // reserved; not selected by pageType yet
 )
 
 // DraftContextLabel returns the fixed vocabulary label for pageType.

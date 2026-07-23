@@ -124,3 +124,25 @@ func TestLoad_postDueDateRetentionInvalid(t *testing.T) {
 		t.Fatal("expected error for invalid duration")
 	}
 }
+
+func TestAllowsEmbedHandoff(t *testing.T) {
+	cases := []struct {
+		publicURL string
+		want      bool
+	}{
+		{"https://rubrical.spencerls.dev", true},
+		{"http://localhost:8787", true},
+		{"http://localhost", true},
+		{"http://127.0.0.1:8787", true},
+		{"http://127.0.0.1", true},
+		{"http://192.168.1.5:8787", false},
+		{"http://example.com", false},
+		{"", false},
+	}
+	for _, tc := range cases {
+		got := (Config{PublicURL: tc.publicURL}).AllowsEmbedHandoff()
+		if got != tc.want {
+			t.Fatalf("%q: got %v want %v", tc.publicURL, got, tc.want)
+		}
+	}
+}

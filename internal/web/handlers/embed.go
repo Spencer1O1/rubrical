@@ -16,8 +16,8 @@ func (h *Handlers) EmbedURL(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "authentication required", http.StatusUnauthorized)
 		return
 	}
-	if !h.authSecure {
-		http.Error(w, "embed handoff requires HTTPS public URL", http.StatusBadRequest)
+	if !h.embedAllowed {
+		http.Error(w, "embed handoff requires HTTPS public URL (or http://localhost for local dev)", http.StatusBadRequest)
 		return
 	}
 	next := auth.WithEmbedQuery(auth.SanitizeNextPath(r.URL.Query().Get("next")))
@@ -44,8 +44,8 @@ func (h *Handlers) EmbedURL(w http.ResponseWriter, r *http.Request) {
 
 // EmbedHandoff (GET /auth/embed) — step 2: iframe first load → CHIPS cookie → redirect to next.
 func (h *Handlers) EmbedHandoff(w http.ResponseWriter, r *http.Request) {
-	if !h.authSecure {
-		http.Error(w, "embed handoff requires HTTPS", http.StatusBadRequest)
+	if !h.embedAllowed {
+		http.Error(w, "embed handoff requires HTTPS (or http://localhost for local dev)", http.StatusBadRequest)
 		return
 	}
 	userID, err := auth.ParseEmbedHandoffToken(h.embedSecret, r.URL.Query().Get("token"), time.Now())

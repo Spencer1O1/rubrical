@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"rubrical/internal/analysispipeline/criterionname"
+	"rubrical/internal/analysispipeline/criterion"
 	"rubrical/internal/analysispipeline/userprompt"
 	"rubrical/internal/llm"
 )
@@ -14,7 +14,7 @@ type Input struct {
 	PageType        string
 	Instructions    string
 	AllowedChannels []string // text, file, url — assignment-allowed; injected into system prompt
-	Criteria        []criterionname.Ref
+	Criteria        []criterion.Ref
 }
 
 // Criterion is one row from the analyzability response.
@@ -47,6 +47,10 @@ func buildUserPrompt(input Input) string {
 	b.WriteString("# Criteria\n")
 	for i, ref := range input.Criteria {
 		b.WriteString(fmt.Sprintf("%d. id=%s — %s\n", i+1, ref.ID, ref.Name))
+		if desc := strings.TrimSpace(ref.Description); desc != "" {
+			b.WriteString(desc)
+			b.WriteByte('\n')
+		}
 	}
 	return b.String()
 }

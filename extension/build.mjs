@@ -1,8 +1,17 @@
 import * as esbuild from "esbuild";
 
-const dev = process.argv.includes("--dev");
 const watch = process.argv.includes("--watch");
-const apiBase = dev ? "http://localhost:8787" : "https://rubrical.spencerls.dev";
+
+// Same knob as the Go server (PUBLIC_URL). Default matches internal/config.DefaultPublicURL.
+function resolveApiBase() {
+  const fromEnv = process.env.PUBLIC_URL?.trim().replace(/\/$/, "");
+  if (fromEnv) {
+    return fromEnv;
+  }
+  return "http://localhost:8787";
+}
+
+const apiBase = resolveApiBase();
 
 const shared = {
   define: {

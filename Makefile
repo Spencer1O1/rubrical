@@ -1,4 +1,4 @@
-.PHONY: dev server purge css css-watch templ templ-watch db-up db-down db-reset migrate-up migrate-down sqlc extension-build extension-build-prod extension-package test build tidy setup-secrets-key
+.PHONY: dev server purge css css-watch templ templ-watch db-up db-down db-reset migrate-up migrate-down sqlc extension-build extension-package test build tidy setup-secrets-key
 
 # Goose needs a URL. No Makefile defaults — load .env.local/.env, honor make/env overrides, then require every piece.
 define goose_postgres
@@ -75,17 +75,27 @@ db-reset:
 sqlc:
 	go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.29.0 generate
 
+# PUBLIC_URL from .env.local/.env (default http://localhost:8787). Homeserver sets
+# PUBLIC_URL=https://rubrical.spencerls.dev on deploy.
+define extension_with_public_url
+	@bash -euo pipefail -c '\
+	  set -a; \
+	  [ -f .env.local ] && source ./.env.local; \
+	  [ -f .env ] && source ./.env; \
+	  set +a; \
+	  export PUBLIC_URL="$${PUBLIC_URL:-http://localhost:8787}"; \
+	  echo "$(1) PUBLIC_URL=$$PUBLIC_URL"; \
+	  pnpm --filter rubrical-extension typecheck; \
+	  PUBLIC_URL="$$PUBLIC_URL" pnpm --filter rubrical-extension build; \
+	  $(2)'
+endef
+
 extension-build:
-	pnpm --filter rubrical-extension typecheck
-	pnpm --filter rubrical-extension build:dev
+	$(call extension_with_public_url,extension-build,true)
 
-extension-build-prod:
-	pnpm --filter rubrical-extension typecheck
-	pnpm --filter rubrical-extension build
-
-# Prod extension zip for https://rubrical.spencerls.dev/install
-extension-package: extension-build-prod
-	python3 scripts/package-extension.py
+# Zip for /install at static/downloads/rubrical-extension.zip (same PUBLIC_URL rules).
+extension-package:
+	$(call extension_with_public_url,extension-package,python3 scripts/package-extension.py)
 
 install-js:
 	pnpm install
