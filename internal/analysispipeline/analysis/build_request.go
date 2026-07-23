@@ -11,7 +11,7 @@ import (
 )
 
 func BuildAnalysisRequest(input DraftInput, fileResult files.ProcessResult, maxSubmissionTextChars int, providerName string, rubric RubricContext) llm.Request {
-	rubric.AssignCriterionIDs()
+	_ = ensureRubricIDs(&rubric)
 	fileContext := promptFileContextFrom(fileResult)
 	promptInput := promptInputFrom(input, fileContext, rubric)
 	system, user := prompt.Build(promptInput, maxSubmissionTextChars)

@@ -108,6 +108,43 @@ func TestFilterRubric_dropsNotAnalyzable(t *testing.T) {
 	}
 }
 
+func TestMergeAnalysis_preservesIdsThroughFilteredPass2(t *testing.T) {
+	rubric := analysis.RubricContext{Rows: []analysis.RubricRow{
+		{Criterion: "Content", Ratings: []analysis.RubricRating{{Title: "Full", Points: "1"}, {Title: "None", Points: "0"}}},
+		{Criterion: "Content", Ratings: []analysis.RubricRating{{Title: "Full", Points: "1"}, {Title: "None", Points: "0"}}},
+	}}
+	refs := rubric.AssignCriterionIDs()
+	class := &analyzability.Response{Criteria: []analyzability.Criterion{
+		{CriterionID: refs[0].ID, Analyzable: false, Reason: "skip", HowToEarnPoints: "N/A"},
+		{CriterionID: refs[1].ID, Analyzable: true, Reason: "ok"},
+	}}
+	filtered := filterRubric(rubric, class)
+	filtered.AssignCriterionIDs() // must not rewrite content-2 → content
+	scored := &analysisschema.ScoredAnalysis{
+		OverallSummary: "ok",
+		Confidence:     "high",
+		Strengths:      []string{},
+		Guidance:       []string{},
+		Criteria: []analysisschema.ScoredCriterion{{
+			CriterionID:     filtered.Rows[0].ID,
+			CriterionName:   "Content",
+			CriterionScore:  1,
+			ScoreRationale:  "Good.",
+			Status:          "met",
+			SelectedRating:  "Full",
+			PredictedPoints: analysis.FloatPtr(1),
+			MaxPoints:       analysis.FloatPtr(1),
+		}},
+	}
+	merged, err := MergeAnalysis(class, scored, rubric)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if merged.Criteria[1].Status != "met" || merged.Criteria[1].CriterionID != "content-2" {
+		t.Fatalf("merged = %+v", merged.Criteria[1])
+	}
+}
+
 func TestMergeAnalysis_allNotAnalyzableSkipsPass2(t *testing.T) {
 	rubric := analysis.RubricContext{Rows: []analysis.RubricRow{
 		{Criterion: "Participation", Ratings: []analysis.RubricRating{{Title: "Full", Points: "1"}, {Title: "None", Points: "0"}}},

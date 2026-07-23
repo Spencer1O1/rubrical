@@ -33,6 +33,12 @@ func (s *Service) persistSuccess(ctx context.Context, handle RunHandle, assignme
 	if err != nil {
 		return Result{}, err
 	}
+	if len(out.Criteria) != len(criterionIDs) {
+		return Result{}, fmt.Errorf(
+			"rubric criterion count mismatch: analysis has %d, database has %d",
+			len(out.Criteria), len(criterionIDs),
+		)
+	}
 
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {

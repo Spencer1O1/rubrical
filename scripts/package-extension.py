@@ -9,28 +9,31 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 EXT = ROOT / "extension"
 OUT = ROOT / "static" / "downloads" / "rubrical-extension.zip"
-TOP_LEVEL = ("manifest.json", "background.js", "popup.js", "popup.html")
+ROOT_FILES = ("manifest.json", "popup.html")
+DIST_FILES = ("content.js", "background.js", "popup.js")
 
 
 def main() -> None:
-    for name in TOP_LEVEL:
+    for name in ROOT_FILES:
         path = EXT / name
         if not path.is_file():
-            raise SystemExit(f"missing {path} — run make extension-build-prod first")
+            raise SystemExit(f"missing {path}")
     dist = EXT / "dist"
-    if not dist.is_dir():
-        raise SystemExit(f"missing {dist} — run make extension-build-prod first")
+    for name in DIST_FILES:
+        path = dist / name
+        if not path.is_file():
+            raise SystemExit(f"missing {path} — run make extension-build-prod first")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     if OUT.exists():
         OUT.unlink()
 
     with zipfile.ZipFile(OUT, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for name in TOP_LEVEL:
+        for name in ROOT_FILES:
             zf.write(EXT / name, name)
-        for path in sorted(dist.rglob("*")):
-            if path.is_file():
-                zf.write(path, path.relative_to(EXT).as_posix())
+        for name in DIST_FILES:
+            path = dist / name
+            zf.write(path, f"dist/{name}")
 
     print(f"wrote {OUT} ({OUT.stat().st_size} bytes)")
 

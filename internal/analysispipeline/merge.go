@@ -2,6 +2,7 @@ package analysispipeline
 
 import (
 	"fmt"
+	"strings"
 
 	"rubrical/internal/analysispipeline/analysis"
 	analysisschema "rubrical/internal/analysispipeline/analysis/schema"
@@ -27,6 +28,13 @@ func MergeAnalysis(
 	refs := fullRubric.AssignCriterionIDs()
 	if err := analyzability.ValidateResponse(class, refs); err != nil {
 		return nil, err
+	}
+	if scored != nil {
+		for _, c := range scored.Criteria {
+			if strings.TrimSpace(c.CriterionID) == "" {
+				return nil, fmt.Errorf("scored criterion missing criterionId")
+			}
+		}
 	}
 
 	scoredByID := map[string]analysisschema.ScoredCriterion{}

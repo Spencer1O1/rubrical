@@ -24,13 +24,13 @@ const builds = [
   {
     ...shared,
     entryPoints: ["src/background.ts"],
-    outfile: "background.js",
+    outfile: "dist/background.js",
     format: "iife",
   },
   {
     ...shared,
     entryPoints: ["src/popup.ts"],
-    outfile: "popup.js",
+    outfile: "dist/popup.js",
     format: "esm",
   },
 ];
