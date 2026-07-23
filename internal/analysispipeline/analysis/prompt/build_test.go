@@ -57,10 +57,10 @@ func TestBuildContext_discussion(t *testing.T) {
 		PageType: "discussion",
 		Title:    "Week 3 reply",
 	})
-	if !contains(got, "Discussion title: Week 3 reply") {
+	if !contains(got, "Title: Week 3 reply") {
 		t.Fatalf("got %q", got)
 	}
-	if contains(got, "Draft context") || contains(got, "Page type:") {
+	if contains(got, "Draft context") || contains(got, "Page type:") || contains(got, "Discussion title:") {
 		t.Fatalf("draft context/page type not in user context: %q", got)
 	}
 }
@@ -70,10 +70,10 @@ func TestBuildContext_assignment(t *testing.T) {
 		PageType: "assignment",
 		Title:    "Essay 1",
 	})
-	if !contains(got, "Assignment title: Essay 1") {
+	if !contains(got, "Title: Essay 1") {
 		t.Fatalf("got %q", got)
 	}
-	if contains(got, "Draft context") || contains(got, "Page type:") {
+	if contains(got, "Draft context") || contains(got, "Page type:") || contains(got, "Assignment title:") {
 		t.Fatalf("draft context/page type not in user context: %q", got)
 	}
 }

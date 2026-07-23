@@ -44,7 +44,7 @@ func buildUserPrompt(input Input) string {
 	var b strings.Builder
 	b.WriteString(userprompt.Instructions(input.Instructions))
 	b.WriteByte('\n')
-	b.WriteString("## Criteria\n")
+	b.WriteString("# Criteria\n")
 	for i, ref := range input.Criteria {
 		b.WriteString(fmt.Sprintf("%d. id=%s — %s\n", i+1, ref.ID, ref.Name))
 	}

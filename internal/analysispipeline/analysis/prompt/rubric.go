@@ -7,7 +7,7 @@ import (
 
 func BuildRubric(rubric Rubric) string {
 	var b strings.Builder
-	b.WriteString("## Rubric\n")
+	b.WriteString("# Rubric\n")
 	b.WriteString(formatRubric(rubric))
 	return b.String()
 }

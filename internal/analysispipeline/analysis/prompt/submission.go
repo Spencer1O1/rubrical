@@ -9,7 +9,7 @@ func BuildSubmission(input Input, maxSubmissionTextChars int) string {
 	budget := newTextBudget(maxSubmissionTextChars)
 	manifestCap := newManifestBudget(0)
 	var b strings.Builder
-	b.WriteString("## Student submission\n")
+	b.WriteString("# Submission\n")
 
 	switch strings.TrimSpace(input.DraftMode) {
 	case "url":
@@ -29,25 +29,26 @@ func writeURLSubmission(b *strings.Builder, input Input, budget *textBudget) {
 	if url == "" {
 		return
 	}
-	fmt.Fprintf(b, "Submission type: website URL\nURL: %s\n", url)
+	b.WriteString("website URL\n")
+	fmt.Fprintf(b, "URL: %s\n", url)
 	if text := budget.take(input.DraftText); text != "" {
-		b.WriteString("\nFetched page text (may be incomplete):\n")
+		b.WriteString("\nFetched text (may be incomplete):\n")
 		b.WriteString(text)
 		b.WriteByte('\n')
 	}
 }
 
 func writeFileSubmission(b *strings.Builder, input Input, budget *textBudget) {
-	b.WriteString("Submission type: file upload\n")
+	b.WriteString("files\n")
 	if text := budget.take(input.DraftText); text != "" {
-		b.WriteString("Additional draft text:\n")
+		b.WriteString("Draft text:\n")
 		b.WriteString(text)
 		b.WriteByte('\n')
 	}
 }
 
 func writeTextSubmission(b *strings.Builder, input Input, budget *textBudget) {
-	b.WriteString("Submission type: text\n")
+	b.WriteString("text\n")
 	draft := budget.take(input.DraftText)
 	if draft == "" && !hasFileContext(input.Files) {
 		b.WriteString("(empty)\n")
@@ -66,7 +67,7 @@ func writeFileContext(b *strings.Builder, files FileContext, budget *textBudget,
 	}
 
 	if len(files.InlineSections) > 0 {
-		b.WriteString("\n## Submission files (text)\n")
+		b.WriteString("\n# Text files\n")
 		for _, section := range files.InlineSections {
 			text := budget.take(section.Text)
 			if text == "" {
@@ -76,21 +77,21 @@ func writeFileContext(b *strings.Builder, files FileContext, budget *textBudget,
 			if section.Extracted {
 				heading += " (extracted text)"
 			}
-			fmt.Fprintf(b, "### %s\n", heading)
+			fmt.Fprintf(b, "## %s\n", heading)
 			b.WriteString(text)
 			b.WriteByte('\n')
 		}
 	}
 
 	if len(files.AttachedFiles) > 0 {
-		b.WriteString("\n## Attached files (sent to model API)\n")
+		b.WriteString("\n# Attached files\n")
 		for _, file := range files.AttachedFiles {
 			fmt.Fprintf(b, "- %s (%s, %d bytes)\n", file.Path, file.MimeType, file.Bytes)
 		}
 	}
 
 	if len(files.SkippedNotes) > 0 {
-		b.WriteString("\n## Skipped files\n")
+		b.WriteString("\n# Skipped files\n")
 		for _, note := range files.SkippedNotes {
 			line := manifestCap.take("- " + note)
 			if line == "" {

@@ -7,7 +7,7 @@ Classify which rubric criteria Rubrical can check. Do not score. You do not see 
 # Rule
 `analyzable` is true only when evidence for that criterion is both:
 1. expected in this Canvas submission via allowed channels ({{CHANNELS}}), and
-2. a kind Rubrical can inspect (capabilities below).
+2. a kind listed under Can in Capabilities.
 
 # Capabilities
 {{CAPABILITIES}}

@@ -8,11 +8,7 @@ import (
 func BuildContext(input Input) string {
 	var b strings.Builder
 
-	titleLabel := "Assignment title"
-	if input.PageType == "discussion" {
-		titleLabel = "Discussion title"
-	}
-	fmt.Fprintf(&b, "%s: %s\n", titleLabel, strings.TrimSpace(input.Title))
+	fmt.Fprintf(&b, "Title: %s\n", strings.TrimSpace(input.Title))
 
 	if course := strings.TrimSpace(input.CourseName); course != "" {
 		fmt.Fprintf(&b, "Course: %s\n", course)

@@ -19,7 +19,7 @@ func TestBuildSubmission_sharedTextBudget(t *testing.T) {
 	if contains(got, stringsRepeat("b", 80)) {
 		t.Fatal("expected inline file truncated by shared budget")
 	}
-	if !contains(got, "### b.txt") {
+	if !contains(got, "## b.txt") {
 		t.Fatal("expected inline heading when partial content fits")
 	}
 }

@@ -33,7 +33,13 @@ func TestBuildRequest_excludesDraftEvidence(t *testing.T) {
 		t.Fatal("openai system prompt should include Office in can-inspect")
 	}
 	if !strings.Contains(req.SystemPrompt, "via allowed channels (text)") {
-		t.Fatalf("expected assignment channels in system prompt:\n%s", req.SystemPrompt)
+		t.Fatalf("expected assignment channels inlined in the rule:\n%s", req.SystemPrompt)
+	}
+	if strings.Contains(req.SystemPrompt, "# Allowed channels") {
+		t.Fatal("channels belong inline in the rule, not a separate section")
+	}
+	if !strings.Contains(req.SystemPrompt, "listed under Can in Capabilities") {
+		t.Fatalf("rule should bind to Capabilities Can list:\n%s", req.SystemPrompt)
 	}
 	if !strings.Contains(req.SystemPrompt, "# Draft context") || !strings.Contains(req.SystemPrompt, "Discussion main topic reply") {
 		t.Fatalf("expected discussion draft context in system:\n%s", req.SystemPrompt)
@@ -82,7 +88,7 @@ func TestBuildRequest_injectsAnthropicCapabilities(t *testing.T) {
 		t.Fatal("anthropic should list Office under Cannot")
 	}
 	if !strings.Contains(req.SystemPrompt, "via allowed channels (files)") {
-		t.Fatalf("file channel should be in system prompt as files:\n%s", req.SystemPrompt)
+		t.Fatalf("file channel should be inlined in the rule as files:\n%s", req.SystemPrompt)
 	}
 	if strings.Contains(req.UserPrompt, "Allowed channels:") {
 		t.Fatalf("channels belong in system prompt, not user:\n%s", req.UserPrompt)
@@ -97,6 +103,7 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 	for _, want := range []string{
 		"criterionId", "analyzable", "reason", "howToEarnPoints", "Can:",
 		"via allowed channels (text, files)",
+		"listed under Can in Capabilities",
 		"# Draft context",
 		"Assignment submission",
 	} {
@@ -116,8 +123,8 @@ func TestSystemPrompt_isFieldSpec(t *testing.T) {
 	if strings.Contains(sys, "False when the locus") {
 		t.Fatal("system prompt must not negative-rephrase the channel rule")
 	}
-	if strings.Contains(sys, "possible channels") || strings.Contains(sys, "this request lists") {
-		t.Fatal("assignment channels are injected; no deferred user-prompt channel list")
+	if strings.Contains(sys, "possible channels") || strings.Contains(sys, "this request lists") || strings.Contains(sys, "# Allowed channels") {
+		t.Fatal("assignment channels are inlined in the rule")
 	}
 }
 

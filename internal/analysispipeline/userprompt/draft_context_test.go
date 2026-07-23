@@ -27,11 +27,11 @@ func TestDraftContextLabel(t *testing.T) {
 
 func TestInstructions(t *testing.T) {
 	empty := userprompt.Instructions("  ")
-	if empty != "## Instructions\n(none)\n" {
+	if empty != "# Instructions\n(none)\n" {
 		t.Fatalf("empty: %q", empty)
 	}
 	got := userprompt.Instructions("Write a reply.")
-	if got != "## Instructions\nWrite a reply.\n" {
+	if got != "# Instructions\nWrite a reply.\n" {
 		t.Fatalf("got %q", got)
 	}
 }
